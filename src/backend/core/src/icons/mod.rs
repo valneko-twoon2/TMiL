@@ -228,4 +228,32 @@ mod tests {
             assert_eq!(icons.get(1), Some(&None));
         }
     }
+
+    mod property {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            /// 問い合わせた順に重なりを除いて返し、上限を超えない。2 回目は何も取りに行かない
+            #[test]
+            fn icons_follow_request_order_and_are_remembered(
+                exes in proptest::collection::vec("[a-c]{0,2}", 0..400),
+            ) {
+                let cache = IconCache::new();
+                let icons = cache.icons(&exes, fake("x:"));
+                let mut expected: Vec<String> = Vec::new();
+                for e in &exes {
+                    if !expected.contains(e) && expected.len() < MAX_PER_REQUEST {
+                        expected.push(e.clone());
+                    }
+                }
+                prop_assert_eq!(icons.iter().map(|i| i.exe.clone()).collect::<Vec<_>>(), expected);
+                let again = cache.icons(&exes, |asked| {
+                    assert!(asked.is_empty(), "覚えているものを聞き直した: {asked:?}");
+                    Vec::new()
+                });
+                prop_assert_eq!(again, icons);
+            }
+        }
+    }
 }

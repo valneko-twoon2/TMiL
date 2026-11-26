@@ -313,4 +313,38 @@ mod tests {
             assert_eq!(cpus_from_mask(0), Vec::<u32>::new());
         }
     }
+
+    mod property {
+        use super::*;
+        use proptest::prelude::*;
+
+        fn rank(p: Priority) -> usize {
+            Priority::ALL.iter().position(|q| *q == p).unwrap()
+        }
+
+        proptest! {
+            /// CPU の番号 → ビット → 番号 で、重なりを除いて小さい順に並んだものに戻る
+            #[test]
+            fn cpus_roundtrip_through_mask(cpus in proptest::collection::vec(0u32..MAX_CPUS, 1..40)) {
+                let mut expected = cpus.clone();
+                expected.sort_unstable();
+                expected.dedup();
+                prop_assert_eq!(cpus_from_mask(mask_from_cpus(&cpus).unwrap()), expected);
+            }
+
+            /// nice 値が大きい（優先されない）ほど、優先度は同じか低くなる
+            #[test]
+            fn priority_falls_as_nice_rises(a in -20i32..=19, b in -20i32..=19) {
+                let (low, high) = (a.min(b), a.max(b));
+                prop_assert!(rank(priority_from_nice(low)) <= rank(priority_from_nice(high)));
+            }
+
+            /// プロセス名に空白や括弧が入っていても、nice 値を読み違えない
+            #[test]
+            fn nice_is_found_whatever_the_name(name in "[^\\n]{0,30}", nice in -20i32..=19) {
+                let stat = format!("12 ({name}) S 1 12 12 0 -1 0 0 0 0 0 0 0 0 0 20 {nice} 1 0 100");
+                prop_assert_eq!(nice_from_proc_stat(&stat), Some(nice));
+            }
+        }
+    }
 }

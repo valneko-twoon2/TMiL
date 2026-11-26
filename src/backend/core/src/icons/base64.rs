@@ -90,4 +90,38 @@ mod tests {
             assert!(!is_valid("Z==="));
         }
     }
+
+    mod property {
+        use super::*;
+        use proptest::prelude::*;
+
+        /// テストだけで使う素朴な復号（符号化が正しいかを、行って戻って確かめるため）。
+        fn decode(text: &str) -> Vec<u8> {
+            let values: Vec<u32> = text
+                .bytes()
+                .filter(|&b| b != b'=')
+                .map(|b| u32::try_from(ALPHABET.iter().position(|&a| a == b).unwrap()).unwrap())
+                .collect();
+            let mut out = Vec::new();
+            for chunk in values.chunks(4) {
+                let n = chunk.iter().enumerate().fold(0u32, |acc, (i, &v)| {
+                    acc | (v << (18 - 6 * u32::try_from(i).unwrap()))
+                });
+                let bytes = [n >> 16, n >> 8, n].map(|b| u8::try_from(b & 0xff).unwrap());
+                out.extend_from_slice(bytes.get(..chunk.len() - 1).unwrap());
+            }
+            out
+        }
+
+        proptest! {
+            /// 長さは 3 バイトごとに 4 文字。空でなければ正しい Base64 になり、復号すると元に戻る
+            #[test]
+            fn encode_roundtrips(bytes in proptest::collection::vec(any::<u8>(), 0..300)) {
+                let text = encode(&bytes);
+                prop_assert_eq!(text.len(), bytes.len().div_ceil(3) * 4);
+                prop_assert_eq!(is_valid(&text), !bytes.is_empty());
+                prop_assert_eq!(decode(&text), bytes);
+            }
+        }
+    }
 }

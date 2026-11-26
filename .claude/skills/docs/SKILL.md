@@ -41,5 +41,6 @@ docs/
 
 - 日本語で、平易に短く。前置きやまとめの繰り返しは書かない
 - 表と箇条書きを優先し、1 文は短く
+- 絵文字は使わない（README も同じ）
 - コマンドは、どこで実行するか（`src/frontend` か `src/backend` か）が分かるように書く
 - `03-inventory.md` は手で直さない（`npm run docs:tests`）

@@ -338,4 +338,17 @@ mod tests {
             }
         }
     }
+
+    mod property {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            /// どんな文字列もクォートして戻すと元に戻る（コマンドラインの組み立てを間違えない）
+            #[test]
+            fn quoting_roundtrips(arg in "[^\\x00]{0,40}") {
+                prop_assert_eq!(unquote_windows_arg(&quote_windows_arg(&arg)), Some(arg));
+            }
+        }
+    }
 }

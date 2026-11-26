@@ -12,6 +12,7 @@ export const KINDS = [
   ['unit', '単体（その他）'],
   ['snapshot', 'スナップショット'],
   ['contract', '契約'],
+  ['property', 'プロパティベース'],
   ['fuzz', 'ファジング'],
   ['formal', '形式検証'],
   ['vrt', 'VRT'],
@@ -27,7 +28,16 @@ export const LAYERS = [
   ['app', 'アプリ全体'],
 ];
 
-const TAGS = new Set(['equivalence', 'boundary', 'regression', 'snapshot', 'contract', 'fuzz', 'formal']);
+const TAGS = new Set([
+  'equivalence',
+  'boundary',
+  'regression',
+  'snapshot',
+  'contract',
+  'property',
+  'fuzz',
+  'formal',
+]);
 
 /**
  * テスト 1 件の種類を決める。名前の途中にあるタグを優先し、無ければ実行方法から決める。

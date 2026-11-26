@@ -212,4 +212,55 @@ mod tests {
             assert!(validate("1:\\a").is_err());
         }
     }
+
+    mod property {
+        use super::*;
+        use proptest::prelude::*;
+
+        fn decode(text: &str) -> Vec<u8> {
+            let bytes = text.as_bytes();
+            let mut out = Vec::new();
+            let mut i = 0;
+            while let Some(&b) = bytes.get(i) {
+                if b == b'%' {
+                    let hex = std::str::from_utf8(bytes.get(i + 1..i + 3).unwrap()).unwrap();
+                    out.push(u8::from_str_radix(hex, 16).unwrap());
+                    i += 3;
+                } else {
+                    out.push(b);
+                    i += 1;
+                }
+            }
+            out
+        }
+
+        proptest! {
+            /// エンコードした結果には、そのまま URL に入れてよい文字と %XX だけが並び、戻すと元の言葉になる
+            #[test]
+            fn url_encode_is_safe_and_reversible(text in any::<String>()) {
+                let encoded = url_encode(&text);
+                prop_assert!(encoded.bytes().all(|b| b.is_ascii_alphanumeric() || b"-_.~%".contains(&b)));
+                prop_assert_eq!(decode(&encoded), text.as_bytes());
+            }
+
+            /// 検索の URL は、どんな言葉でも決まったサイトの URL から始まり、空白や引用符を含まない
+            #[test]
+            fn search_url_never_escapes_the_site(text in any::<String>()) {
+                if let Ok(url) = search_url(&text) {
+                    prop_assert!(url.starts_with(SEARCH_URL));
+                    prop_assert!(!url.contains([' ', '"', '\'', '\n']));
+                }
+            }
+
+            /// 受け付けた場所には、コマンドの引数を壊す文字が入っていない
+            #[test]
+            fn accepted_paths_have_no_breaking_characters(path in any::<String>()) {
+                if validate(&path).is_ok() {
+                    prop_assert!(!path.contains('"'));
+                    prop_assert!(!path.chars().any(char::is_control));
+                    prop_assert!(!path.trim().is_empty());
+                }
+            }
+        }
+    }
 }

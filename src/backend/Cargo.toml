@@ -16,6 +16,8 @@ serde_json = "1.0.154"
 sysinfo = { version = "0.40.4", default-features = false, features = ["disk", "network", "system", "user"] }
 winreg = "0.56.0"
 insta = { version = "1.49.0", features = ["json"] }
+# プロパティベースのテスト用（テストだけで使い、アプリには入らない）
+proptest = { version = "1.12.0", default-features = false, features = ["std"] }
 tauri = { version = "2.12.7", features = ["tray-icon"] }
 tauri-build = { version = "2.7.6", features = [] }
 tauri-plugin-single-instance = "2.5.5"

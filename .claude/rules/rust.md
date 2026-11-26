@@ -30,7 +30,7 @@ paths:
 
 ## テスト
 
-- 単体テストは同じファイルの `#[cfg(test)] mod tests` に置き、種類ごとにサブモジュールを分ける: `equivalence` `boundary` `regression` `snapshot` `fuzz` `formal`
+- 単体テストは同じファイルの `#[cfg(test)] mod tests` に置き、種類ごとにサブモジュールを分ける: `equivalence` `boundary` `regression` `snapshot` `property` `fuzz` `formal`
 - 実機の値を読むテスト（sysinfo など）は値の範囲や関係を確かめる。具体的な値は決め打ちしない
 - ファイルを扱うテストは `startup::test_support::TempDir` を使う
 - スナップショットは insta。新しい `.snap.new` は中身を確かめてから `.snap` に変える

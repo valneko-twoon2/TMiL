@@ -279,4 +279,43 @@ Exec=/usr/bin/sample --tray
             insta::assert_snapshot!(with_enabled(SAMPLE, false));
         }
     }
+
+    mod property {
+        use super::*;
+        use proptest::prelude::*;
+
+        fn line() -> impl Strategy<Value = String> {
+            prop_oneof![
+                Just("Name=App".to_owned()),
+                Just("Exec=app --flag".to_owned()),
+                Just("Hidden=true".to_owned()),
+                Just("Hidden=false".to_owned()),
+                Just("X-GNOME-Autostart-enabled=false".to_owned()),
+                Just("X-GNOME-Autostart-enabled=true".to_owned()),
+                Just("# コメント".to_owned()),
+                Just("[Other Group]".to_owned()),
+                Just("[Desktop Entry]".to_owned()),
+                "[A-Za-z]{1,8}=[a-z ]{0,8}",
+            ]
+        }
+
+        proptest! {
+            /// どんな中身でも、有効・無効を書き換えた結果を読むと、その通りになっている
+            #[test]
+            fn with_enabled_is_read_back(lines in proptest::collection::vec(line(), 0..12), enabled in any::<bool>()) {
+                let content = format!("[Desktop Entry]\n{}\n", lines.join("\n"));
+                prop_assert_eq!(parse(&with_enabled(&content, enabled)).is_enabled(), enabled);
+            }
+
+            /// 有効・無効以外の行（名前やコマンド）は書き換えで変わらない
+            #[test]
+            fn with_enabled_keeps_name_and_exec(lines in proptest::collection::vec(line(), 0..12), enabled in any::<bool>()) {
+                let content = format!("[Desktop Entry]\n{}\n", lines.join("\n"));
+                let before = parse(&content);
+                let after = parse(&with_enabled(&content, enabled));
+                prop_assert_eq!(after.name, before.name);
+                prop_assert_eq!(after.exec, before.exec);
+            }
+        }
+    }
 }

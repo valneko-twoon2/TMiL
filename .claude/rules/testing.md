@@ -15,8 +15,9 @@ paths:
 
 ## 種類と分類
 
-- テスト名にタグ（`equivalence` `boundary` `regression` `snapshot` `contract` `fuzz`）を入れて分類する。詳しくは docs/testing/02-tags.md
+- テスト名にタグ（`equivalence` `boundary` `regression` `snapshot` `contract` `property` `fuzz`）を入れて分類する。詳しくは docs/testing/02-tags.md
 - 新しい関数には、同値分割と境界値の両方のテストを書く（空・0・最大・範囲の端・不正な値）
+- 入力の組み合わせが多い純粋関数には、プロパティベースのテストも書く（`property`。フロントは fast-check、バックは proptest）。「落ちない」だけでなく、並べ替えても数が変わらない・行って戻ると元に戻る など、成り立つべき性質を確かめる
 - テストを足したり減らしたりしたら `npm run docs:tests` で集計を更新する
 
 ## 回し方
