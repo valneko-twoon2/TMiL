@@ -15,9 +15,9 @@ src/
 │       ├── mock/       E2E・VRT 用の偽バックエンド
 │       └── ...         整形・並べ替え・グラフ計算などの純粋関数
 └── backend/
-    ├── core/           tmil-core: システム情報の取得とスタートアップ管理（Tauri に依存しない）
+    ├── core/           tmil-core: 状態機械・システム情報の取得・スタートアップ管理（Tauri に依存しない）
     └── app/            tmil: Tauri 本体。コマンドの受け渡し・トレイ・ウィンドウ
-tests/                  E2E・VRT・契約の見本・cargo-fuzz
+tests/                  E2E・VRT・契約の見本・cargo-fuzz・TLA+（formal/）
 scripts/                開発用スクリプト（種類ごとにフォルダー分け）
 docs/                   ドキュメント
 assets/                 ロゴ（画面の public フォルダーも兼ねる）
@@ -25,6 +25,7 @@ assets/                 ロゴ（画面の public フォルダーも兼ねる）
 
 ## 方針
 
+- バックエンドの判断は状態機械（`machine::step`）に集め、TLA+ で検証する（[state-machine.md](state-machine.md)）
 - 処理はできるだけ純粋関数にしてテストしやすくする。画面（`.svelte`）とアプリ本体（`app`）は薄く保つ
 - OS ごとの違いは `core` に閉じ込める。Windows 専用の処理も、ロジックは trait 越しにどの OS でもテストできるようにする（例: `startup/registry.rs`）
 - 軽さを優先する。ウィンドウが隠れている間（トレイ常駐中）は計測を止める
@@ -33,7 +34,7 @@ assets/                 ロゴ（画面の public フォルダーも兼ねる）
 ## データの流れ
 
 1. 画面が一定間隔で `snapshot` コマンドを呼ぶ（既定 1 秒。設定で変更・一時停止できる）
-2. `core` の `Collector` が sysinfo で CPU・メモリ・ディスク・ネットワーク・プロセスを取る
+2. 状態機械が、計測するか直前の結果を返すかを決める。計測するときは `Collector` が sysinfo で CPU・メモリ・ディスク・ネットワーク・プロセスを取る
 3. フロントは受け取った値を `model/guards.ts` で検証してから使う
 4. グラフ用の履歴（60 回分）はフロント側で持つ
 

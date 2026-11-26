@@ -18,9 +18,10 @@ description: TMiL の不具合を直すときの手順。再現テストを先�
 2. **失敗を確かめる**: `npm run test:related` で、そのテストが落ちることを見る
 3. **直す**: 最小限の変更で直す。ついでの整理は別コミットにする
 4. **通ることを確かめる**: `npm run test:related`。画面なら `-- --e2e-mock`、バックの挙動なら必要に応じて `-- --e2e-native`
-5. **集計を更新**: `npm run docs:tests`
-6. **コミット**: `fix: 〜の不具合を修正`。テストと修正は同じコミットでよい
-7. **CHANGELOG**: 利用者に見える不具合なら「未リリース」の「修正」に 1 行足す
+5. **状態機械の不具合なら TLA+ にも残す**: 不具合を戻した版を `tests/formal/Regressions.tla` と `regressions/*.cfg`、`scripts/lib/formal.mjs` に足し、TLC が見つけることを確かめる（docs/architecture/state-machine.md）
+6. **集計を更新**: `npm run docs:tests`
+7. **コミット**: `fix: 〜の不具合を修正`。テストと修正は同じコミットでよい
+8. **CHANGELOG**: 利用者に見える不具合なら「未リリース」の「修正」に 1 行足す
 
 ## 期待値が間違っていた場合
 

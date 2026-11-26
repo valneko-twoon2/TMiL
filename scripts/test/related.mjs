@@ -56,6 +56,11 @@ if (plan.uiChanged && !args.includes('--e2e-mock')) {
 if (plan.backendChanged && !args.includes('--e2e-native')) {
   console.log('ヒント: バックエンドの挙動を変えたなら --e2e-native も検討してください。');
 }
+if (plan.formalChanged) {
+  console.log(
+    'ヒント: 状態機械か TLA+ を変えたので、npm run test:formal（または CI の形式検証）で確かめてください。',
+  );
+}
 if (failures.length > 0) {
   console.error(`\n失敗: ${failures.join(', ')}`);
   process.exit(1);

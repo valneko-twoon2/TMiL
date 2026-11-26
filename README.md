@@ -71,7 +71,7 @@ npm test             # テスト（並列）
 
 ## 🧪 テスト
 
-単体（同値分割・境界値・回帰）・スナップショット・契約・VRT・E2E（モック / 実アプリ）・ファジングを用意しています。カバレッジはフロント・バックとも 80% 以上を CI で確認します。
+単体（同値分割・境界値・回帰）・スナップショット・契約・VRT・E2E（モック / 実アプリ）・ファジングを用意しています。バックエンドは状態機械にまとめ、**TLA+（TLC）で形式検証**しています（[docs/architecture/state-machine.md](docs/architecture/state-machine.md)）。カバレッジはフロント・バックとも 80% 以上を CI で確認します。
 
 件数の内訳は [docs/testing/inventory.md](docs/testing/inventory.md) にあります。
 

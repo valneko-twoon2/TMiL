@@ -27,6 +27,7 @@
     "vrt:pull": "node scripts/test/vrt-pull.mjs",
     "test:e2e:native": "node scripts/test/e2e-native.mjs",
     "test:fuzz": "node scripts/test/fuzz.mjs",
+    "test:formal": "node scripts/test/formal.mjs",
     "test:mutation": "node scripts/test/mutation.mjs",
     "docs:tests": "node scripts/docs/test-inventory.mjs",
     "release:bump": "node scripts/release/bump-version.mjs",

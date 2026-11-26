@@ -26,7 +26,7 @@ export function rustFilterFor(file) {
 /**
  * 変更ファイルから実行計画を作る。
  * @param {string[]} files
- * @returns {{ frontend: string[], rustFilters: string[], contract: boolean, uiChanged: boolean, backendChanged: boolean }}
+ * @returns {{ frontend: string[], rustFilters: string[], contract: boolean, uiChanged: boolean, backendChanged: boolean, formalChanged: boolean }}
  */
 export function planTests(files) {
   const normalized = files.map(normalizePath);
@@ -46,5 +46,8 @@ export function planTests(files) {
     ) || normalized.some((f) => f.endsWith('/model/guards.ts'));
   const uiChanged = normalized.some((f) => /^src\/frontend\/.*\.(svelte|css)$/.test(f));
   const backendChanged = normalized.some((f) => f.startsWith('src/backend/'));
-  return { frontend, rustFilters, contract, uiChanged, backendChanged };
+  const formalChanged = normalized.some(
+    (f) => f.startsWith('src/backend/core/src/machine/') || f.startsWith('tests/formal/'),
+  );
+  return { frontend, rustFilters, contract, uiChanged, backendChanged, formalChanged };
 }

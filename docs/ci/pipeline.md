@@ -16,6 +16,7 @@
 | VRT                        | Playwright のスクリーンショット比較                                           |
 | E2E（実アプリ）            | tauri-driver + Xvfb                                                           |
 | ファジング                 | cargo-fuzz を各ターゲット 30 秒                                               |
+| 形式検証（TLA+）           | TLC で、Rust と TLA+ の一致・約束・活性・不具合版の検出を確かめる             |
 | 依存関係の監査             | npm audit（high 以上で失敗）・cargo-deny（脆弱性・ライセンス・取得元）        |
 
 ## codeql.yml

@@ -51,6 +51,12 @@ describe('planTests', () => {
       expect(plan.contract).toBe(false);
     });
 
+    it('状態機械や TLA+ を変えたら形式検証を案内する', () => {
+      expect(planTests(['src/backend/core/src/machine/mod.rs']).formalChanged).toBe(true);
+      expect(planTests(['tests/formal/Backend.tla']).formalChanged).toBe(true);
+      expect(planTests(['src/backend/core/src/metrics.rs']).formalChanged).toBe(false);
+    });
+
     it('型や契約が変わったら契約テストも回す', () => {
       expect(planTests(['src/backend/core/src/model.rs']).contract).toBe(true);
       expect(planTests(['src/frontend/lib/model/types.ts']).contract).toBe(true);

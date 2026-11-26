@@ -2,17 +2,18 @@
 
 ## 種類
 
-| 種類                     | フロント                        | バック                            | 置き場所                                               |
-| ------------------------ | ------------------------------- | --------------------------------- | ------------------------------------------------------ |
-| 単体（同値分割・境界値） | Vitest                          | cargo test                        | 対象のすぐ隣（`*.test.ts` / `#[cfg(test)] mod tests`） |
-| 回帰                     | Vitest                          | cargo test                        | 同上の `regression`                                    |
-| スナップショット         | Vitest（サーバー描画した HTML） | insta                             | 同上の `snapshot`                                      |
-| 契約                     | Vitest                          | cargo test                        | `tests/contract/fixtures` と各側のテスト               |
-| ファジング               | fast-check                      | cargo-fuzz と簡易版（`mod fuzz`） | `src/frontend/lib/fuzz.test.ts` / `tests/fuzz`         |
-| VRT                      | Playwright                      | -                                 | `tests/vrt`                                            |
-| E2E（モック）            | Playwright                      | -                                 | `tests/e2e/mock`                                       |
-| E2E（実アプリ）          | tauri-driver + WebDriver        | ← 両方                            | `tests/e2e/native`                                     |
-| ミューテーション         | Stryker                         | cargo-mutants                     | 設定だけ（手動で回す）                                 |
+| 種類                     | フロント                        | バック                                        | 置き場所                                               |
+| ------------------------ | ------------------------------- | --------------------------------------------- | ------------------------------------------------------ |
+| 単体（同値分割・境界値） | Vitest                          | cargo test                                    | 対象のすぐ隣（`*.test.ts` / `#[cfg(test)] mod tests`） |
+| 回帰                     | Vitest                          | cargo test                                    | 同上の `regression`                                    |
+| スナップショット         | Vitest（サーバー描画した HTML） | insta                                         | 同上の `snapshot`                                      |
+| 契約                     | Vitest                          | cargo test                                    | `tests/contract/fixtures` と各側のテスト               |
+| ファジング               | fast-check                      | cargo-fuzz と簡易版（`mod fuzz`）             | `src/frontend/lib/fuzz.test.ts` / `tests/fuzz`         |
+| 形式検証                 | -                               | TLA+（TLC）と Rust の全数検査（`mod formal`） | `tests/formal`                                         |
+| VRT                      | Playwright                      | -                                             | `tests/vrt`                                            |
+| E2E（モック）            | Playwright                      | -                                             | `tests/e2e/mock`                                       |
+| E2E（実アプリ）          | tauri-driver + WebDriver        | ← 両方                                        | `tests/e2e/native`                                     |
+| ミューテーション         | Stryker                         | cargo-mutants                                 | 設定だけ（手動で回す）                                 |
 
 分類の付け方は [tags.md](tags.md)、件数は [inventory.md](inventory.md) を見てください。
 

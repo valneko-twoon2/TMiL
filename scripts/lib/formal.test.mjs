@@ -12,7 +12,7 @@ PROPERTIES
     Done
 `;
 
-describe('formal', () => {
+describe('TLA+ の検査設定', () => {
   describe('equivalence', () => {
     it('一致の確認を先に回す', () => {
       expect(formalChecks().map((c) => c.module)).toEqual(['MachineConformance', 'Backend']);
