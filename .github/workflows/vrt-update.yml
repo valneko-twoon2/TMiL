@@ -1,0 +1,37 @@
+# VRT の基準画像を CI と同じ環境（Linux）で作り直し、develop にコミットする。
+# 画面を意図して変えたときに手動で実行する。
+name: VRT 基準画像の更新
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    name: 基準画像を更新
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --project=vrt --update-snapshots=all
+      - name: 変化があればコミット
+        run: |
+          git add tests/vrt
+          if git diff --cached --quiet; then
+            echo '基準画像に変化はありません。'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'test: VRT の基準画像を更新'
+          git push origin HEAD:develop

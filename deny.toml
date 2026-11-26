@@ -1,0 +1,43 @@
+# cargo-deny の設定（CI の「依存関係の監査」で使う）
+
+[graph]
+all-features = false
+
+[advisories]
+version = 2
+# 脆弱性は既定で失敗。メンテ終了などの注意喚起は警告にとどめる
+unmaintained = "workspace"
+yanked = "warn"
+ignore = []
+
+[licenses]
+version = 2
+confidence-threshold = 0.8
+allow = [
+  "MIT",
+  "MIT-0",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-3-Clause",
+  "CC0-1.0",
+  "ISC",
+  "MPL-2.0",
+  "Unicode-3.0",
+  "Unlicense",
+  "Zlib",
+  "0BSD",
+]
+
+[licenses.private]
+ignore = true
+
+[bans]
+# Tauri の依存は同じクレートの複数版を含むので許可する
+multiple-versions = "allow"
+wildcards = "deny"
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
