@@ -1,0 +1,94 @@
+# テスト一覧
+
+> 自動生成です。手で編集せず `npm run docs:tests` で更新してください。
+> 種類の決め方は [tags.md](tags.md) を参照。
+
+合計 **378** 件
+
+## 種類 × 対象
+
+| 種類 | フロント | バック | ツール | アプリ全体 | 合計 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 単体（同値分割） | 61 | 51 | 44 | 0 | 156 |
+| 単体（境界値） | 77 | 49 | 16 | 0 | 142 |
+| 単体（回帰） | 0 | 2 | 1 | 0 | 3 |
+| 単体（その他） | 0 | 7 | 0 | 0 | 7 |
+| スナップショット | 11 | 1 | 0 | 0 | 12 |
+| 契約 | 9 | 5 | 0 | 0 | 14 |
+| ファジング | 10 | 6 | 0 | 0 | 16 |
+| VRT | 10 | 0 | 0 | 0 | 10 |
+| E2E（モック） | 13 | 0 | 0 | 0 | 13 |
+| E2E（実アプリ） | 0 | 0 | 0 | 5 | 5 |
+| **合計** | **191** | **121** | **61** | **5** | **378** |
+
+## フロントの内訳
+
+| ファイル / モジュール | 件数 | 内訳 |
+| --- | ---: | --- |
+| `src/frontend/lib/api/ipc.test.ts` | 6 | 単体（同値分割） 4 / 単体（境界値） 2 |
+| `src/frontend/lib/chart/chart.test.ts` | 13 | 単体（同値分割） 7 / 単体（境界値） 6 |
+| `src/frontend/lib/components/render.test.ts` | 11 | スナップショット 11 |
+| `src/frontend/lib/format/format.test.ts` | 56 | 単体（同値分割） 18 / 単体（境界値） 38 |
+| `src/frontend/lib/fuzz.test.ts` | 10 | ファジング 10 |
+| `src/frontend/lib/history/history.test.ts` | 9 | 単体（同値分割） 3 / 単体（境界値） 6 |
+| `src/frontend/lib/model/contract.test.ts` | 9 | 契約 9 |
+| `src/frontend/lib/model/guards.test.ts` | 10 | 単体（同値分割） 6 / 単体（境界値） 4 |
+| `src/frontend/lib/performance/resources.test.ts` | 7 | 単体（同値分割） 3 / 単体（境界値） 4 |
+| `src/frontend/lib/process/process.test.ts` | 20 | 単体（同値分割） 12 / 単体（境界値） 8 |
+| `src/frontend/lib/settings/settings.test.ts` | 14 | 単体（同値分割） 6 / 単体（境界値） 8 |
+| `src/frontend/lib/startup/startup.test.ts` | 3 | 単体（同値分割） 2 / 単体（境界値） 1 |
+| `tests/e2e/mock/app.spec.ts` | 13 | E2E（モック） 13 |
+| `tests/vrt/pages.spec.ts` | 10 | VRT 10 |
+
+## バックの内訳
+
+| ファイル / モジュール | 件数 | 内訳 |
+| --- | ---: | --- |
+| `collector::boundary` | 3 | 単体（境界値） 3 |
+| `collector::equivalence` | 6 | 単体（同値分割） 6 |
+| `collector::system` | 7 | 単体（その他） 7 |
+| `contract` | 5 | 契約 5 |
+| `metrics::boundary` | 10 | 単体（境界値） 10 |
+| `metrics::equivalence` | 5 | 単体（同値分割） 5 |
+| `model::boundary` | 2 | 単体（境界値） 2 |
+| `model::equivalence` | 2 | 単体（同値分割） 2 |
+| `startup::approval::boundary` | 3 | 単体（境界値） 3 |
+| `startup::approval::equivalence` | 3 | 単体（同値分割） 3 |
+| `startup::boundary` | 2 | 単体（境界値） 2 |
+| `startup::command::boundary` | 5 | 単体（境界値） 5 |
+| `startup::command::equivalence` | 4 | 単体（同値分割） 4 |
+| `startup::command::fuzz` | 1 | ファジング 1 |
+| `startup::desktop::boundary` | 7 | 単体（境界値） 7 |
+| `startup::desktop::equivalence` | 6 | 単体（同値分割） 6 |
+| `startup::desktop::fuzz` | 1 | ファジング 1 |
+| `startup::desktop::regression` | 2 | 単体（回帰） 2 |
+| `startup::desktop::snapshot` | 1 | スナップショット 1 |
+| `startup::equivalence` | 4 | 単体（同値分割） 4 |
+| `startup::registry::boundary` | 5 | 単体（境界値） 5 |
+| `startup::registry::equivalence` | 6 | 単体（同値分割） 6 |
+| `startup::win_registry::boundary` | 1 | 単体（境界値） 1 |
+| `startup::win_registry::equivalence` | 2 | 単体（同値分割） 2 |
+| `startup::xdg::boundary` | 5 | 単体（境界値） 5 |
+| `startup::xdg::equivalence` | 6 | 単体（同値分割） 6 |
+| `taskmgr::boundary` | 6 | 単体（境界値） 6 |
+| `taskmgr::equivalence` | 7 | 単体（同値分割） 7 |
+| `taskmgr::fuzz` | 1 | ファジング 1 |
+| `tests/fuzz/fuzz_targets/command_line.rs` | 1 | ファジング 1 |
+| `tests/fuzz/fuzz_targets/desktop_entry.rs` | 1 | ファジング 1 |
+| `tests/fuzz/fuzz_targets/windows_quote.rs` | 1 | ファジング 1 |
+
+## ツールの内訳
+
+| ファイル / モジュール | 件数 | 内訳 |
+| --- | ---: | --- |
+| `scripts/lib/changelog.test.mjs` | 8 | 単体（同値分割） 4 / 単体（境界値） 4 |
+| `scripts/lib/command-guard.test.mjs` | 19 | 単体（同値分割） 15 / 単体（境界値） 3 / 単体（回帰） 1 |
+| `scripts/lib/commit-message.test.mjs` | 17 | 単体（同値分割） 13 / 単体（境界値） 4 |
+| `scripts/lib/inventory.test.mjs` | 6 | 単体（同値分割） 4 / 単体（境界値） 2 |
+| `scripts/lib/related.test.mjs` | 11 | 単体（同値分割） 8 / 単体（境界値） 3 |
+
+## アプリ全体の内訳
+
+| ファイル / モジュール | 件数 | 内訳 |
+| --- | ---: | --- |
+| `tests/e2e/native/app.test.mjs` | 5 | E2E（実アプリ） 5 |
