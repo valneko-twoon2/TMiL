@@ -5,7 +5,7 @@
 //! 呼び出し側（`backend.rs`）が実行する。
 //!
 //! TLA+ の `tests/formal/BackendMachine.tla` の `Step` と 1 対 1 に対応する。
-//! 変えたときの手順は docs/architecture/state-machine.md を参照。
+//! 変えたときの手順は docs/architecture/02-state-machine.md を参照。
 
 use std::fmt;
 

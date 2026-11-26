@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-// テストの種類ごとの件数を集計して docs/testing/inventory.md を作る。
+// テストの種類ごとの件数を集計して docs/testing/03-inventory.md を作る。
 //   node scripts/docs/test-inventory.mjs           生成する
 //   node scripts/docs/test-inventory.mjs --check   最新か確かめる（差があれば失敗）
-// 種類はテスト名に含まれるタグ（describe / mod の名前）で決める。docs/testing/tags.md を参照。
+// 種類はテスト名に含まれるタグ（describe / mod の名前）で決める。docs/testing/02-tags.md を参照。
 import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { BACKEND, capture, FRONTEND, nodeBin, ROOT, run } from '../lib/proc.mjs';
 import { propertiesInCfg } from '../lib/formal.mjs';
 import { buildInventory, parseJunit, renderInventory } from '../lib/inventory.mjs';
 
-const OUTPUT = join(ROOT, 'docs', 'testing', 'inventory.md');
+const OUTPUT = join(ROOT, 'docs', 'testing', '03-inventory.md');
 const rel = (p) => relative(ROOT, p).replaceAll('\\', '/');
 
 /** @type {import('../lib/inventory.mjs').TestCase[]} */
@@ -114,10 +114,10 @@ const markdown = renderInventory(buildInventory(cases));
 if (process.argv.includes('--check')) {
   const current = existsSync(OUTPUT) ? readFileSync(OUTPUT, 'utf8') : '';
   if (current !== markdown) {
-    console.error('docs/testing/inventory.md が古いです。npm run docs:tests で更新してください。');
+    console.error('docs/testing/03-inventory.md が古いです。npm run docs:tests で更新してください。');
     process.exit(1);
   }
-  console.log('docs/testing/inventory.md は最新です。');
+  console.log('docs/testing/03-inventory.md は最新です。');
 } else {
   writeFileSync(OUTPUT, markdown);
   console.log(`更新しました: ${rel(OUTPUT)}（${String(cases.length)} 件）`);

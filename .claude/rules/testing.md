@@ -15,7 +15,7 @@ paths:
 
 ## 種類と分類
 
-- テスト名にタグ（`equivalence` `boundary` `regression` `snapshot` `contract` `fuzz`）を入れて分類する。詳しくは docs/testing/tags.md
+- テスト名にタグ（`equivalence` `boundary` `regression` `snapshot` `contract` `fuzz`）を入れて分類する。詳しくは docs/testing/02-tags.md
 - 新しい関数には、同値分割と境界値の両方のテストを書く（空・0・最大・範囲の端・不正な値）
 - テストを足したり減らしたりしたら `npm run docs:tests` で集計を更新する
 

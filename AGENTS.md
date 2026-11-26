@@ -2,7 +2,7 @@
 
 TMiL は Rust + Tauri 2 + Svelte 5 で作る軽量タスクマネージャーです（Windows と Linux）。画面の構成は Windows 11 のタスク マネージャーに寄せています。
 
-全体の構成は [docs/architecture/overview.md](docs/architecture/overview.md)、細かいルールは `.claude/rules/` にあります（Claude Code は自動で読み込みます。ほかのエージェントも作業する場所に応じて読んでください）。
+全体の構成は [docs/architecture/01-overview.md](docs/architecture/01-overview.md)、細かいルールは `.claude/rules/` にあります（Claude Code は自動で読み込みます。ほかのエージェントも作業する場所に応じて読んでください）。
 
 ## 必ず守ること
 
@@ -14,7 +14,7 @@ TMiL は Rust + Tauri 2 + Svelte 5 で作る軽量タスクマネージャーで
 6. **Lint を通す**: 編集するたびにフックが整形と Lint を回す。無効化は理由を書いて最小限に
 7. **不具合を直したら回帰テストを入れる**（重要）: 先に再現テストを書いてから直す。手順は `bugfix` スキル
 8. **テストは関係するものから**: 普段は `npm run test:related`。全部は CI に任せる
-9. **バックエンドの判断は状態機械に**: `machine::step` 以外で判断しない。変えたら遷移表と TLA+ もそろえる（docs/architecture/state-machine.md）
+9. **バックエンドの判断は状態機械に**: `machine::step` 以外で判断しない。変えたら遷移表と TLA+ もそろえる（docs/architecture/02-state-machine.md）
 10. **依存を増やさない**: 必要なときは理由を説明してから
 11. **レビューは PR のときだけ**: 作業ごとにはしない。対象はソースコードだけ
 
@@ -32,7 +32,7 @@ npm のコマンドは `src/frontend` で実行します（`cd src/frontend`）�
 | `npm run test:front` / `npm run test:back` | フロント / バックだけ                                      |
 | `npm run test:tools`                       | `scripts/` 自身のテスト（node:test）                       |
 | `npm run test:formal`                      | TLA+ の形式検証（Java と tla2tools.jar が必要。普段は CI） |
-| `npm run docs:tests`                       | テスト件数の集計（docs/testing/inventory.md）を更新        |
+| `npm run docs:tests`                       | テスト件数の集計（docs/testing/03-inventory.md）を更新     |
 | `npm run release:bump -- x.y.z`            | バージョンを上げる                                         |
 
 cargo を直接使うときは `src/backend` で実行します。Rust のコマンドは `scripts/` 経由で呼ぶと、rustup のプロキシが使えない環境でもツールチェーンを探して動きます。
@@ -58,3 +58,4 @@ cargo を直接使うときは `src/backend` で実行します。Rust のコマ
 | `bugfix`    | 不具合を直すとき（回帰テストの入れ方）             |
 | `release`   | バージョンを上げて develop → main の PR を出すとき |
 | `pr-review` | PR を出したあと、CI の間にレビューするとき         |
+| `docs`      | docs/ に文書を足す・直すとき（番号と README）      |

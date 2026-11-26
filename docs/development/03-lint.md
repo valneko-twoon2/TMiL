@@ -19,6 +19,10 @@
 - Prettier（リポジトリ直下の `.prettierrc.json`。全体の Markdown・YAML も整える）
 - Svelte は runes 構文だけを使う（`svelte.config.js` で強制）
 
+## 文書
+
+- `docs/` の置き方（番号付きの名前・各フォルダーの README）と、Markdown のリンク切れを確かめる（`scripts/docs/check-docs.mjs`）
+
 ## 無効化するとき
 
 基本は直す。どうしても必要なら理由を書く。

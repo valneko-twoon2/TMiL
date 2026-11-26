@@ -25,7 +25,7 @@ paths:
 - `unwrap`・`expect`・`panic!`・添字アクセス（`v[i]`）は本体では使わない（clippy で禁止。テストでは可）
 - `unsafe` は禁止
 - エラーは `Result` で返す。画面に出るエラー文は日本語で、利用者が次にどうすればよいか分かるように書く
-- フロントに渡す型は `model.rs` に置き、`#[serde(rename_all = "camelCase")]` を付ける。形を変えたら契約の見本を更新する（docs/architecture/ipc.md）
+- フロントに渡す型は `model.rs` に置き、`#[serde(rename_all = "camelCase")]` を付ける。形を変えたら契約の見本を更新する（docs/architecture/03-ipc.md）
 - lint を無効にするときは `#[expect(..., reason = "...")]` で理由を書く
 
 ## テスト

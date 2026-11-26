@@ -34,4 +34,4 @@ paths:
 - 単体テストは対象の隣に `*.test.ts`。`describe` を種類ごとに分ける: `equivalence` `boundary` `regression` `snapshot` `contract` `fuzz`
 - 画面のスナップショットは `svelte/server` の `render` で描いた HTML を比べる（`components/render.test.ts`）
 - 契約の見本を読むときは `src/frontend/test/fixtures.ts` を使う
-- 画面を変えたら `npm run test:related -- --e2e-mock` も回す。見た目が変わるなら VRT の基準画像を更新する（Actions の「VRT 基準画像の更新」→ `npm run vrt:pull` → コミット。docs/testing/strategy.md）
+- 画面を変えたら `npm run test:related -- --e2e-mock` も回す。見た目が変わるなら VRT の基準画像を更新する（Actions の「VRT 基準画像の更新」→ `npm run vrt:pull` → コミット。docs/testing/01-strategy.md）

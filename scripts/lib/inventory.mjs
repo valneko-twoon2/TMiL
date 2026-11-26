@@ -106,7 +106,7 @@ export function renderInventory(inv) {
     '# テスト一覧',
     '',
     '> 自動生成です。手で編集せず `npm run docs:tests` で更新してください。',
-    '> 種類の決め方は [tags.md](tags.md) を参照。',
+    '> 種類の決め方は [02-tags.md](02-tags.md) を参照。',
     '',
     `合計 **${String(inv.total)}** 件`,
     '',

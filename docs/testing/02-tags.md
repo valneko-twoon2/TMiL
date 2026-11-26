@@ -1,6 +1,6 @@
 # テストの分類（タグ）
 
-テスト名の途中に入れた「タグ」で種類を決め、`npm run docs:tests` が [inventory.md](inventory.md) に集計します。タグは名前の一部なので、絞り込み実行にも使えます。
+テスト名の途中に入れた「タグ」で種類を決め、`npm run docs:tests` が [03-inventory.md](03-inventory.md) に集計します。タグは名前の一部なので、絞り込み実行にも使えます。
 
 ## タグ
 

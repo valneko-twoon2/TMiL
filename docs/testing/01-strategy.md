@@ -15,7 +15,7 @@
 | E2E（実アプリ）          | tauri-driver + WebDriver        | ← 両方                                        | `tests/e2e/native`                                     |
 | ミューテーション         | Stryker                         | cargo-mutants                                 | 設定だけ（手動で回す）                                 |
 
-分類の付け方は [tags.md](tags.md)、件数は [inventory.md](inventory.md) を見てください。
+分類の付け方は [02-tags.md](02-tags.md)、件数は [03-inventory.md](03-inventory.md) を見てください。
 
 ## いつ何を回すか
 

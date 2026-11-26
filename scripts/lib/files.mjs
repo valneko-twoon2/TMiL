@@ -6,7 +6,7 @@ const norm = (f) => f.replaceAll('\\', '/');
 export const isPrettierTarget = (f) =>
   /\.(ts|js|mjs|cjs|svelte|json|css|html|md|ya?ml)$/.test(norm(f)) &&
   !norm(f).endsWith('package-lock.json') &&
-  !norm(f).startsWith('docs/testing/inventory.md') &&
+  !norm(f).startsWith('docs/testing/03-inventory.md') &&
   !norm(f).startsWith('src/backend/app/gen/') &&
   !norm(f).includes('__snapshots__/');
 

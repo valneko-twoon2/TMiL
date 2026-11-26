@@ -35,7 +35,7 @@ assets/                 ロゴ（画面の public フォルダーも兼ねる）
 
 ## 方針
 
-- バックエンドの判断は状態機械（`machine::step`）に集め、TLA+ で検証する（[state-machine.md](state-machine.md)）
+- バックエンドの判断は状態機械（`machine::step`）に集め、TLA+ で検証する（[02-state-machine.md](02-state-machine.md)）
 - 処理はできるだけ純粋関数にしてテストしやすくする。画面（`.svelte`）とアプリ本体（`app`）は薄く保つ
 - OS ごとの違いは `core` に閉じ込める。Windows 専用の処理も、ロジックは trait 越しにどの OS でもテストできるようにする（例: `startup/registry.rs`）
 - 軽さを優先する。ウィンドウが隠れている間（トレイ常駐中）は計測を止める

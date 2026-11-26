@@ -68,13 +68,13 @@ npm run lint         # Lint
 npm test             # テスト（並列）
 ```
 
-必要なものや詳しい手順は [docs/development/setup.md](docs/development/setup.md) を見てください。
+必要なものや詳しい手順は [docs/development/01-setup.md](docs/development/01-setup.md) を見てください。
 
 ## 🧪 テスト
 
-単体（同値分割・境界値・回帰）・スナップショット・契約・VRT・E2E（モック / 実アプリ）・ファジングを用意しています。バックエンドは状態機械にまとめ、**TLA+（TLC）で形式検証**しています（[docs/architecture/state-machine.md](docs/architecture/state-machine.md)）。カバレッジはフロント・バックとも 80% 以上を CI で確認します。
+単体（同値分割・境界値・回帰）・スナップショット・契約・VRT・E2E（モック / 実アプリ）・ファジングを用意しています。バックエンドは状態機械にまとめ、**TLA+（TLC）で形式検証**しています（[docs/architecture/02-state-machine.md](docs/architecture/02-state-machine.md)）。カバレッジはフロント・バックとも 80% 以上を CI で確認します。
 
-件数の内訳は [docs/testing/inventory.md](docs/testing/inventory.md) にあります。
+件数の内訳は [docs/testing/03-inventory.md](docs/testing/03-inventory.md) にあります。
 
 ## 📚 ドキュメント
 

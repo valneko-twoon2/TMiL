@@ -28,7 +28,7 @@
 
 ## release.yml
 
-main に push されたら、`src/frontend/package.json` のバージョンでリリースを作ります。詳しくは [../release/release.md](../release/release.md)。
+main に push されたら、`src/frontend/package.json` のバージョンでリリースを作ります。詳しくは [../release/01-release.md](../release/01-release.md)。
 
 ## vrt-update.yml
 
