@@ -67,6 +67,12 @@ describe('planTests', () => {
       assert.equal(planTests(['src/backend/core/src/metrics.rs']).formalChanged, false);
     });
 
+    it('インストール スクリプトを変えたら、そのテストを回す', () => {
+      assert.equal(planTests(['src/installer/install.ps1']).installer, true);
+      assert.equal(planTests(['scripts/test/installer.mjs']).installer, true);
+      assert.equal(planTests(['src/frontend/lib/format/format.ts']).installer, false);
+    });
+
     it('型や契約が変わったら契約テストも回す', () => {
       assert.equal(planTests(['src/backend/core/src/model.rs']).contract, true);
       assert.equal(planTests(['src/frontend/lib/model/types.ts']).contract, true);

@@ -23,6 +23,7 @@
     "test:back": "node ../../scripts/test/backend.mjs",
     "test:back:coverage": "node ../../scripts/test/backend.mjs --coverage",
     "test:tools": "node ../../scripts/test/tools.mjs",
+    "test:installer": "node ../../scripts/test/installer.mjs",
     "test:e2e:mock": "playwright test --project=e2e-mock",
     "test:vrt": "playwright test --project=vrt",
     "vrt:pull": "node ../../scripts/test/vrt-pull.mjs",

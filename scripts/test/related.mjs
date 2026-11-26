@@ -73,6 +73,9 @@ if (plan.uiChanged && !args.includes('--e2e-mock')) {
 if (plan.backendChanged && !args.includes('--e2e-native')) {
   console.log('ヒント: バックエンドの挙動を変えたなら --e2e-native も検討してください。');
 }
+if (plan.installer) {
+  step('インストール スクリプト', run(process.execPath, ['scripts/test/installer.mjs']).status);
+}
 if (plan.formalChanged) {
   console.log(
     'ヒント: 状態機械か TLA+ を変えたので、npm run test:formal（または CI の形式検証）で確かめてください。',

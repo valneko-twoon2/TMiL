@@ -74,6 +74,16 @@ if (frontendOn && (all || pick((f) => f.endsWith('.md')).length > 0)) {
   step('docs', () => run(process.execPath, ['scripts/docs/check-docs.mjs']).status);
 }
 
+// シェル スクリプト（インストール スクリプト）。shellcheck が無い環境では飛ばす（CI の Linux にはある）
+const shellFiles = all ? ['src/installer/install.sh'] : pick((f) => f.endsWith('.sh'));
+if (frontendOn && shellFiles.length > 0) {
+  if (run('shellcheck', ['--version'], { quiet: true }).status === 0) {
+    step('shellcheck', () => run('shellcheck', ['-s', 'sh', ...shellFiles]).status);
+  } else {
+    console.log('- shellcheck が無いので飛ばす');
+  }
+}
+
 // svelte-check（型検査はプロジェクト全体が単位）
 if (frontendOn && (all || pick(isTypeCheckTarget).length > 0)) {
   step(

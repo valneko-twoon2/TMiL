@@ -31,6 +31,7 @@ npm のコマンドは `src/frontend` で実行します（`cd src/frontend`）�
 | `npm test`                                 | テストを並列で全部（ミューテーション以外）                 |
 | `npm run test:front` / `npm run test:back` | フロント / バックだけ                                      |
 | `npm run test:tools`                       | `scripts/` 自身のテスト（node:test）                       |
+| `npm run test:installer`                   | インストール スクリプトを偽のリリースで確かめる            |
 | `npm run test:formal`                      | TLA+ の形式検証（Java と tla2tools.jar が必要。普段は CI） |
 | `npm run docs:tests`                       | テスト件数の集計（docs/testing/03-inventory.md）を更新     |
 | `npm run release:bump -- x.y.z`            | バージョンを上げる                                         |
@@ -44,6 +45,7 @@ cargo を直接使うときは `src/backend` で実行します。Rust のコマ
 | 場所                | 内容                                                                                         |
 | ------------------- | -------------------------------------------------------------------------------------------- |
 | `src/frontend/`     | 画面（Svelte 5）と npm のパッケージ・設定（Vite・Vitest・ESLint・Playwright など）           |
+| `src/installer/`    | リリースから入れるスクリプト（`install.ps1`・`install.sh`）                                  |
 | `src/backend/`      | Cargo のワークスペースと設定（clippy・rustfmt・cargo-deny・cargo-mutants）                   |
 | `src/backend/core/` | 状態機械・システム情報の取得・スタートアップ管理（Tauri 非依存。テストの中心）               |
 | `src/backend/app/`  | Tauri 本体（受け渡し・トレイ・ウィンドウだけ）                                               |

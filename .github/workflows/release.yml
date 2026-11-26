@@ -4,7 +4,7 @@
 #
 # 1. prepare: 下書きのリリースを 1 回だけ作る（ビルドが並列でも作成が競合しない）
 # 2. build:   Windows / Linux でビルドし、下書きにインストーラーを添付する
-# 3. publish: 両方そろったら公開する（このときタグが付く）
+# 3. publish: インストール スクリプトと SHA256SUMS を添付し、公開する（このときタグが付く）
 name: Release
 
 on:
@@ -118,6 +118,27 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # irm / curl で入れるためのスクリプトと、全部のファイルのハッシュ（スクリプトが確かめる）を添付する
+      - name: インストール スクリプトと SHA256SUMS を添付する
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ needs.prepare.outputs.release_id }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/assets"
+          cd "$RUNNER_TEMP/assets"
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets" --paginate --jq '.[] | "\(.id) \(.name)"' |
+            while read -r id name; do
+              case "$name" in SHA256SUMS | install.sh | install.ps1) continue ;; esac
+              gh api -H 'Accept: application/octet-stream' "repos/$GITHUB_REPOSITORY/releases/assets/$id" > "$name"
+            done
+          cp "$GITHUB_WORKSPACE/src/installer/install.sh" "$GITHUB_WORKSPACE/src/installer/install.ps1" .
+          sha256sum -- * > "$RUNNER_TEMP/SHA256SUMS"
+          cat "$RUNNER_TEMP/SHA256SUMS"
+          gh release upload "v$VERSION" install.sh install.ps1 "$RUNNER_TEMP/SHA256SUMS" --clobber --repo "$GITHUB_REPOSITORY"
       - name: 下書きを公開する
         env:
           GH_TOKEN: ${{ github.token }}

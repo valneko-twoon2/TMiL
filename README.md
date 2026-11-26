@@ -47,7 +47,23 @@
 
 ## インストール
 
-[Releases](https://github.com/valneko-twoon2/TMiL/releases) から入手できます。
+コマンド 1 行で入れられます。ダウンロードしたファイルは、リリースの `SHA256SUMS` とハッシュが一致するか確かめてから入れます。管理者権限は要りません。
+
+Windows（PowerShell）:
+
+```powershell
+irm https://github.com/valneko-twoon2/TMiL/releases/latest/download/install.ps1 | iex
+```
+
+Linux（x86_64）:
+
+```sh
+curl -fsSL https://github.com/valneko-twoon2/TMiL/releases/latest/download/install.sh | sh
+```
+
+Linux ではアプリを `~/.local/bin/tmil` に置き、アプリのメニューに登録します。消すときは `... | sh -s -- --uninstall` です。
+
+[Releases](https://github.com/valneko-twoon2/TMiL/releases) からファイルを直接ダウンロードすることもできます。
 
 | OS      | ファイル                   |
 | ------- | -------------------------- |

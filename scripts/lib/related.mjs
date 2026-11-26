@@ -26,7 +26,7 @@ export function rustFilterFor(file) {
 /**
  * 変更ファイルから実行計画を作る。
  * @param {string[]} files
- * @returns {{ frontend: string[], tools: boolean, rustFilters: string[], contract: boolean, uiChanged: boolean, backendChanged: boolean, formalChanged: boolean }}
+ * @returns {{ frontend: string[], tools: boolean, installer: boolean, rustFilters: string[], contract: boolean, uiChanged: boolean, backendChanged: boolean, formalChanged: boolean }}
  */
 export function planTests(files) {
   const normalized = files.map(normalizePath);
@@ -49,5 +49,12 @@ export function planTests(files) {
   const formalChanged = normalized.some(
     (f) => f.startsWith('src/backend/core/src/machine/') || f.startsWith('tests/formal/'),
   );
-  return { frontend, tools, rustFilters, contract, uiChanged, backendChanged, formalChanged };
+  // インストール スクリプトか、それを確かめるテストを変えた
+  const installer = normalized.some(
+    (f) =>
+      f.startsWith('src/installer/') ||
+      f === 'scripts/test/installer.mjs' ||
+      f === 'scripts/lib/installer.mjs',
+  );
+  return { frontend, tools, installer, rustFilters, contract, uiChanged, backendChanged, formalChanged };
 }

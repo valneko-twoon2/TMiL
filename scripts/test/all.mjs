@@ -25,6 +25,7 @@ const jobs = [
     args: ['scripts/test/backend.mjs', '--coverage'],
   },
   { name: 'ツール', cmd: node, args: toolTestArgs() },
+  { name: 'インストール スクリプト', cmd: node, args: ['scripts/test/installer.mjs'] },
   {
     name: 'E2E（モック）',
     cmd: node,

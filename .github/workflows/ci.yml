@@ -195,6 +195,23 @@ jobs:
           path: test-results/native
           retention-days: 7
 
+  installer:
+    name: インストール スクリプト（${{ matrix.os }}）
+    strategy:
+      fail-fast: false
+      matrix:
+        # Linux: install.sh と PowerShell 7 の install.ps1、Windows: Windows PowerShell 5.1 の install.ps1
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: node scripts/test/installer.mjs
+
   fuzz:
     name: ファジング
     runs-on: ubuntu-24.04

@@ -16,6 +16,7 @@ src/
 │       ├── state/      定期更新・設定などの状態（runes）
 │       ├── mock/       E2E・VRT 用の偽バックエンド
 │       └── ...         整形・並べ替え・グラフ計算などの純粋関数
+├── installer/          リリースから入れるスクリプト（install.ps1・install.sh）
 └── backend/            Cargo のワークスペース
     ├── Cargo.toml      ワークスペース・Lint・ビルドの設定（target/ もここにできる）
     ├── *.toml          clippy・rustfmt・cargo-deny の設定（.cargo/ に cargo-mutants）

@@ -6,18 +6,19 @@
 
 すべて並列に動きます。
 
-| ジョブ                     | 内容                                                                                                                      |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Lint（フロント）           | Prettier・ESLint・svelte-check                                                                                            |
-| Lint（バック）             | rustfmt・clippy（警告もエラー）                                                                                           |
-| テスト（フロント・ツール） | Vitest（単体・スナップショット・契約・ファジング）。カバレッジ 80% 未満で失敗。`scripts/` 自身のテスト（node:test）も回す |
-| テスト（バック）           | cargo-llvm-cov。Ubuntu と Windows の両方。カバレッジ 80% 未満で失敗                                                       |
-| E2E（モック）              | Playwright                                                                                                                |
-| VRT                        | Playwright のスクリーンショット比較                                                                                       |
-| E2E（実アプリ）            | tauri-driver + Xvfb                                                                                                       |
-| ファジング                 | cargo-fuzz を各ターゲット 30 秒                                                                                           |
-| 形式検証（TLA+）           | TLC で、Rust と TLA+ の一致・約束・活性・不具合版の検出を確かめる                                                         |
-| 依存関係の監査             | npm audit（high 以上で失敗）・cargo-deny（脆弱性・ライセンス・取得元）                                                    |
+| ジョブ                     | 内容                                                                                                                                            |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint（フロント）           | Prettier・ESLint・svelte-check                                                                                                                  |
+| Lint（バック）             | rustfmt・clippy（警告もエラー）                                                                                                                 |
+| テスト（フロント・ツール） | Vitest（単体・スナップショット・契約・ファジング）。カバレッジ 80% 未満で失敗。`scripts/` 自身のテスト（node:test）も回す                       |
+| テスト（バック）           | cargo-llvm-cov。Ubuntu と Windows の両方。カバレッジ 80% 未満で失敗                                                                             |
+| E2E（モック）              | Playwright                                                                                                                                      |
+| VRT                        | Playwright のスクリーンショット比較                                                                                                             |
+| E2E（実アプリ）            | tauri-driver + Xvfb                                                                                                                             |
+| インストール スクリプト    | 偽のリリースを手元のサーバーで配り、`install.sh`（Linux）と `install.ps1`（Windows PowerShell 5.1 と PowerShell 7）を `irm \| iex` などで動かす |
+| ファジング                 | cargo-fuzz を各ターゲット 30 秒                                                                                                                 |
+| 形式検証（TLA+）           | TLC で、Rust と TLA+ の一致・約束・活性・不具合版の検出を確かめる                                                                               |
+| 依存関係の監査             | npm audit（high 以上で失敗）・cargo-deny（脆弱性・ライセンス・取得元）                                                                          |
 
 ## codeql.yml
 
