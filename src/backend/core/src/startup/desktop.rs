@@ -66,8 +66,11 @@ pub fn with_enabled(content: &str, enabled: bool) -> String {
         format!("{HIDDEN}={}", !enabled),
         format!("{GNOME_ENABLED}={enabled}"),
     ];
+    // 見出しが無いファイルは先頭に見出しを足すので、最初のグループより前の行も
+    // 書き換え後は `[Desktop Entry]` に属する。その行の切り替えキーも消す。
+    let has_main = content.lines().any(|l| l.trim() == MAIN_GROUP);
     let mut out: Vec<String> = Vec::new();
-    let mut in_main = false;
+    let mut in_main = !has_main;
     let mut found_main = false;
     for raw in content.lines() {
         let line = raw.trim();
@@ -201,6 +204,70 @@ Exec=/usr/bin/sample --tray
         fn comments_and_blank_lines_are_ignored_when_parsing() {
             let e = parse("# c\n\n[Desktop Entry]\n# Name=no\nName=yes\n");
             assert_eq!(e.name.as_deref(), Some("yes"));
+        }
+    }
+
+    mod regression {
+        use super::*;
+
+        /// 見出しの無いファイルにある切り替えキーが残り、有効にしても無効のままだった。
+        #[test]
+        fn keys_before_any_group_do_not_override_requested_state() {
+            let content = "Hidden = false\nX-GNOME-Autostart-enabled=false\n";
+            let enabled = with_enabled(content, true);
+            assert!(parse(&enabled).is_enabled(), "{enabled}");
+            assert_eq!(enabled.matches(GNOME_ENABLED).count(), 1);
+        }
+
+        /// 別グループより前の行は、見出しがある場合は対象外のまま残す。
+        #[test]
+        fn orphan_lines_are_kept_when_main_group_exists() {
+            let content = "Hidden=true\n[Desktop Entry]\nName=A\n";
+            let text = with_enabled(content, true);
+            assert!(text.starts_with("Hidden=true\n[Desktop Entry]\n"));
+            assert!(parse(&text).is_enabled());
+        }
+    }
+
+    /// 乱数で作った内容でも落ちず、書き換え後の状態が指定どおりになることを確かめる（簡易ファジング）。
+    mod fuzz {
+        use super::*;
+
+        #[test]
+        fn rewritten_content_always_has_requested_state() {
+            let pieces = [
+                "[Desktop Entry]",
+                "[Other]",
+                "Name=A",
+                "Hidden=true",
+                "Hidden = false",
+                "X-GNOME-Autostart-enabled=false",
+                "#c",
+                "",
+                "=",
+                "[Desktop Entry",
+                "  Exec=x",
+            ];
+            let mut state: u64 = 0x9E37_79B9_7F4A_7C15;
+            for round in 0..3000 {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                let len = usize::try_from(state % 8).unwrap();
+                let content: Vec<&str> = (0..len)
+                    .map(|i| {
+                        let shift = u32::try_from(i).unwrap() * 7;
+                        pieces[usize::try_from((state >> shift) % 11).unwrap()]
+                    })
+                    .collect();
+                let content = content.join("\n");
+                let enabled = round % 2 == 0;
+                assert_eq!(
+                    parse(&with_enabled(&content, enabled)).is_enabled(),
+                    enabled,
+                    "{content:?}"
+                );
+            }
         }
     }
 
