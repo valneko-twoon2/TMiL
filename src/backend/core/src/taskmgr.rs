@@ -254,6 +254,18 @@ mod tests {
     mod regression {
         use super::*;
 
+        /// 置き換えたままアンインストールすると、タスク マネージャーが開かなくなっていた。
+        /// インストーラーのフックが同じキーを消すことを確かめる。
+        #[test]
+        fn uninstaller_hook_removes_the_same_key() {
+            let hook = include_str!("../../app/nsis/hooks.nsh");
+            assert!(hook.contains("NSIS_HOOK_PREUNINSTALL"));
+            assert!(hook.contains(IFEO_KEY), "フックのキーが IFEO_KEY と違う");
+            assert!(hook.contains(&format!(r#"delete "HKLM\{IFEO_KEY}" /v Debugger"#)));
+            // 書き込む値（"<exe>"）と同じ形で比べている
+            assert!(hook.contains(r#"'"$INSTDIR\${MAINBINARYNAME}.exe"'"#));
+        }
+
         /// UAC で「いいえ」を押すと Start-Process が失敗するが、終了コード 0 で抜けて成功扱いになっていた。
         #[test]
         fn elevate_script_fails_when_start_process_fails() {
