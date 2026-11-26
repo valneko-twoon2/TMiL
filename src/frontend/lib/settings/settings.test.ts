@@ -5,7 +5,12 @@ describe('parseSettings', () => {
   describe('equivalence', () => {
     it('保存された値を読む', () => {
       const raw = JSON.stringify({ refresh: 'high', theme: 'dark', startPage: 'performance' });
-      expect(parseSettings(raw)).toEqual({ refresh: 'high', theme: 'dark', startPage: 'performance' });
+      expect(parseSettings(raw)).toEqual({
+        refresh: 'high',
+        theme: 'dark',
+        startPage: 'performance',
+        detailColumns: DEFAULT_SETTINGS.detailColumns,
+      });
     });
 
     it('知らない値は既定値に戻す', () => {
@@ -29,7 +34,14 @@ describe('parseSettings', () => {
     it('既定値のオブジェクトを書き換えない', () => {
       const s = parseSettings(null);
       s.theme = 'dark';
+      s.detailColumns.push('exe');
       expect(DEFAULT_SETTINGS.theme).toBe('system');
+      expect(DEFAULT_SETTINGS.detailColumns).not.toContain('exe');
+    });
+
+    it('詳細タブの列は保存された値を整えて読む', () => {
+      const raw = JSON.stringify({ detailColumns: ['exe', 'unknown', 'pid', 'pid'] });
+      expect(parseSettings(raw).detailColumns).toEqual(['name', 'pid', 'exe']);
     });
   });
 });

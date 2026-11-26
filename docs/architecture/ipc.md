@@ -11,8 +11,14 @@
 | `set_startup_enabled`     | `id`, `enabled` | `null`              | スタートアップの有効・無効         |
 | `taskmgr_replacement`     | なし            | `ReplacementStatus` | タスク マネージャー置き換えの状態  |
 | `set_taskmgr_replacement` | `enabled`       | `ReplacementStatus` | 置き換えの切り替え（Windows のみ） |
+| `process_icons`           | `exes`          | `ProcessIcon[]`     | 実行ファイルのアイコン（data URL） |
+| `reveal_file`             | `path`          | `null`              | ファイルの場所を開く               |
 
 エラーは日本語の文字列で返します。
+
+`process_icons` は一度調べた結果をバックで覚えます。Windows は PowerShell（System.Drawing）、Linux は `.desktop` の `Icon` から探します。フロントは PNG・SVG の data URL だけを受け取ります。
+
+`reveal_file` は実在するファイルの絶対パスだけを受け付けます（Windows はエクスプローラーで選んだ状態、Linux は入っているフォルダーを開く）。アイコンとこの操作は状態を持たないので、状態機械は通しません。
 
 `kill_processes` は PID と起動時刻（`startTime`）の組を受け取ります。一覧を取ってから PID が別のプロセスに再利用されていたら終了しません。TMiL 自身とその子孫（WebView）も終了しません。
 

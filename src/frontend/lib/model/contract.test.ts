@@ -5,6 +5,7 @@ import { toKillTarget } from '../process/columns';
 import {
   isKillResults,
   isKillTargets,
+  isProcessIcons,
   isReplacementStatus,
   isSnapshot,
   isStartupEntries,
@@ -33,6 +34,7 @@ describe('バックエンドとの契約', () => {
       ['kill-targets', isKillTargets],
       ['startup-entries', isStartupEntries],
       ['replacement-status', isReplacementStatus],
+      ['process-icons', isProcessIcons],
     ] as const)('%s を受け取れる', (name, guard) => {
       expect(guard(fixture(name))).toBe(true);
     });

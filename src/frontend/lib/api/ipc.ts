@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import {
   isKillResults,
   isNull,
+  isProcessIcons,
   isReplacementStatus,
   isSnapshot,
   isStartupEntries,
@@ -11,6 +12,7 @@ import {
 import type {
   KillResult,
   KillTarget,
+  ProcessIcon,
   ReplacementStatus,
   Snapshot,
   StartupEntry,
@@ -42,6 +44,8 @@ export interface Api {
   setStartupEnabled(id: string, enabled: boolean): Promise<void>;
   taskmgrReplacement(): Promise<ReplacementStatus>;
   setTaskmgrReplacement(enabled: boolean): Promise<ReplacementStatus>;
+  processIcons(exes: string[]): Promise<ProcessIcon[]>;
+  revealFile(path: string): Promise<void>;
 }
 
 /** invoke を差し替えられる形で API を作る（テストではモックを渡す）。 */
@@ -71,6 +75,10 @@ export function createApi(call: Invoke): Api {
     },
     taskmgrReplacement: () => request('taskmgr_replacement', isReplacementStatus),
     setTaskmgrReplacement: (enabled) => request('set_taskmgr_replacement', isReplacementStatus, { enabled }),
+    processIcons: (exes) => request('process_icons', isProcessIcons, { exes }),
+    revealFile: async (path) => {
+      await request('reveal_file', isNull, { path });
+    },
   };
 }
 

@@ -37,6 +37,14 @@ export function formatUptime(totalSecs: number): string {
   return `${String(d)}:${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
+/** UNIX 秒をその PC の時刻で「年/月/日 時:分:秒」にする。0 以下や不正な値は空。 */
+export function formatDateTime(unixSecs: number): string {
+  if (!Number.isFinite(unixSecs) || unixSecs <= 0) return '';
+  const d = new Date(unixSecs * 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${String(d.getFullYear())}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 /** クロック周波数（MHz → "3.20 GHz"）。 */
 export function formatFrequency(mhz: number): string {
   if (!Number.isFinite(mhz) || mhz <= 0) return '-';

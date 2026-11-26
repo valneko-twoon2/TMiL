@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { formatBits, formatBytes, formatFrequency, formatPercent, formatRate, formatUptime } from './format';
+import {
+  formatBits,
+  formatBytes,
+  formatDateTime,
+  formatFrequency,
+  formatPercent,
+  formatRate,
+  formatUptime,
+} from './format';
 import { heatLevel, rateLevel, shareOf } from './heat';
 import { processStateLabel, processStatusBadge, startupLocationLabel } from './labels';
 
@@ -72,6 +80,21 @@ describe('formatUptime', () => {
       [Number.NaN, '0:00:00:00'],
     ])('%d → %s', (input, expected) => {
       expect(formatUptime(input)).toBe(expected);
+    });
+  });
+});
+
+describe('formatDateTime', () => {
+  describe('equivalence', () => {
+    it('その PC の時刻で年/月/日 時:分:秒', () => {
+      const secs = new Date(2026, 0, 2, 3, 4, 5).getTime() / 1000;
+      expect(formatDateTime(secs)).toBe('2026/01/02 03:04:05');
+    });
+  });
+
+  describe('boundary', () => {
+    it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])('%s は空', (v) => {
+      expect(formatDateTime(v)).toBe('');
     });
   });
 });

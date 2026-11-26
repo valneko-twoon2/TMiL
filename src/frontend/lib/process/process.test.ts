@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { ProcessInfo } from '../model/types';
 import {
+  DEFAULT_DETAIL_COLUMNS,
+  DETAIL_COLUMNS,
   DETAIL_NUMERIC,
+  detailLabel,
+  detailText,
   detailValue,
+  normalizeDetailColumns,
+  toggleDetailColumn,
   GROUP_NUMERIC,
   groupValue,
   selectedTargets,
@@ -145,11 +151,44 @@ describe('columns', () => {
 
   describe('equivalence', () => {
     it('詳細タブの各列の値', () => {
-      expect(DETAIL_NUMERIC.map((c) => detailValue(p, c))).toEqual([7, 3, 9, 15]);
+      expect(DETAIL_NUMERIC.map((c) => [c, detailValue(p, c)])).toEqual([
+        ['pid', 7],
+        ['cpu', 3],
+        ['memory', 9],
+        ['disk', 15],
+        ['diskRead', 10],
+        ['diskWrite', 5],
+        ['parentPid', -1],
+        ['runTime', 0],
+        ['startTime', 1007],
+      ]);
+      expect(detailValue(p, 'exe')).toBe(p.exe);
       expect(detailValue(p, 'name')).toBe('a.exe');
       expect(detailValue(p, 'state')).toBe('stopped');
       expect(detailValue(p, 'user')).toBe('alice');
       expect(detailValue(p, 'command')).toBe('a.exe --run');
+    });
+
+    it('詳細タブのセルの文字', () => {
+      expect(detailText(p, 'state')).toBe('中断');
+      expect(detailText(p, 'cpu')).toBe('3.0%');
+      expect(detailText(p, 'pid')).toBe('7');
+      expect(detailText(p, 'parentPid')).toBe('');
+      expect(detailText({ ...p, parentPid: 4 }, 'parentPid')).toBe('4');
+      expect(detailText({ ...p, runTimeSecs: 93784 }, 'runTime')).toBe('1:02:03:04');
+      expect(detailText(p, 'command')).toBe('a.exe --run');
+    });
+
+    it('すべての列に見出しと文字がある', () => {
+      for (const { key, label } of DETAIL_COLUMNS) {
+        expect(detailLabel(key)).toBe(label);
+        expect(typeof detailText(p, key)).toBe('string');
+      }
+    });
+
+    it('列を出したり隠したりできる（並びは決まった順）', () => {
+      expect(toggleDetailColumn(['name', 'cpu'], 'pid')).toEqual(['name', 'pid', 'cpu']);
+      expect(toggleDetailColumn(['name', 'pid', 'cpu'], 'pid')).toEqual(['name', 'cpu']);
     });
 
     it('プロセス タブの各列の値', () => {
@@ -178,6 +217,26 @@ describe('columns', () => {
       expect(selectedTargets(null, groups)).toEqual([]);
       expect(selectedTargets({ kind: 'group', key: 'gone' }, groups)).toEqual([]);
       expect(selectedTargets({ kind: 'process', pid: 99 }, groups)).toEqual([]);
+    });
+
+    it('名前の列は外せない', () => {
+      expect(toggleDetailColumn(['name', 'pid'], 'name')).toEqual(['name', 'pid']);
+    });
+
+    it('保存された列が壊れていたら既定、空でも名前だけは出す', () => {
+      expect(normalizeDetailColumns('pid')).toEqual(DEFAULT_DETAIL_COLUMNS);
+      expect(normalizeDetailColumns(null)).toEqual(DEFAULT_DETAIL_COLUMNS);
+      expect(normalizeDetailColumns([])).toEqual(['name']);
+      expect(normalizeDetailColumns(['command', 42, 'pid'])).toEqual(['name', 'pid', 'command']);
+    });
+
+    it('全部の列を出せる', () => {
+      const all = DETAIL_COLUMNS.map((c) => c.key);
+      expect(normalizeDetailColumns(all)).toEqual(all);
+    });
+
+    it('開始時刻が 0 なら空', () => {
+      expect(detailText(proc(1, 'a', { startTime: 0 }), 'startTime')).toBe('');
     });
   });
 });

@@ -3,20 +3,26 @@
   import type { Api } from '../api/ipc';
   import Icon from '../components/Icon.svelte';
   import PageHeader from '../components/PageHeader.svelte';
+  import ProcessIcon from '../components/ProcessIcon.svelte';
   import SortHeader from '../components/SortHeader.svelte';
   import { startupLocationLabel } from '../format/labels';
+  import { SEPARATOR } from '../menu/menu';
   import type { StartupEntry } from '../model/types';
   import { nextSort, sortBy, type SortState } from '../process/process';
   import { filterStartup, startupValue, type StartupColumn } from '../startup/startup';
+  import type { IconStore } from '../state/icons.svelte';
+  import type { ContextMenus } from '../state/menus.svelte';
   import type { Toasts } from '../state/toast.svelte';
 
   interface Props {
     api: Api;
     toasts: Toasts;
+    icons: IconStore;
+    menus: ContextMenus;
     query: string;
   }
 
-  const { api, toasts, query }: Props = $props();
+  const { api, toasts, icons, menus, query }: Props = $props();
 
   let entries = $state<StartupEntry[] | null>(null);
   let selectedId = $state<string | null>(null);
@@ -33,23 +39,49 @@
   async function load() {
     try {
       entries = await api.startupEntries();
+      void icons.request(entries.map((e) => e.program));
     } catch (cause) {
       entries = [];
       toasts.show(cause instanceof Error ? cause.message : String(cause), 'error');
     }
   }
 
-  async function toggle() {
-    if (!selected?.canToggle || busy) return;
+  async function toggle(entry: StartupEntry | null = selected) {
+    if (!entry?.canToggle || busy) return;
     busy = true;
     try {
-      await api.setStartupEnabled(selected.id, !selected.enabled);
+      await api.setStartupEnabled(entry.id, !entry.enabled);
       await load();
     } catch (cause) {
       toasts.show(cause instanceof Error ? cause.message : String(cause), 'error');
     } finally {
       busy = false;
     }
+  }
+
+  async function reveal(path: string) {
+    try {
+      await api.revealFile(path);
+    } catch (cause) {
+      toasts.show(cause instanceof Error ? cause.message : String(cause), 'error');
+    }
+  }
+
+  function openMenu(event: MouseEvent, entry: StartupEntry) {
+    selectedId = entry.id;
+    const items = [
+      {
+        id: 'toggle',
+        label: entry.enabled ? '無効にする' : '有効にする',
+        disabled: !entry.canToggle || busy,
+      },
+      SEPARATOR,
+      { id: 'reveal', label: 'ファイルの場所を開く', disabled: entry.program === '' },
+    ];
+    menus.open(event, 'スタートアップ アプリの操作', items, (id) => {
+      if (id === 'toggle') void toggle(entry);
+      else void reveal(entry.program);
+    });
   }
 
   onMount(() => {
@@ -68,7 +100,7 @@
       class="command"
       disabled={!selected?.canToggle || busy}
       title={selected && !selected.canToggle ? '管理者権限が必要な項目です' : undefined}
-      onclick={toggle}
+      onclick={() => toggle()}
     >
       <Icon name={selected?.enabled === false ? 'enable' : 'disable'} />
       {selected?.enabled === false ? '有効にする' : '無効にする'}
@@ -95,9 +127,12 @@
           onkeydown={(ev) => {
             if (ev.key === 'Enter') selectedId = e.id;
           }}
+          oncontextmenu={(ev) => {
+            openMenu(ev, e);
+          }}
           data-testid="startup-row"
         >
-          <td>{e.name}</td>
+          <td class="name"><ProcessIcon src={icons.get(e.program)} /><span>{e.name}</span></td>
           <td class="program" title={e.command}>{e.program}</td>
           <td>{startupLocationLabel(e.location)}</td>
           <td class:disabled-text={!e.enabled}>{e.enabled ? '有効' : '無効'}</td>
@@ -112,6 +147,11 @@
 </div>
 
 <style>
+  .name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
   .program {
     max-width: 380px;
     overflow: hidden;

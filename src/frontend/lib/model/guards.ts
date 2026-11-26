@@ -9,6 +9,7 @@ import {
   type KillTarget,
   type MemoryStats,
   type NetworkStats,
+  type ProcessIcon,
   type ProcessInfo,
   type ReplacementStatus,
   type Snapshot,
@@ -141,6 +142,13 @@ export const isReplacementStatus = shape<ReplacementStatus>({
   replaced: isBool,
   other: nullable(isStr),
 });
+
+/** 画像の data URL だけを受け付ける（img に入れるので、それ以外の URL は通さない）。 */
+const isImageDataUrl = (v: unknown): v is string =>
+  typeof v === 'string' && /^data:image\/(png|svg\+xml);base64,[A-Za-z0-9+/]+=*$/.test(v);
+
+export const isProcessIcon = shape<ProcessIcon>({ exe: isStr, icon: nullable(isImageDataUrl) });
+export const isProcessIcons = arrayOf(isProcessIcon);
 
 /** `null` を返すコマンド用。 */
 export const isNull = (v: unknown): v is null => v === null;

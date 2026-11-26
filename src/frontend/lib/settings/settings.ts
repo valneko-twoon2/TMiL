@@ -1,4 +1,5 @@
 // ユーザー設定の型と読み書き。
+import { DEFAULT_DETAIL_COLUMNS, normalizeDetailColumns, type DetailColumn } from '../process/columns';
 
 export const REFRESH_OPTIONS = [
   { id: 'high', label: '高', intervalMs: 500 },
@@ -22,9 +23,21 @@ export interface Settings {
   refresh: RefreshSpeed;
   theme: Theme;
   startPage: Page;
+  /** 詳細タブに出す列 */
+  detailColumns: DetailColumn[];
 }
 
-export const DEFAULT_SETTINGS: Settings = { refresh: 'normal', theme: 'system', startPage: 'processes' };
+export const DEFAULT_SETTINGS: Settings = {
+  refresh: 'normal',
+  theme: 'system',
+  startPage: 'processes',
+  detailColumns: [...DEFAULT_DETAIL_COLUMNS],
+};
+
+const defaults = (): Settings => ({
+  ...DEFAULT_SETTINGS,
+  detailColumns: [...DEFAULT_SETTINGS.detailColumns],
+});
 
 export const SETTINGS_STORAGE_KEY = 'tmil.settings';
 
@@ -35,14 +48,14 @@ function pick<T extends string>(candidates: readonly T[], value: unknown, fallba
 
 /** 保存された JSON を読む。壊れた値は既定値に戻す。 */
 export function parseSettings(raw: string | null): Settings {
-  if (raw === null) return { ...DEFAULT_SETTINGS };
+  if (raw === null) return defaults();
   let data: unknown;
   try {
     data = JSON.parse(raw);
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    return defaults();
   }
-  if (typeof data !== 'object' || data === null) return { ...DEFAULT_SETTINGS };
+  if (typeof data !== 'object' || data === null) return defaults();
   const rec = data as Record<string, unknown>;
   return {
     refresh: pick(
@@ -56,6 +69,7 @@ export function parseSettings(raw: string | null): Settings {
       DEFAULT_SETTINGS.theme,
     ),
     startPage: pick(PAGES, rec.startPage, DEFAULT_SETTINGS.startPage),
+    detailColumns: normalizeDetailColumns(rec.detailColumns),
   };
 }
 

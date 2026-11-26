@@ -2,6 +2,7 @@
   import { listen } from '@tauri-apps/api/event';
   import { onMount, untrack } from 'svelte';
   import type { Api } from './lib/api/ipc';
+  import ContextMenuHost from './lib/components/ContextMenuHost.svelte';
   import Icon from './lib/components/Icon.svelte';
   import NavRail from './lib/components/NavRail.svelte';
   import ToastHost from './lib/components/ToastHost.svelte';
@@ -10,7 +11,10 @@
   import ProcessesPage from './lib/pages/ProcessesPage.svelte';
   import SettingsPage from './lib/pages/SettingsPage.svelte';
   import StartupPage from './lib/pages/StartupPage.svelte';
+  import { allowsNativeMenu } from './lib/menu/menu';
   import { intervalOf, type Page } from './lib/settings/settings';
+  import type { IconStore } from './lib/state/icons.svelte';
+  import type { ContextMenus } from './lib/state/menus.svelte';
   import type { Monitor } from './lib/state/monitor.svelte';
   import type { SettingsStore } from './lib/state/settings.svelte';
   import type { Toasts } from './lib/state/toast.svelte';
@@ -20,20 +24,38 @@
     settings: SettingsStore;
     monitor: Monitor;
     toasts: Toasts;
+    icons: IconStore;
+    menus: ContextMenus;
   }
 
-  const { api, settings, monitor, toasts }: Props = $props();
+  const { api, settings, monitor, toasts, icons, menus }: Props = $props();
 
   // 起動時だけ既定のページを使う（設定を変えても今の画面は動かさない）
   let page = $state<Page>(untrack(() => settings.value.startPage));
   let navExpanded = $state(false);
   let query = $state('');
+  /** 詳細タブで選んでおくプロセス（プロセス タブから移ってきたとき） */
+  let detailsFocus = $state<number | null>(null);
 
   const searchable = $derived(page === 'processes' || page === 'details' || page === 'startup');
 
   function onnavigate(next: Page) {
     page = next;
+    detailsFocus = null;
   }
+
+  function gotoDetails(pid: number) {
+    // 検索で隠れないよう、絞り込みを外してから移る
+    query = '';
+    detailsFocus = pid;
+    page = 'details';
+  }
+
+  // 一覧に出てきた実行ファイルのアイコンを取りに行く（覚えているものは聞かない）
+  $effect(() => {
+    const processes = monitor.snapshot?.processes;
+    if (processes) void icons.request(processes.map((p) => p.exe));
+  });
 
   // 間隔の値が変わったときだけ再設定する（テーマなど他の設定の変更では動かさない）
   const interval = $derived(intervalOf(settings.value.refresh));
@@ -54,11 +76,17 @@
       monitor.setVisible(document.visibilityState === 'visible');
     };
     document.addEventListener('visibilitychange', onVisibility);
+    // WebView 標準の右クリックメニュー（戻る・再読み込み・検証など）は出さない。入力欄だけは残す
+    const onContextMenu = (event: MouseEvent) => {
+      if (!allowsNativeMenu(event.target)) event.preventDefault();
+    };
+    document.addEventListener('contextmenu', onContextMenu);
     const unlisten = listen<boolean>('window-visibility', (event) => {
       monitor.setVisible(event.payload);
     }).catch(() => undefined);
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener('contextmenu', onContextMenu);
       void unlisten.then((stop) => stop?.());
       monitor.stop();
     };
@@ -91,19 +119,22 @@
         <div class="banner" role="alert">情報を取得できません: {monitor.error}</div>
       {/if}
       {#if page === 'processes'}
-        <ProcessesPage {monitor} {api} {toasts} {query} />
+        <ProcessesPage {monitor} {api} {toasts} {icons} {menus} {query} ongotodetails={gotoDetails} />
       {:else if page === 'performance'}
         <PerformancePage {monitor} intervalMs={interval} />
       {:else if page === 'startup'}
-        <StartupPage {api} {toasts} {query} />
+        <StartupPage {api} {toasts} {icons} {menus} {query} />
       {:else if page === 'details'}
-        <DetailsPage {monitor} {api} {toasts} {query} />
+        {#key detailsFocus}
+          <DetailsPage {monitor} {api} {toasts} {settings} {icons} {menus} {query} focusPid={detailsFocus} />
+        {/key}
       {:else}
         <SettingsPage {settings} {api} {toasts} />
       {/if}
     </main>
   </div>
   <ToastHost {toasts} />
+  <ContextMenuHost {menus} />
 </div>
 
 <style>

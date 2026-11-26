@@ -84,6 +84,124 @@ test.describe('詳細', () => {
     await expect(page.getByTestId('detail-row')).toHaveCount(1);
     await expect(page.getByTestId('detail-row')).toContainText('explorer.exe');
   });
+
+  test('見出しの右クリックで列を選べ、次回も残る', async ({ page }) => {
+    await open(page, '詳細');
+    const table = page.getByRole('table', { name: 'プロセスの詳細' });
+    await expect(table.getByRole('columnheader', { name: 'イメージ パス名' })).toHaveCount(0);
+    await table.getByRole('columnheader', { name: /PID/ }).click({ button: 'right' });
+    const menu = page.getByRole('menu', { name: '列の選択' });
+    await expect(menu.getByRole('menuitemcheckbox', { name: '名前' })).toBeDisabled();
+    await menu.getByRole('menuitemcheckbox', { name: 'イメージ パス名' }).click();
+    await expect(menu).toHaveCount(0);
+    await expect(table.getByRole('columnheader', { name: 'イメージ パス名' })).toBeVisible();
+
+    await table.getByRole('columnheader', { name: /PID/ }).click({ button: 'right' });
+    await menu.getByRole('menuitemcheckbox', { name: 'ユーザー名' }).click();
+    await expect(table.getByRole('columnheader', { name: 'ユーザー名' })).toHaveCount(0);
+
+    await page.reload();
+    await page.getByRole('navigation').getByRole('button', { name: '詳細' }).click();
+    await expect(table.getByRole('columnheader', { name: 'イメージ パス名' })).toBeVisible();
+    await expect(table.getByRole('columnheader', { name: 'ユーザー名' })).toHaveCount(0);
+  });
+
+  test('行の右クリックからタスクを終了できる', async ({ page }) => {
+    await open(page, '詳細');
+    await page.getByRole('searchbox', { name: '検索' }).fill('OneDrive');
+    await page.getByTestId('detail-row').click({ button: 'right' });
+    await page
+      .getByRole('menu', { name: 'プロセスの操作' })
+      .getByRole('menuitem', { name: 'タスクを終了する' })
+      .click();
+    await expect(page.getByTestId('detail-row')).toHaveCount(0);
+  });
+});
+
+test.describe('右クリック', () => {
+  test('プロセスの行ではアプリのメニューが出て、Escape で閉じる', async ({ page }) => {
+    await open(page);
+    await groupRow(page, 'Code (4)').click({ button: 'right' });
+    const menu = page.getByRole('menu', { name: 'プロセスの操作' });
+    await expect(menu.getByRole('menuitem')).toHaveText([
+      '展開する',
+      'タスクを終了する',
+      '詳細の表示に移動',
+      'ファイルの場所を開く',
+    ]);
+    await expect(menu.getByRole('menuitem', { name: '展開する' })).toBeFocused();
+    // 作っている途中で、区切りの数だけ矢印キーの移動先がずれる不具合があった
+    await page.keyboard.press('ArrowDown');
+    await expect(menu.getByRole('menuitem', { name: 'タスクを終了する' })).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(menu.getByRole('menuitem', { name: '詳細の表示に移動' })).toBeFocused();
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('ArrowUp');
+    await expect(menu.getByRole('menuitem', { name: 'ファイルの場所を開く' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(menu).toHaveCount(0);
+  });
+
+  test('メニューから展開と詳細への移動ができる', async ({ page }) => {
+    await open(page);
+    await groupRow(page, 'Code (4)').click({ button: 'right' });
+    await page.getByRole('menuitem', { name: '展開する' }).click();
+    await expect(page.locator('tr.child')).toHaveCount(4);
+
+    await groupRow(page, 'explorer').click({ button: 'right' });
+    await page.getByRole('menuitem', { name: '詳細の表示に移動' }).click();
+    await expect(page.getByRole('heading', { name: '詳細' })).toBeVisible();
+    await expect(page.locator('[data-testid="detail-row"].selected')).toContainText('explorer.exe');
+  });
+
+  test('ファイルの場所を開いてもエラーにならない', async ({ page }) => {
+    await open(page);
+    await groupRow(page, 'explorer').click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'ファイルの場所を開く' }).click();
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(page.getByRole('alert')).toHaveCount(0);
+  });
+
+  test('スタートアップの行から有効・無効を切り替えられる', async ({ page }) => {
+    await open(page, 'スタートアップ アプリ');
+    const row = page.getByTestId('startup-row').filter({ hasText: 'Spotify' });
+    await expect(row).toContainText('無効');
+    await row.click({ button: 'right' });
+    await page.getByRole('menuitem', { name: '有効にする' }).click();
+    await expect(row).toContainText('有効');
+  });
+
+  // 以前は WebView 標準のメニュー（戻る・再読み込み・検証など）がどこでも出ていた
+  test('入力欄以外では WebView 標準のメニューを出さない', async ({ page }) => {
+    await open(page);
+    const prevented = (selector: string) =>
+      page
+        .locator(selector)
+        .first()
+        .evaluate((el) => {
+          const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+          el.dispatchEvent(event);
+          return event.defaultPrevented;
+        });
+    expect(await prevented('.titlebar')).toBe(true);
+    expect(await prevented('h1')).toBe(true);
+    expect(await prevented('input[type="search"]')).toBe(false);
+  });
+});
+
+test.describe('アイコン', () => {
+  test('プロセスと詳細の行にアイコンが出る', async ({ page }) => {
+    await open(page);
+    await expect(groupRow(page, 'explorer').locator('img.process-icon')).toHaveAttribute(
+      'src',
+      /^data:image\/svg\+xml;base64,/,
+    );
+    // 実行ファイルが分からないもの（System）は決まった絵
+    await expect(groupRow(page, 'System').locator('.process-icon.fallback')).toBeVisible();
+    await page.getByRole('navigation').getByRole('button', { name: '詳細' }).click();
+    await expect(page.getByTestId('detail-row').first().locator('.process-icon')).toBeVisible();
+  });
 });
 
 test.describe('設定', () => {

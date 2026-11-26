@@ -47,6 +47,8 @@ export interface MockState {
   killed: Set<number>;
   startup: StartupEntry[];
   replaced: boolean;
+  /** 「ファイルの場所を開く」で渡された場所 */
+  revealed: string[];
 }
 
 export function createMockState(): MockState {
@@ -54,6 +56,7 @@ export function createMockState(): MockState {
     tick: 0,
     killed: new Set(),
     replaced: false,
+    revealed: [],
     startup: [
       startup(
         'registryUser',
@@ -232,33 +235,66 @@ function replacement(state: MockState): ReplacementStatus {
   return { supported: true, replaced: state.replaced, other: null };
 }
 
+const ICON_COLORS = ['#0f6cbd', '#c239b3', '#107c10', '#ca5010', '#5c2e91', '#038387'];
+
+/** 実行ファイルごとに決まった色と頭文字のアイコン（VRT で毎回同じ見た目になるように）。 */
+export function mockIcon(exe: string): string | null {
+  const file = exe.split(/[\\/]/).pop() ?? '';
+  if (file === '') return null;
+  let hash = 7;
+  for (let i = 0; i < file.length; i += 1) hash = (hash * 31 + file.charCodeAt(i)) % 9973;
+  const color = ICON_COLORS[hash % ICON_COLORS.length] ?? '#0f6cbd';
+  const letter = (file[0] ?? '?').toUpperCase().replace(/[^A-Z0-9]/, '?');
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" rx="3" fill="${color}"/>` +
+    `<text x="8" y="12" font-size="10" font-family="sans-serif" text-anchor="middle" fill="#fff">${letter}</text></svg>`;
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+}
+
+type Handler = (state: MockState, args: Record<string, unknown>) => unknown;
+
+function setStartupEnabled(state: MockState, args: Record<string, unknown>): null {
+  const target = state.startup.find((e) => e.id === args.id);
+  if (!target) throw new Error('項目が見つかりません。一覧を更新してください。');
+  if (!target.canToggle) throw new Error('この項目は切り替えられません（管理者権限が必要です）。');
+  target.enabled = args.enabled === true;
+  return null;
+}
+
+function revealFile(state: MockState, args: Record<string, unknown>): null {
+  if (typeof args.path !== 'string' || args.path === '') {
+    throw new Error('ファイルの場所が分かりません。');
+  }
+  state.revealed.push(args.path);
+  return null;
+}
+
+const HANDLERS: Record<string, Handler> = {
+  snapshot: (state) => {
+    const snap = mockSnapshot(state);
+    state.tick += 1;
+    return snap;
+  },
+  system_info: () => MOCK_SYSTEM_INFO,
+  kill_processes: (state, args) =>
+    kill(state, Array.isArray(args.targets) ? args.targets.filter(isKillTarget) : []),
+  startup_entries: (state) => state.startup,
+  set_startup_enabled: setStartupEnabled,
+  taskmgr_replacement: (state) => replacement(state),
+  set_taskmgr_replacement: (state, args) => {
+    state.replaced = args.enabled === true;
+    return replacement(state);
+  },
+  process_icons: (_state, args) =>
+    (Array.isArray(args.exes) ? args.exes : [])
+      .filter((e): e is string => typeof e === 'string')
+      .map((exe) => ({ exe, icon: mockIcon(exe) })),
+  reveal_file: revealFile,
+};
+
 /** コマンド名と引数から応答を作る。知らないコマンドは例外にする。 */
 export function handleCommand(state: MockState, cmd: string, args: Record<string, unknown> = {}): unknown {
-  switch (cmd) {
-    case 'snapshot': {
-      const snap = mockSnapshot(state);
-      state.tick += 1;
-      return snap;
-    }
-    case 'system_info':
-      return MOCK_SYSTEM_INFO;
-    case 'kill_processes':
-      return kill(state, Array.isArray(args.targets) ? args.targets.filter(isKillTarget) : []);
-    case 'startup_entries':
-      return state.startup;
-    case 'set_startup_enabled': {
-      const target = state.startup.find((e) => e.id === args.id);
-      if (!target) throw new Error('項目が見つかりません。一覧を更新してください。');
-      if (!target.canToggle) throw new Error('この項目は切り替えられません（管理者権限が必要です）。');
-      target.enabled = args.enabled === true;
-      return null;
-    }
-    case 'taskmgr_replacement':
-      return replacement(state);
-    case 'set_taskmgr_replacement':
-      state.replaced = args.enabled === true;
-      return replacement(state);
-    default:
-      throw new Error(`未対応のコマンド: ${cmd}`);
-  }
+  const handler = HANDLERS[cmd];
+  if (!handler) throw new Error(`未対応のコマンド: ${cmd}`);
+  return handler(state, args);
 }

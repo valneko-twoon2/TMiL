@@ -111,6 +111,12 @@ export interface StartupEntry {
   canToggle: boolean;
 }
 
+/** プロセスのアイコン。icon は画像の data URL（見つからなければ null）。 */
+export interface ProcessIcon {
+  exe: string;
+  icon: string | null;
+}
+
 export interface ReplacementStatus {
   supported: boolean;
   replaced: boolean;

@@ -15,6 +15,7 @@
     disable: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 12h8',
     refresh: 'M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7',
     close: 'M6 6l12 12M18 6L6 18',
+    app: 'M4 5h16v14H4zM4 9h16M7 7h.01',
   } as const;
 
   export type IconName = keyof typeof ICONS;
