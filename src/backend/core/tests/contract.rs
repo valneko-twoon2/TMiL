@@ -14,8 +14,8 @@ mod contract {
     use serde::Serialize;
     use tmil_core::model::{
         CpuStats, DiskKind, DiskStats, KillResult, KillTarget, MemoryStats, NetworkStats,
-        ProcessInfo, ProcessState, ReplacementStatus, Snapshot, StartupEntry, StartupLocation,
-        SystemInfo,
+        ProcessIcon, ProcessInfo, ProcessState, ReplacementStatus, Snapshot, StartupEntry,
+        StartupLocation, SystemInfo,
     };
 
     fn fixtures_dir() -> PathBuf {
@@ -205,6 +205,23 @@ mod contract {
                 replaced: false,
                 other: Some("C:\\Tools\\procexp.exe".to_owned()),
             },
+        );
+    }
+
+    #[test]
+    fn process_icons() {
+        check(
+            "process-icons",
+            &vec![
+                ProcessIcon {
+                    exe: r"C:\Windows\explorer.exe".to_owned(),
+                    icon: Some("data:image/png;base64,iVBORw0KGgo=".to_owned()),
+                },
+                ProcessIcon {
+                    exe: "/usr/bin/unknown".to_owned(),
+                    icon: None,
+                },
+            ],
         );
     }
 }

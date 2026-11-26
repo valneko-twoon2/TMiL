@@ -218,6 +218,16 @@ pub struct ReplacementStatus {
     pub other: Option<String>,
 }
 
+/// プロセスのアイコン。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProcessIcon {
+    /// 実行ファイルの場所（問い合わせに使った値そのまま）
+    pub exe: String,
+    /// 画像の data URL。見つからなければ `None`
+    pub icon: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

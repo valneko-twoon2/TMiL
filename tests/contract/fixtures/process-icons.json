@@ -1,0 +1,10 @@
+[
+  {
+    "exe": "C:\\Windows\\explorer.exe",
+    "icon": "data:image/png;base64,iVBORw0KGgo="
+  },
+  {
+    "exe": "/usr/bin/unknown",
+    "icon": null
+  }
+]

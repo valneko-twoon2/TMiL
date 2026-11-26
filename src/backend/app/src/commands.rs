@@ -5,10 +5,11 @@
 
 use tauri::{AppHandle, Manager};
 use tmil_core::backend::{Backend, set_replacement_for_exe};
+use tmil_core::icons::{self, IconCache};
 use tmil_core::model::{
-    KillResult, KillTarget, ReplacementStatus, Snapshot, StartupEntry, SystemInfo,
+    KillResult, KillTarget, ProcessIcon, ReplacementStatus, Snapshot, StartupEntry, SystemInfo,
 };
-use tmil_core::{startup, taskmgr};
+use tmil_core::{reveal, startup, taskmgr};
 
 fn current_exe() -> Result<std::path::PathBuf, String> {
     std::env::current_exe().map_err(|e| format!("実行ファイルの場所が分かりません: {e}"))
@@ -78,4 +79,23 @@ pub(crate) async fn set_taskmgr_replacement(
 ) -> Result<ReplacementStatus, String> {
     let exe = current_exe()?;
     blocking(app, move |b| set_replacement_for_exe(b, &exe, enabled)).await
+}
+
+/// 実行ファイルのアイコン（状態を持たない読み取り。一度調べたものは覚えておく）。
+#[tauri::command]
+pub(crate) async fn process_icons(
+    app: AppHandle,
+    exes: Vec<String>,
+) -> Result<Vec<ProcessIcon>, String> {
+    tauri::async_runtime::spawn_blocking(move || app.state::<IconCache>().icons(&exes, icons::load))
+        .await
+        .map_err(|e| format!("処理が中断されました: {e}"))
+}
+
+/// ファイルの場所を開く（状態を持たない操作）。
+#[tauri::command]
+pub(crate) async fn reveal_file(path: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || reveal::reveal(&path))
+        .await
+        .map_err(|e| format!("処理が中断されました: {e}"))?
 }

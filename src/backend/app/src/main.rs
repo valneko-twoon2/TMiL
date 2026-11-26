@@ -6,6 +6,7 @@ mod tray;
 
 use tauri::WindowEvent;
 use tmil_core::backend::Backend;
+use tmil_core::icons::IconCache;
 
 fn main() {
     if let Err(err) = run() {
@@ -25,6 +26,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             tray::show_main_window(app);
         }))
         .manage(backend)
+        .manage(IconCache::new())
         .invoke_handler(tauri::generate_handler![
             commands::snapshot,
             commands::system_info,
@@ -33,6 +35,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             commands::set_startup_enabled,
             commands::taskmgr_replacement,
             commands::set_taskmgr_replacement,
+            commands::process_icons,
+            commands::reveal_file,
         ])
         .setup(|app| {
             tray::create(app.handle())?;

@@ -2,9 +2,11 @@
 
 pub mod backend;
 pub mod collector;
+pub mod icons;
 pub mod machine;
 pub mod metrics;
 pub mod model;
+pub mod reveal;
 pub mod startup;
 pub mod taskmgr;
 
