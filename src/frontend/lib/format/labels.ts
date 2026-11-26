@@ -5,7 +5,7 @@ const PROCESS_STATE_LABEL: Record<ProcessState, string> = {
   running: '実行中',
   sleeping: '待機中',
   stopped: '中断',
-  zombie: '応答なし',
+  zombie: '終了済み',
   other: '',
 };
 

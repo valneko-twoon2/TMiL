@@ -165,16 +165,24 @@ describe('labels', () => {
       expect(processStateLabel('other')).toBe('');
     });
 
-    it('プロセス タブは中断と応答なしだけ表示する', () => {
+    it('プロセス タブは中断と終了済みだけ表示する', () => {
       expect(processStatusBadge('running')).toBe('');
       expect(processStatusBadge('sleeping')).toBe('');
       expect(processStatusBadge('stopped')).toBe('中断');
-      expect(processStatusBadge('zombie')).toBe('応答なし');
+      expect(processStatusBadge('zombie')).toBe('終了済み');
     });
 
     it('スタートアップの場所', () => {
       expect(startupLocationLabel('registryUser')).toBe('レジストリ（ユーザー）');
       expect(startupLocationLabel('autostartSystem')).toBe('autostart（システム）');
+    });
+  });
+
+  describe('regression', () => {
+    // 終了済み（ゾンビ）のプロセスを「応答なし」と表示し、固まったアプリと紛らわしかった
+    it('終了済みのプロセスを「応答なし」と表示しない', () => {
+      expect(processStateLabel('zombie')).not.toBe('応答なし');
+      expect(processStatusBadge('zombie')).not.toBe('応答なし');
     });
   });
 });
