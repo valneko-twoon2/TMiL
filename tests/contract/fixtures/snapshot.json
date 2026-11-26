@@ -31,7 +31,7 @@
     },
     {
       "name": "sda",
-      "mountPoint": "/",
+      "mountPoint": "/data",
       "fileSystem": "ext4",
       "kind": "hdd",
       "removable": false,
@@ -42,7 +42,7 @@
     },
     {
       "name": "loop0",
-      "mountPoint": "/",
+      "mountPoint": "/snap/core",
       "fileSystem": "ext4",
       "kind": "unknown",
       "removable": false,

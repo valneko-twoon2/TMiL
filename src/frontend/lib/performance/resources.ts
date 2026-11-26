@@ -9,7 +9,7 @@ import {
   formatUptime,
 } from '../format/format';
 import { shareOf } from '../format/heat';
-import { historyKey, type HistoryMap } from '../history/history';
+import { diskKeys, historyKey, type HistoryMap } from '../history/history';
 import type { DiskKind, NetworkStats, Snapshot, SystemInfo } from '../model/types';
 
 export type ResourceKind = 'cpu' | 'memory' | 'disk' | 'network';
@@ -83,11 +83,13 @@ export function buildResources(snapshot: Snapshot, history: HistoryMap, info: Sy
     },
   ];
 
+  const keys = diskKeys(snapshot.disks);
   snapshot.disks.forEach((d, i) => {
-    const read = get(historyKey.diskRead(d.name));
-    const write = get(historyKey.diskWrite(d.name));
+    const key = keys[i] ?? d.mountPoint;
+    const read = get(historyKey.diskRead(key));
+    const write = get(historyKey.diskWrite(key));
     resources.push({
-      id: `disk:${d.name}`,
+      id: `disk:${key}`,
       kind: 'disk',
       title: `ディスク ${String(i)} (${d.mountPoint})`,
       summary: `${DISK_KIND_LABEL[d.kind]}  ${formatRate(d.readPerSec + d.writtenPerSec)}`,
@@ -149,7 +151,8 @@ export function resourceStats(resource: Resource, snapshot: Snapshot, info: Syst
       ];
     }
     case 'disk': {
-      const d = snapshot.disks.find((x) => `disk:${x.name}` === resource.id);
+      const keys = diskKeys(snapshot.disks);
+      const d = snapshot.disks.find((_, i) => `disk:${keys[i] ?? ''}` === resource.id);
       if (!d) return [];
       return [
         { label: '読み取り速度', value: formatRate(d.readPerSec) },

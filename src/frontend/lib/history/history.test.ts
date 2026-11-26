@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { snapshotFixture } from '../../test/fixtures';
-import { EMPTY_HISTORY, historyKey, pushValue, recordSnapshot } from './history';
+import { diskKeys, EMPTY_HISTORY, historyKey, pushValue, recordSnapshot } from './history';
 
 const snapshot = snapshotFixture();
 
@@ -32,14 +32,38 @@ describe('pushValue', () => {
   });
 });
 
+describe('diskKeys', () => {
+  describe('regression', () => {
+    // 名前の同じディスク（ラベルなしの C: と D: など）で履歴と ID が重なり、別のディスクのグラフが出ていた
+    it('名前が同じでもマウントポイントで区別する', () => {
+      const [a, b] = snapshot.disks;
+      if (!a || !b) throw new Error('fixture');
+      const disks = [
+        { ...a, name: '', mountPoint: 'C:\\' },
+        { ...b, name: '', mountPoint: 'D:\\' },
+      ];
+      expect(diskKeys(disks)).toEqual(['C:\\', 'D:\\']);
+      const h = recordSnapshot(EMPTY_HISTORY, { ...snapshot, disks });
+      expect(h.get(historyKey.diskRead('C:\\'))).toEqual([a.readPerSec]);
+      expect(h.get(historyKey.diskRead('D:\\'))).toEqual([b.readPerSec]);
+    });
+
+    it('マウントポイントまで同じなら番号を付けて区別する', () => {
+      const [a] = snapshot.disks;
+      if (!a) throw new Error('fixture');
+      expect(diskKeys([a, a, a])).toEqual([a.mountPoint, `${a.mountPoint}#1`, `${a.mountPoint}#2`]);
+    });
+  });
+});
+
 describe('recordSnapshot', () => {
   describe('equivalence', () => {
     it('CPU・メモリ・ディスク・ネットワークを記録する', () => {
       const h = recordSnapshot(EMPTY_HISTORY, snapshot);
       expect(h.get(historyKey.cpu)).toEqual([25.5]);
       expect(h.get(historyKey.memory)).toEqual([50]);
-      expect(h.get(historyKey.diskRead('nvme0n1'))).toEqual([4096]);
-      expect(h.get(historyKey.diskWrite('nvme0n1'))).toEqual([1024]);
+      expect(h.get(historyKey.diskRead('/'))).toEqual([4096]);
+      expect(h.get(historyKey.diskWrite('/'))).toEqual([1024]);
       expect(h.get(historyKey.netReceive('eth0'))).toEqual([1000]);
       expect(h.get(historyKey.netTransmit('eth0'))).toEqual([200]);
     });
@@ -55,7 +79,7 @@ describe('recordSnapshot', () => {
     it('消えたディスクの履歴は捨てる', () => {
       const once = recordSnapshot(EMPTY_HISTORY, snapshot);
       const next = recordSnapshot(once, { ...snapshot, disks: [] });
-      expect(next.has(historyKey.diskRead('nvme0n1'))).toBe(false);
+      expect(next.has(historyKey.diskRead('/'))).toBe(false);
     });
 
     it('容量を指定できる', () => {

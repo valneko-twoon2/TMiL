@@ -1,5 +1,5 @@
 // グラフ用の履歴（直近 N 回分の値）。
-import type { Snapshot } from '../model/types';
+import type { DiskStats, Snapshot } from '../model/types';
 import { shareOf } from '../format/heat';
 
 export const HISTORY_CAPACITY = 60;
@@ -16,12 +16,25 @@ export function pushValue(values: readonly number[], value: number, capacity = H
   return next.length > capacity ? next.slice(next.length - capacity) : next;
 }
 
+/**
+ * ディスクを区別するキー。名前は空や重複がありうるのでマウントポイントを使い、
+ * それも重なるときは 2 つ目以降に番号を付ける。
+ */
+export function diskKeys(disks: readonly DiskStats[]): string[] {
+  const seen = new Map<string, number>();
+  return disks.map((d) => {
+    const count = seen.get(d.mountPoint) ?? 0;
+    seen.set(d.mountPoint, count + 1);
+    return count === 0 ? d.mountPoint : `${d.mountPoint}#${String(count)}`;
+  });
+}
+
 /** 履歴のキー。 */
 export const historyKey = {
   cpu: 'cpu',
   memory: 'memory',
-  diskRead: (name: string) => `disk:${name}:read`,
-  diskWrite: (name: string) => `disk:${name}:write`,
+  diskRead: (key: string) => `disk:${key}:read`,
+  diskWrite: (key: string) => `disk:${key}:write`,
   netReceive: (name: string) => `net:${name}:rx`,
   netTransmit: (name: string) => `net:${name}:tx`,
 } as const;
@@ -36,10 +49,12 @@ export function recordSnapshot(
     [historyKey.cpu, snapshot.cpu.usage],
     [historyKey.memory, shareOf(snapshot.memory.used, snapshot.memory.total)],
   ]);
-  for (const d of snapshot.disks) {
-    values.set(historyKey.diskRead(d.name), d.readPerSec);
-    values.set(historyKey.diskWrite(d.name), d.writtenPerSec);
-  }
+  const keys = diskKeys(snapshot.disks);
+  snapshot.disks.forEach((d, i) => {
+    const key = keys[i] ?? d.mountPoint;
+    values.set(historyKey.diskRead(key), d.readPerSec);
+    values.set(historyKey.diskWrite(key), d.writtenPerSec);
+  });
   for (const n of snapshot.networks) {
     values.set(historyKey.netReceive(n.name), n.receivedPerSec);
     values.set(historyKey.netTransmit(n.name), n.transmittedPerSec);

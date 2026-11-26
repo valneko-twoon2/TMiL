@@ -59,10 +59,10 @@ mod contract {
         }
     }
 
-    fn disk(name: &str, kind: DiskKind) -> DiskStats {
+    fn disk(name: &str, mount_point: &str, kind: DiskKind) -> DiskStats {
         DiskStats {
             name: name.to_owned(),
-            mount_point: "/".to_owned(),
+            mount_point: mount_point.to_owned(),
             file_system: "ext4".to_owned(),
             kind,
             removable: false,
@@ -92,9 +92,9 @@ mod contract {
                 swap_used: 0,
             },
             disks: vec![
-                disk("nvme0n1", DiskKind::Ssd),
-                disk("sda", DiskKind::Hdd),
-                disk("loop0", DiskKind::Unknown),
+                disk("nvme0n1", "/", DiskKind::Ssd),
+                disk("sda", "/data", DiskKind::Hdd),
+                disk("loop0", "/snap/core", DiskKind::Unknown),
             ],
             networks: vec![NetworkStats {
                 name: "eth0".to_owned(),
