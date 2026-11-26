@@ -36,3 +36,7 @@ Thumbs.db
 # VRT の基準画像は Linux（CI）のものだけを管理する
 tests/vrt/**/*-win32.png
 tests/vrt/**/*-darwin.png
+
+# TLC が書き出すもの
+tests/formal/*_TTrace_*
+tests/formal/states/

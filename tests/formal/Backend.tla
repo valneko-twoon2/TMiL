@@ -11,6 +11,7 @@
 EXTENDS BackendMachine, Naturals
 
 CONSTANTS
+  MStep(_, _),     \* 検査する状態機械（普段は Step。Regressions.tla では不具合を戻した版）
   Pids,            \* PID の集合
   Protected,       \* TMiL 自身とその子孫（WebView など）
   MaxIncarnation   \* PID を使い回す回数の上限（起動のたびに番号が増える）
@@ -81,25 +82,25 @@ Accept(r) ==
   /\ violation' = IF violation = "none" THEN Broken(r) ELSE violation
 
 ShowWindow ==
-  LET r == Step(m, [kind |-> "windowShown"]) IN
+  LET r == MStep(m, [kind |-> "windowShown"]) IN
   Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown>>
 
 HideWindow ==
-  LET r == Step(m, [kind |-> "windowHidden"]) IN
+  LET r == MStep(m, [kind |-> "windowHidden"]) IN
   Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown>>
 
 Quit ==
-  LET r == Step(m, [kind |-> "quitRequested"]) IN
+  LET r == MStep(m, [kind |-> "quitRequested"]) IN
   Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown>>
 
 \* 画面が計測を頼む。古いかどうかは殻が時刻から判断して伝える
 Poll ==
-  LET r == Step(m, [kind |-> "snapshotRequested", stale |-> ~fresh]) IN
+  LET r == MStep(m, [kind |-> "snapshotRequested", stale |-> ~fresh]) IN
   Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown>>
 
 \* 計測が終わる。画面には今のプロセスが出る
 FinishSample ==
-  LET r == Step(m, [kind |-> "sampleFinished"]) IN
+  LET r == MStep(m, [kind |-> "sampleFinished"]) IN
   /\ Accept(r)
   /\ fresh' = TRUE
   /\ shown' = procs
@@ -111,11 +112,11 @@ TimePasses ==
   /\ UNCHANGED <<m, registry, elev, procs, nextInc, shown, violation>>
 
 ObserveReplacement ==
-  LET r == Step(m, [kind |-> "replacementObserved", registry |-> registry]) IN
+  LET r == MStep(m, [kind |-> "replacementObserved", registry |-> registry]) IN
   Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown>>
 
 RequestReplacement(enable) ==
-  LET r == Step(m, [kind |-> "replacementRequested", enable |-> enable]) IN
+  LET r == MStep(m, [kind |-> "replacementRequested", enable |-> enable]) IN
   /\ Accept(r)
   /\ elev' = IF r.effect \in {"startEnable", "startDisable"} THEN "running" ELSE elev
   /\ UNCHANGED <<registry, fresh, procs, nextInc, shown>>
@@ -133,7 +134,7 @@ UacCancels ==
 
 \* 書き込みが終わり、殻が改めて状態を確かめて伝える
 ElevationReturns ==
-  LET r == Step(m, [kind |-> "elevationFinished", registry |-> registry]) IN
+  LET r == MStep(m, [kind |-> "elevationFinished", registry |-> registry]) IN
   /\ elev = "done"
   /\ Accept(r)
   /\ elev' = "idle"
@@ -148,7 +149,7 @@ OtherToolWrites ==
 RequestKill(p) ==
   LET e == [kind |-> "killRequested", exists |-> procs[p] # 0,
             protected |-> p \in Protected, sameStart |-> procs[p] = shown[p]]
-      r == Step(m, e)
+      r == MStep(m, e)
   IN
   /\ shown[p] # 0
   /\ r.ok

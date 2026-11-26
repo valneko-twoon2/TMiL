@@ -72,6 +72,13 @@ if (existsSync(formalDir)) {
       cases.push({ runner: 'tlc', file: `tests/formal/${f}`, path: [name] });
     }
   }
+  // 不具合を戻した版で違反を見つける検査は、1 つの cfg を 1 件と数える
+  const regressionDir = join(formalDir, 'regressions');
+  if (existsSync(regressionDir)) {
+    for (const f of readdirSync(regressionDir).filter((n) => n.endsWith('.cfg'))) {
+      cases.push({ runner: 'tlc', file: 'tests/formal/regressions', path: [f] });
+    }
+  }
 }
 
 // Playwright（E2E モックと VRT）

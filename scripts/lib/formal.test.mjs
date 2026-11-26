@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formalChecks, propertiesInCfg, tlcArgs } from './formal.mjs';
+import { formalChecks, propertiesInCfg, regressionChecks, regressionDetected, tlcArgs } from './formal.mjs';
 
 const CFG = String.raw`\* comment
 CONSTANTS
@@ -19,7 +19,7 @@ describe('formal', () => {
     });
 
     it('TLC に設定ファイルと作業フォルダーを渡す', () => {
-      const args = tlcArgs('t.jar', { module: 'Backend' }, '/tmp/x');
+      const args = tlcArgs('t.jar', { module: 'Backend', config: 'Backend.cfg' }, '/tmp/x');
       expect(args).toContain('tlc2.TLC');
       expect(args.slice(args.indexOf('-config'), args.indexOf('-config') + 2)).toEqual([
         '-config',
@@ -30,6 +30,7 @@ describe('formal', () => {
         '/tmp/x',
       ]);
       expect(args.at(-1)).toBe('Backend');
+      expect(args).toContain('-noGenerateSpecTE');
     });
 
     it('cfg から検査する性質の名前を取り出す', () => {
@@ -41,6 +42,26 @@ describe('formal', () => {
     it('性質が無い cfg は空', () => {
       expect(propertiesInCfg('INIT Init\nNEXT Next\n')).toEqual([]);
       expect(propertiesInCfg('')).toEqual([]);
+    });
+  });
+
+  describe('regression', () => {
+    it('不具合版は違反名ごとに 1 つずつ、Regressions.tla で回す', () => {
+      const checks = regressionChecks();
+      expect(checks.length).toBe(6);
+      expect(new Set(checks.map((c) => c.expect)).size).toBe(checks.length);
+      expect(checks.every((c) => c.module === 'Regressions' && c.config.startsWith('regressions/'))).toBe(
+        true,
+      );
+    });
+
+    it('TLC が失敗し、期待した違反名が反例に出たときだけ合格', () => {
+      const out = String.raw`Error: Invariant Safe is violated.
+/\ violation = "killedProtected"`;
+      expect(regressionDetected(12, out, 'killedProtected')).toBe(true);
+      expect(regressionDetected(0, out, 'killedProtected')).toBe(false);
+      expect(regressionDetected(12, out, 'overlappingSamples')).toBe(false);
+      expect(regressionDetected(12, 'Error: parse error', 'killedProtected')).toBe(false);
     });
   });
 });
