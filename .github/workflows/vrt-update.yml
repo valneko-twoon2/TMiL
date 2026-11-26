@@ -5,6 +5,10 @@ name: VRT 基準画像の更新
 on:
   workflow_dispatch:
 
+concurrency:
+  group: vrt-update
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
