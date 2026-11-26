@@ -19,9 +19,10 @@ fn observed(start_time: u64, protected: bool) -> ObservedProcess {
 fn kill(s: State, observed: Option<ObservedProcess>) -> Option<Transition> {
     step(
         s,
-        &Event::KillRequested {
+        &Event::ProcessActionRequested {
             target: KILL_TARGET,
             observed,
+            action: ProcessAction::Kill,
         },
     )
 }
@@ -95,7 +96,13 @@ mod equivalence {
             Some(observed(KILL_TARGET.start_time, false)),
         )
         .unwrap();
-        assert_eq!(t.effect, Effect::Kill(KILL_TARGET.pid));
+        assert_eq!(
+            t.effect,
+            Effect::Act {
+                pid: KILL_TARGET.pid,
+                action: ProcessAction::Kill
+            }
+        );
         assert_eq!(t.state, State::INITIAL);
     }
 
@@ -205,9 +212,10 @@ mod boundary {
         for event in [
             Event::SnapshotRequested { stale: true },
             Event::ReplacementRequested { enable: true },
-            Event::KillRequested {
+            Event::ProcessActionRequested {
                 target: KILL_TARGET,
                 observed: Some(observed(KILL_TARGET.start_time, false)),
+                action: ProcessAction::Kill,
             },
         ] {
             assert_eq!(
@@ -379,7 +387,14 @@ mod formal {
                 }
             }
             (Effect::Sample, _) => Some("計測の依頼以外で計測した"),
-            (Effect::Kill(pid), Event::KillRequested { target, observed }) => match observed {
+            (
+                Effect::Act { pid, action },
+                Event::ProcessActionRequested {
+                    target,
+                    observed,
+                    action: requested,
+                },
+            ) => match observed {
                 _ if !running => Some("終了中にプロセスを終了した"),
                 None => Some("存在しないプロセスを終了した"),
                 Some(p) if p.protected => Some("守るべきプロセスを終了した"),
@@ -387,9 +402,10 @@ mod formal {
                     Some("入れ替わったプロセスを終了した")
                 }
                 Some(_) if pid != target.pid => Some("頼まれていない PID を終了した"),
+                Some(_) if action != *requested => Some("頼まれていない操作をした"),
                 Some(_) => None,
             },
-            (Effect::Kill(_), _) => Some("終了の依頼以外でプロセスを終了した"),
+            (Effect::Act { .. }, _) => Some("操作の依頼以外でプロセスを操作した"),
             (Effect::ReplacementSucceeded, Event::ElevationFinished(observed)) => {
                 (s.pending.target() != Some(*observed)).then_some("成功していないのに成功とした")
             }
@@ -489,5 +505,49 @@ mod formal {
                 .iter()
                 .all(|r| !tla::registry_tla(*r).is_empty())
         );
+    }
+
+    /// TLA+ ではプロセスへの操作を終了で代表させている。その前提（判断が操作の種類によらない）を
+    /// 全状態 × 観測の全組み合わせ × 全種類の操作で確かめる。
+    #[test]
+    fn process_decision_does_not_depend_on_action() {
+        let actions = [
+            ProcessAction::Kill,
+            ProcessAction::SetPriority(Priority::High),
+            ProcessAction::SetPriority(Priority::Low),
+            ProcessAction::SetAffinity(1),
+            ProcessAction::SetAffinity(u64::MAX),
+        ];
+        let observations = [
+            None,
+            Some(observed(KILL_TARGET.start_time, false)),
+            Some(observed(KILL_TARGET.start_time, true)),
+            Some(observed(KILL_TARGET.start_time + 1, false)),
+        ];
+        let as_kill = |effect: Effect| match effect {
+            Effect::Act { pid, .. } => Effect::Act {
+                pid,
+                action: ProcessAction::Kill,
+            },
+            other => other,
+        };
+        for s in tla::all_states() {
+            for observed in observations {
+                let event = |action| Event::ProcessActionRequested {
+                    target: KILL_TARGET,
+                    observed,
+                    action,
+                };
+                let base = step(s, &event(ProcessAction::Kill)).unwrap();
+                for action in actions {
+                    let t = step(s, &event(action)).unwrap();
+                    assert_eq!(t.state, base.state, "{s:?} {action:?}");
+                    assert_eq!(as_kill(t.effect), base.effect, "{s:?} {action:?}");
+                    if let Effect::Act { action: done, .. } = t.effect {
+                        assert_eq!(done, action, "頼まれた操作と違う");
+                    }
+                }
+            }
+        }
     }
 }

@@ -1,6 +1,6 @@
 use super::*;
 use crate::machine::{Life, Pending, Window};
-use crate::model::KillTarget;
+use crate::model::{KillTarget, Priority};
 use crate::test_support::spawn_sleeper;
 
 fn backend() -> Backend {
@@ -105,6 +105,33 @@ mod equivalence {
     }
 
     #[test]
+    fn lowering_priority_of_child_is_applied() {
+        let mut child = spawn_sleeper();
+        let b = Backend::with_collector(Collector::new().unwrap().without_self_protection());
+        let target = target_of(&b, child.id());
+        // 下げるだけなら、管理者でなくても変えられる
+        let result = b.set_priority(&[target], Priority::BelowNormal).unwrap();
+        let now = Backend::controls(target.pid);
+        let _ = child.kill();
+        let _ = child.wait();
+        assert!(result[0].ok, "{:?}", result[0].error);
+        assert_eq!(now.priority, Some(Priority::BelowNormal));
+    }
+
+    #[test]
+    fn affinity_of_child_is_applied() {
+        let mut child = spawn_sleeper();
+        let b = Backend::with_collector(Collector::new().unwrap().without_self_protection());
+        let target = target_of(&b, child.id());
+        let result = b.set_affinity(&[target], &[0]).unwrap();
+        let now = Backend::controls(target.pid);
+        let _ = child.kill();
+        let _ = child.wait();
+        assert!(result[0].ok, "{:?}", result[0].error);
+        assert_eq!(now.affinity, Some(vec![0]));
+    }
+
+    #[test]
     fn registry_of_maps_status() {
         assert_eq!(registry_of(&status(true, None)), Registry::Replaced);
         assert_eq!(registry_of(&status(false, Some("p"))), Registry::Other);
@@ -150,6 +177,34 @@ mod boundary {
     #[test]
     fn empty_kill_list() {
         assert_eq!(backend().kill(&[]).unwrap(), Vec::new());
+    }
+
+    #[test]
+    fn affinity_without_cpus_is_rejected_before_asking() {
+        let b = backend();
+        assert!(b.set_affinity(&[], &[]).is_err());
+    }
+
+    #[test]
+    fn own_process_priority_is_not_changed() {
+        let b = backend();
+        let target = target_of(&b, std::process::id());
+        let result = b.set_priority(&[target], Priority::Low).unwrap();
+        assert!(!result[0].ok);
+        assert!(
+            result[0]
+                .error
+                .as_deref()
+                .unwrap()
+                .contains("変更できません")
+        );
+    }
+
+    #[test]
+    fn controls_of_missing_process_are_unknown() {
+        let c = Backend::controls(u32::MAX - 1);
+        assert_eq!(c.priority, None);
+        assert_eq!(c.affinity, None);
     }
 
     #[test]

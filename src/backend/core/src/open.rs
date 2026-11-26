@@ -1,8 +1,12 @@
-//! 「ファイルの場所を開く」。実行ファイルを選んだ状態でファイル マネージャーを開く。
+//! ほかのアプリで開く操作。
+//! - 「ファイルの場所を開く」: 実行ファイルを選んだ状態でファイル マネージャーを開く
+//! - 「オンライン検索」: プロセスの名前をブラウザーで検索する
 //!
-//! 状態を持たない操作なので状態機械は通さない。画面から渡された場所は、
-//! 実在するファイルの絶対パスであることを確かめてから使う（ファイル自体は実行しない）。
+//! 状態を持たない操作なので状態機械は通さない。画面から渡された値はそのまま使わない。
+//! 場所は実在するファイルの絶対パスであることを確かめ（ファイル自体は実行しない）、
+//! 検索は決まった検索サイトの URL を組み立て、言葉は URL エンコードしてから渡す。
 
+use std::fmt::Write as _;
 use std::path::Path;
 
 /// 開く前に場所を確かめる（純粋関数。実在の確認は呼び出し側）。
@@ -38,11 +42,65 @@ pub fn reveal(path: &str) -> Result<(), String> {
     if !Path::new(path).is_file() {
         return Err(format!("ファイルが見つかりません: {path}"));
     }
-    open(path)
+    open_location(path)
+}
+
+/// 検索に使うサイト（本家のタスク マネージャーと同じ Bing）。
+pub const SEARCH_URL: &str = "https://www.bing.com/search?q=";
+/// 検索する言葉の長さの上限。
+const MAX_QUERY_CHARS: usize = 200;
+
+/// URL のクエリに入れられるようにする（英数字と `-_.~` 以外はすべて %XX にする）。
+pub fn url_encode(text: &str) -> String {
+    let mut out = String::with_capacity(text.len() * 3);
+    for b in text.bytes() {
+        if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b'~') {
+            out.push(char::from(b));
+        } else {
+            let _ = write!(out, "%{b:02X}");
+        }
+    }
+    out
+}
+
+/// 検索する URL を作る。空や長すぎる言葉は受け付けない。
+pub fn search_url(query: &str) -> Result<String, String> {
+    let query = query.trim();
+    if query.is_empty() {
+        return Err("検索する言葉がありません。".to_owned());
+    }
+    if query.chars().count() > MAX_QUERY_CHARS {
+        return Err("検索する言葉が長すぎます。".to_owned());
+    }
+    Ok(format!("{SEARCH_URL}{}", url_encode(query)))
+}
+
+/// プロセスの名前などをブラウザーで検索する。
+pub fn search_online(query: &str) -> Result<(), String> {
+    open_url(&search_url(query)?)
 }
 
 #[cfg(windows)]
-fn open(path: &str) -> Result<(), String> {
+fn open_url(url: &str) -> Result<(), String> {
+    // URL は search_url が組み立てたもので、空白や引用符を含まない
+    std::process::Command::new("explorer.exe")
+        .arg(url)
+        .status()
+        .map(|_| ())
+        .map_err(|e| format!("ブラウザーを開けません: {e}"))
+}
+
+#[cfg(not(windows))]
+fn open_url(url: &str) -> Result<(), String> {
+    std::process::Command::new("xdg-open")
+        .arg(url)
+        .status()
+        .map(|_| ())
+        .map_err(|e| format!("ブラウザーを開けません（xdg-open が必要です）: {e}"))
+}
+
+#[cfg(windows)]
+fn open_location(path: &str) -> Result<(), String> {
     use std::os::windows::process::CommandExt;
     // explorer は引用符の付け方が独特なので、引数をそのまま渡す（validate で引用符は除いてある）
     std::process::Command::new("explorer.exe")
@@ -53,7 +111,7 @@ fn open(path: &str) -> Result<(), String> {
 }
 
 #[cfg(not(windows))]
-fn open(path: &str) -> Result<(), String> {
+fn open_location(path: &str) -> Result<(), String> {
     // ファイルを開くと実行されうるので、入っているフォルダーを開く
     let dir = Path::new(path)
         .parent()
@@ -88,6 +146,23 @@ mod tests {
         }
 
         #[test]
+        fn search_url_encodes_the_query() {
+            assert_eq!(
+                search_url("chrome.exe").unwrap(),
+                "https://www.bing.com/search?q=chrome.exe"
+            );
+            assert_eq!(
+                search_url("a b&c=\"d\"").unwrap(),
+                "https://www.bing.com/search?q=a%20b%26c%3D%22d%22"
+            );
+        }
+
+        #[test]
+        fn non_ascii_is_percent_encoded_as_utf8() {
+            assert_eq!(url_encode("あ"), "%E3%81%82");
+        }
+
+        #[test]
         fn relative_paths_are_rejected() {
             assert!(validate(r"app.exe").is_err());
             assert!(validate(r"%windir%\system32\a.exe").is_err());
@@ -105,6 +180,19 @@ mod tests {
 
     mod boundary {
         use super::*;
+
+        #[test]
+        fn empty_or_too_long_query_is_rejected() {
+            assert!(search_url("").is_err());
+            assert!(search_url("   ").is_err());
+            assert!(search_url(&"a".repeat(MAX_QUERY_CHARS)).is_ok());
+            assert!(search_url(&"a".repeat(MAX_QUERY_CHARS + 1)).is_err());
+        }
+
+        #[test]
+        fn query_is_trimmed() {
+            assert_eq!(search_url("  x  ").unwrap(), format!("{SEARCH_URL}x"));
+        }
 
         #[test]
         fn empty_path_is_rejected() {

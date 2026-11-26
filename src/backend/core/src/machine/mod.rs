@@ -9,7 +9,7 @@
 
 use std::fmt;
 
-use crate::model::KillTarget;
+use crate::model::{KillTarget, Priority};
 
 #[cfg(test)]
 pub(crate) mod tla;
@@ -100,6 +100,16 @@ pub struct ObservedProcess {
     pub protected: bool,
 }
 
+/// プロセスへの操作。どれも「頼まれたプロセスのままか」「守るべきプロセスでないか」を同じ基準で確かめる。
+/// 判断は操作の種類によらない（TLA+ ではまとめて終了として扱い、Rust のテストで種類によらないことを確かめる）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProcessAction {
+    Kill,
+    SetPriority(Priority),
+    /// 動かしてよい CPU のビットの並び（0 番の CPU が最下位ビット）
+    SetAffinity(u64),
+}
+
 /// 状態機械に伝える出来事。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
@@ -121,10 +131,11 @@ pub enum Event {
     },
     /// 管理者として切り替えを試み終え、改めて状態を確かめた
     ElevationFinished(Registry),
-    /// プロセスの終了を頼まれた。`observed` は今その PID で動いているプロセス
-    KillRequested {
+    /// プロセスへの操作（終了・優先度・関係）を頼まれた。`observed` は今その PID で動いているプロセス
+    ProcessActionRequested {
         target: KillTarget,
         observed: Option<ObservedProcess>,
+        action: ProcessAction,
     },
 }
 
@@ -148,7 +159,7 @@ impl fmt::Display for Rejection {
             Self::Quitting => "終了処理中です。",
             Self::NotFound => "プロセスが見つかりません。すでに終了している可能性があります。",
             Self::Protected => {
-                "TMiL 自身と、TMiL の画面を表示しているプロセスは終了できません。TMiL を終了するときはトレイのメニューを使ってください。"
+                "TMiL 自身と、TMiL の画面を表示しているプロセスは終了・変更できません。TMiL を終了するときはトレイのメニューを使ってください。"
             }
             Self::Replaced => "プロセスが入れ替わっています。一覧を更新してからやり直してください。",
             Self::OtherTool => {
@@ -177,8 +188,11 @@ pub enum Effect {
     },
     ReplacementSucceeded,
     ReplacementFailed,
-    /// この PID のプロセスを終了する
-    Kill(u32),
+    /// この PID のプロセスに操作を行う
+    Act {
+        pid: u32,
+        action: ProcessAction,
+    },
     Reject(Rejection),
 }
 
@@ -241,14 +255,25 @@ fn replacement_request_step(s: State, enable: bool) -> Transition {
     }
 }
 
-fn kill_step(s: State, target: KillTarget, observed: Option<ObservedProcess>) -> Transition {
+fn process_step(
+    s: State,
+    target: KillTarget,
+    observed: Option<ObservedProcess>,
+    action: ProcessAction,
+) -> Transition {
     let reject = |r| to(s, Effect::Reject(r));
     match observed {
         _ if s.life == Life::Quitting => reject(Rejection::Quitting),
         None => reject(Rejection::NotFound),
         Some(p) if p.protected => reject(Rejection::Protected),
         Some(p) if p.start_time != target.start_time => reject(Rejection::Replaced),
-        Some(_) => to(s, Effect::Kill(target.pid)),
+        Some(_) => to(
+            s,
+            Effect::Act {
+                pid: target.pid,
+                action,
+            },
+        ),
     }
 }
 
@@ -307,7 +332,11 @@ pub fn step(s: State, event: &Event) -> Option<Transition> {
                 },
             })
         }
-        Event::KillRequested { target, observed } => Some(kill_step(s, target, observed)),
+        Event::ProcessActionRequested {
+            target,
+            observed,
+            action,
+        } => Some(process_step(s, target, observed, action)),
     }
 }
 

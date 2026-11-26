@@ -6,7 +6,9 @@ pub mod icons;
 pub mod machine;
 pub mod metrics;
 pub mod model;
-pub mod reveal;
+pub mod open;
+pub mod powershell;
+pub mod process_control;
 pub mod startup;
 pub mod taskmgr;
 

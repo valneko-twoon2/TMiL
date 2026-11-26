@@ -37,6 +37,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             commands::set_taskmgr_replacement,
             commands::process_icons,
             commands::reveal_file,
+            commands::set_process_priority,
+            commands::set_process_affinity,
+            commands::process_controls,
+            commands::search_online,
         ])
         .setup(|app| {
             tray::create(app.handle())?;

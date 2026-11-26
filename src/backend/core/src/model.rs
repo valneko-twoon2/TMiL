@@ -121,6 +121,38 @@ pub struct KillTarget {
     pub start_time: u64,
 }
 
+/// プロセスの優先度（Windows の優先度クラスに合わせた 6 段階）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Priority {
+    Realtime,
+    High,
+    AboveNormal,
+    Normal,
+    BelowNormal,
+    Low,
+}
+
+impl Priority {
+    pub const ALL: [Self; 6] = [
+        Self::Realtime,
+        Self::High,
+        Self::AboveNormal,
+        Self::Normal,
+        Self::BelowNormal,
+        Self::Low,
+    ];
+}
+
+/// プロセスの今の優先度と、動かしてよい CPU（取れなければ `None`）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProcessControls {
+    pub priority: Option<Priority>,
+    /// 動かしてよい論理プロセッサの番号（0 から）
+    pub affinity: Option<Vec<u32>>,
+}
+
 /// 変化しないシステム情報。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]

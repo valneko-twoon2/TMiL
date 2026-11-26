@@ -13,9 +13,9 @@ mod contract {
 
     use serde::Serialize;
     use tmil_core::model::{
-        CpuStats, DiskKind, DiskStats, KillResult, KillTarget, MemoryStats, NetworkStats,
-        ProcessIcon, ProcessInfo, ProcessState, ReplacementStatus, Snapshot, StartupEntry,
-        StartupLocation, SystemInfo,
+        CpuStats, DiskKind, DiskStats, KillResult, KillTarget, MemoryStats, NetworkStats, Priority,
+        ProcessControls, ProcessIcon, ProcessInfo, ProcessState, ReplacementStatus, Snapshot,
+        StartupEntry, StartupLocation, SystemInfo,
     };
 
     fn fixtures_dir() -> PathBuf {
@@ -223,5 +223,24 @@ mod contract {
                 },
             ],
         );
+    }
+
+    /// 優先度はすべての値を並べ、フロントと種類が一致するかも確かめる。
+    #[test]
+    fn process_controls() {
+        check(
+            "process-controls",
+            &vec![
+                ProcessControls {
+                    priority: Some(Priority::Normal),
+                    affinity: Some(vec![0, 1, 2, 3]),
+                },
+                ProcessControls {
+                    priority: None,
+                    affinity: None,
+                },
+            ],
+        );
+        check("priorities", &Priority::ALL);
     }
 }

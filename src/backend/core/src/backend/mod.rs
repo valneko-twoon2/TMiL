@@ -1,7 +1,7 @@
 //! 状態機械（[`machine`](crate::machine)）と実際の処理をつなぐ殻。
 //!
 //! 判断はすべて状態機械に任せ、ここでは出来事を伝えて、返ってきた [`Effect`] のとおりに
-//! 計測・プロセス終了・管理者としての切り替えを行うだけにする。
+//! 計測・プロセスへの操作（終了・優先度・関係）・管理者としての切り替えを行うだけにする。
 //!
 //! ロックの順番は「collector → machine」に固定する（machine を持ったまま collector を待たない）。
 //! 計測や UAC の確認の間は machine のロックを手放すので、その間の依頼は状態機械が
@@ -12,8 +12,11 @@ use std::sync::{Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
 use crate::collector::{Collector, CollectorError};
-use crate::machine::{Effect, Event, Machine, Registry, State};
-use crate::model::{KillResult, KillTarget, ReplacementStatus, Snapshot, SystemInfo};
+use crate::machine::{Effect, Event, Machine, ProcessAction, Registry, State};
+use crate::model::{
+    KillResult, KillTarget, Priority, ProcessControls, ReplacementStatus, Snapshot, SystemInfo,
+};
+use crate::process_control;
 
 /// 前回の計測からこれより短い間隔の依頼には、計測し直さず直前の結果を返す。
 /// （短すぎると CPU 使用率や転送量の計算が不安定になる）
@@ -112,7 +115,9 @@ impl Backend {
     /// プロセスを終了する。終了してよいかは 1 つずつ状態機械が決める。
     /// 終了できたプロセスは直前の結果からも除き、次の計測を待たずに一覧から消えるようにする。
     pub fn kill(&self, targets: &[KillTarget]) -> Result<Vec<KillResult>, String> {
-        let results = self.kill_each(targets)?;
+        let results = self.act(targets, ProcessAction::Kill, |_, _| {
+            Err("内部エラー: 終了は collector で行います。".to_owned())
+        })?;
         let killed: Vec<u32> = results.iter().filter(|r| r.ok).map(|r| r.pid).collect();
         if !killed.is_empty()
             && let Some((_, snap)) = lock(&self.cache)?.as_mut()
@@ -123,33 +128,86 @@ impl Backend {
         Ok(results)
     }
 
-    fn kill_each(&self, targets: &[KillTarget]) -> Result<Vec<KillResult>, String> {
-        let mut collector = lock(&self.collector)?;
-        collector.refresh_process_list();
-        targets
-            .iter()
-            .map(|&target| {
+    /// プロセスの優先度を変える。変えてよいかは 1 つずつ状態機械が決める。
+    pub fn set_priority(
+        &self,
+        targets: &[KillTarget],
+        priority: Priority,
+    ) -> Result<Vec<KillResult>, String> {
+        self.act(targets, ProcessAction::SetPriority(priority), |pid, _| {
+            process_control::set_priority(pid, priority)
+        })
+    }
+
+    /// プロセスの関係（動かしてよい CPU）を変える。変えてよいかは 1 つずつ状態機械が決める。
+    pub fn set_affinity(
+        &self,
+        targets: &[KillTarget],
+        cpus: &[u32],
+    ) -> Result<Vec<KillResult>, String> {
+        let mask = process_control::mask_from_cpus(cpus)?;
+        self.act(targets, ProcessAction::SetAffinity(mask), |pid, _| {
+            process_control::set_affinity(pid, mask)
+        })
+    }
+
+    /// 1 つずつ状態機械に聞いてから操作する。
+    /// 終了は collector のロックを持ったまま行う。ほかの操作（PowerShell などで時間がかかる）は
+    /// 計測を止めないよう、判断を済ませてロックを手放してから `apply` で行う。
+    fn act(
+        &self,
+        targets: &[KillTarget],
+        action: ProcessAction,
+        apply: impl Fn(u32, ProcessAction) -> Result<(), String>,
+    ) -> Result<Vec<KillResult>, String> {
+        let result = |pid, outcome: Result<(), String>| KillResult {
+            pid,
+            ok: outcome.is_ok(),
+            error: outcome.err(),
+        };
+        let decided: Vec<(u32, Result<Option<ProcessAction>, String>)> = {
+            let mut collector = lock(&self.collector)?;
+            collector.refresh_process_list();
+            let mut decided = Vec::with_capacity(targets.len());
+            for &target in targets {
                 let observed = collector.observe(target.pid);
-                let effect = self.dispatch(&Event::KillRequested { target, observed })?;
-                let failure = |msg: String| KillResult {
-                    pid: target.pid,
-                    ok: false,
-                    error: Some(msg),
-                };
-                Ok(match effect {
-                    Some(Effect::Kill(pid)) if collector.terminate(pid) => KillResult {
+                let effect = self.dispatch(&Event::ProcessActionRequested {
+                    target,
+                    observed,
+                    action,
+                })?;
+                let outcome = match effect {
+                    Some(Effect::Act {
                         pid,
-                        ok: true,
-                        error: None,
-                    },
-                    Some(Effect::Kill(_)) => {
-                        failure("終了できませんでした。権限が足りない可能性があります。".to_owned())
+                        action: ProcessAction::Kill,
+                    }) => {
+                        if collector.terminate(pid) {
+                            Ok(None)
+                        } else {
+                            Err("終了できませんでした。権限が足りない可能性があります。".to_owned())
+                        }
                     }
-                    Some(Effect::Reject(r)) => failure(r.to_string()),
-                    other => failure(format!("想定しない処理です: {other:?}")),
-                })
+                    Some(Effect::Act { action, .. }) => Ok(Some(action)),
+                    Some(Effect::Reject(r)) => Err(r.to_string()),
+                    other => Err(format!("想定しない処理です: {other:?}")),
+                };
+                decided.push((target.pid, outcome));
+            }
+            decided
+        };
+        Ok(decided
+            .into_iter()
+            .map(|(pid, outcome)| match outcome {
+                Ok(Some(action)) => result(pid, apply(pid, action)),
+                Ok(None) => result(pid, Ok(())),
+                Err(msg) => result(pid, Err(msg)),
             })
-            .collect()
+            .collect())
+    }
+
+    /// 今の優先度と関係（読むだけなので状態機械は通さない）。
+    pub fn controls(pid: u32) -> ProcessControls {
+        process_control::controls(pid)
     }
 
     /// ウィンドウを出した。画面に知らせるべきなら `true`。

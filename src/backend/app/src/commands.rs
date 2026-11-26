@@ -7,9 +7,10 @@ use tauri::{AppHandle, Manager};
 use tmil_core::backend::{Backend, set_replacement_for_exe};
 use tmil_core::icons::{self, IconCache};
 use tmil_core::model::{
-    KillResult, KillTarget, ProcessIcon, ReplacementStatus, Snapshot, StartupEntry, SystemInfo,
+    KillResult, KillTarget, Priority, ProcessControls, ProcessIcon, ReplacementStatus, Snapshot,
+    StartupEntry, SystemInfo,
 };
-use tmil_core::{reveal, startup, taskmgr};
+use tmil_core::{open, startup, taskmgr};
 
 fn current_exe() -> Result<std::path::PathBuf, String> {
     std::env::current_exe().map_err(|e| format!("実行ファイルの場所が分かりません: {e}"))
@@ -44,6 +45,34 @@ pub(crate) async fn kill_processes(
     targets: Vec<KillTarget>,
 ) -> Result<Vec<KillResult>, String> {
     blocking(app, move |b| b.kill(&targets)).await
+}
+
+/// プロセスの優先度を変える。
+#[tauri::command]
+pub(crate) async fn set_process_priority(
+    app: AppHandle,
+    targets: Vec<KillTarget>,
+    priority: Priority,
+) -> Result<Vec<KillResult>, String> {
+    blocking(app, move |b| b.set_priority(&targets, priority)).await
+}
+
+/// プロセスの関係（動かしてよい CPU）を変える。
+#[tauri::command]
+pub(crate) async fn set_process_affinity(
+    app: AppHandle,
+    targets: Vec<KillTarget>,
+    cpus: Vec<u32>,
+) -> Result<Vec<KillResult>, String> {
+    blocking(app, move |b| b.set_affinity(&targets, &cpus)).await
+}
+
+/// プロセスの今の優先度と関係（読むだけなので状態機械は通さない）。
+#[tauri::command]
+pub(crate) async fn process_controls(pid: u32) -> Result<ProcessControls, String> {
+    tauri::async_runtime::spawn_blocking(move || Backend::controls(pid))
+        .await
+        .map_err(|e| format!("処理が中断されました: {e}"))
 }
 
 /// スタートアップ項目の一覧（状態を持たない処理なので状態機械は通さない）。
@@ -95,7 +124,15 @@ pub(crate) async fn process_icons(
 /// ファイルの場所を開く（状態を持たない操作）。
 #[tauri::command]
 pub(crate) async fn reveal_file(path: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || reveal::reveal(&path))
+    tauri::async_runtime::spawn_blocking(move || open::reveal(&path))
+        .await
+        .map_err(|e| format!("処理が中断されました: {e}"))?
+}
+
+/// プロセスの名前などをブラウザーで検索する（状態を持たない操作）。
+#[tauri::command]
+pub(crate) async fn search_online(query: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || open::search_online(&query))
         .await
         .map_err(|e| format!("処理が中断されました: {e}"))?
 }

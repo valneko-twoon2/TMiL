@@ -4,7 +4,8 @@
 use std::fmt::Write as _;
 
 use super::{
-    Effect, Event, Life, ObservedProcess, Pending, Registry, Rejection, State, Window, step,
+    Effect, Event, Life, ObservedProcess, Pending, ProcessAction, Registry, Rejection, State,
+    Window, step,
 };
 use crate::model::KillTarget;
 
@@ -145,9 +146,11 @@ pub(crate) fn all_events() -> Vec<AbstractEvent> {
                         tla_bool(protected),
                         tla_bool(same_start)
                     ),
-                    event: Event::KillRequested {
+                    // 判断は操作の種類によらないので、TLA+ では終了で代表させる
+                    event: Event::ProcessActionRequested {
                         target: KILL_TARGET,
                         observed,
+                        action: ProcessAction::Kill,
                     },
                 });
             }
@@ -191,7 +194,7 @@ pub(crate) fn effect_tla(e: Effect) -> &'static str {
         Effect::StartElevation { enable: false } => "startDisable",
         Effect::ReplacementSucceeded => "replacementOk",
         Effect::ReplacementFailed => "replacementFailed",
-        Effect::Kill(_) => "kill",
+        Effect::Act { .. } => "kill",
         Effect::Reject(Rejection::Hidden) => "rejectHidden",
         Effect::Reject(Rejection::Busy) => "rejectBusy",
         Effect::Reject(Rejection::Quitting) => "rejectQuitting",

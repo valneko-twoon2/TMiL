@@ -67,7 +67,9 @@ ElevationStep(s, registry) ==
             IF registry = Target(s.pending) THEN "replacementOk" ELSE "replacementFailed")
     ELSE NA
 
-\* プロセス終了の依頼: 存在しない・守るべき・入れ替わった ものは断る
+\* プロセスへの操作の依頼: 存在しない・守るべき・入れ替わった ものは断る
+\* Rust では終了・優先度・関係の 3 種類があるが、判断は種類によらないので終了で代表させる
+\* （種類によらないことは Rust の machine::tests::formal が全状態で確かめる）
 KillStep(s, e) ==
   IF s.life = "quitting" THEN To(s, "rejectQuitting")
   ELSE IF ~e.exists THEN To(s, "rejectNotFound")
