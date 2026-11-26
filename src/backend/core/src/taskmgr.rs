@@ -130,18 +130,6 @@ pub fn elevate_script(args: &[String]) -> String {
     )
 }
 
-/// 書き込み後の状態が頼んだ状態になっているかを確かめる。
-pub fn confirm_state(
-    requested: bool,
-    status: ReplacementStatus,
-) -> Result<ReplacementStatus, String> {
-    if status.replaced == requested {
-        Ok(status)
-    } else {
-        Err("設定が反映されませんでした。管理者の確認が取り消された可能性があります。".to_owned())
-    }
-}
-
 /// 現在の状態を返す。
 #[cfg(windows)]
 pub fn status(exe: &Path) -> ReplacementStatus {
@@ -149,9 +137,10 @@ pub fn status(exe: &Path) -> ReplacementStatus {
     evaluate(current.as_deref(), exe)
 }
 
-/// 置き換えを有効・無効にする（UAC の確認が出る）。
+/// 管理者として reg.exe を動かし、置き換えを有効・無効にする（UAC の確認が出る）。
+/// 成功したかどうかの最終判断は、書き込み後の状態を見て状態機械が行う。
 #[cfg(windows)]
-pub fn set(exe: &Path, enable: bool) -> Result<ReplacementStatus, String> {
+pub fn elevate(exe: &Path, enable: bool) -> Result<(), String> {
     let script = elevate_script(&reg_args(enable, exe));
     let output = std::process::Command::new("powershell.exe")
         .args(["-NoProfile", "-NonInteractive", "-Command", &script])
@@ -162,7 +151,7 @@ pub fn set(exe: &Path, enable: bool) -> Result<ReplacementStatus, String> {
             "設定を変更できませんでした（管理者の確認が取り消された可能性があります）。".to_owned(),
         );
     }
-    confirm_state(enable, status(exe))
+    Ok(())
 }
 
 /// Windows 以外では使えない。
@@ -177,7 +166,7 @@ pub fn status(_exe: &Path) -> ReplacementStatus {
 
 /// Windows 以外では使えない。
 #[cfg(not(windows))]
-pub fn set(_exe: &Path, _enable: bool) -> Result<ReplacementStatus, String> {
+pub fn elevate(_exe: &Path, _enable: bool) -> Result<(), String> {
     Err("この機能は Windows でのみ使えます。".to_owned())
 }
 
@@ -246,7 +235,7 @@ mod tests {
         fn status_on_non_windows_is_unsupported() {
             if cfg!(not(windows)) {
                 assert!(!status(&exe()).supported);
-                assert!(set(&exe(), true).is_err());
+                assert!(elevate(&exe(), true).is_err());
             }
         }
     }
@@ -274,17 +263,6 @@ mod tests {
                 script.starts_with("$ErrorActionPreference = 'Stop';"),
                 "{script}"
             );
-        }
-
-        /// 書き込み後の状態が頼んだ状態と違うときは、成功として返さない。
-        #[test]
-        fn confirm_state_rejects_unchanged_state() {
-            let not_replaced = evaluate(None, &exe());
-            assert!(confirm_state(true, not_replaced.clone()).is_err());
-            assert_eq!(confirm_state(false, not_replaced.clone()), Ok(not_replaced));
-            let replaced = evaluate(Some(&debugger_value(&exe())), &exe());
-            assert_eq!(confirm_state(true, replaced.clone()), Ok(replaced.clone()));
-            assert!(confirm_state(false, replaced).is_err());
         }
     }
 

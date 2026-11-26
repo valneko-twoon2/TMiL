@@ -1,8 +1,10 @@
 //! トレイアイコンとウィンドウの表示切り替え。
+//! 表示・非表示・終了は状態機械に伝え、返ってきた判断のとおりに画面へ知らせる。
 
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, Runtime, Window};
+use tmil_core::backend::Backend;
 
 /// 画面の表示状態をフロントへ知らせるイベント名。非表示中は計測を止めてもらう。
 pub(crate) const VISIBILITY_EVENT: &str = "window-visibility";
@@ -22,7 +24,7 @@ pub(crate) fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
             MENU_OPEN => show_main_window(app),
-            MENU_QUIT => app.exit(0),
+            MENU_QUIT => request_quit(app),
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
@@ -49,12 +51,28 @@ pub(crate) fn show_main_window<R: Runtime>(app: &AppHandle<R>) {
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();
-        let _ = app.emit(VISIBILITY_EVENT, true);
+        if app.state::<Backend>().window_shown().unwrap_or(false) {
+            let _ = app.emit(VISIBILITY_EVENT, true);
+        }
     }
 }
 
 /// ウィンドウを隠してトレイに常駐させる。
 pub(crate) fn hide_window<R: Runtime>(window: &Window<R>) {
     let _ = window.hide();
-    let _ = window.emit(VISIBILITY_EVENT, false);
+    if window
+        .app_handle()
+        .state::<Backend>()
+        .window_hidden()
+        .unwrap_or(false)
+    {
+        let _ = window.emit(VISIBILITY_EVENT, false);
+    }
+}
+
+/// 終了する。状態機械が「終了してよい」と判断したときだけ終える。
+fn request_quit<R: Runtime>(app: &AppHandle<R>) {
+    if app.state::<Backend>().quit().unwrap_or(true) {
+        app.exit(0);
+    }
 }

@@ -4,15 +4,8 @@
 mod commands;
 mod tray;
 
-use std::sync::Mutex;
-
 use tauri::WindowEvent;
-use tmil_core::collector::Collector;
-
-/// コマンド間で共有する状態。
-pub(crate) struct AppState {
-    pub(crate) collector: Mutex<Collector>,
-}
+use tmil_core::backend::Backend;
 
 fn main() {
     if let Err(err) = run() {
@@ -25,15 +18,13 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let collector = Collector::new()?;
+    let backend = Backend::new()?;
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             // 2 つ目の起動（タスク マネージャー置き換え経由を含む）は既存のウィンドウを出す
             tray::show_main_window(app);
         }))
-        .manage(AppState {
-            collector: Mutex::new(collector),
-        })
+        .manage(backend)
         .invoke_handler(tauri::generate_handler![
             commands::snapshot,
             commands::system_info,

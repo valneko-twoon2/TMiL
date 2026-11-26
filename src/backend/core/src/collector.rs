@@ -8,10 +8,11 @@ use sysinfo::{
     ProcessStatus, ProcessesToUpdate, RefreshKind, System, UpdateKind, Users,
 };
 
+use crate::machine::ObservedProcess;
 use crate::metrics::{clamp_percent, normalize_cpu, per_second, truncate_chars};
 use crate::model::{
-    CpuStats, DiskKind, DiskStats, KillResult, KillTarget, MemoryStats, NetworkStats, ProcessInfo,
-    ProcessState, Snapshot, SystemInfo,
+    CpuStats, DiskKind, DiskStats, MemoryStats, NetworkStats, ProcessInfo, ProcessState, Snapshot,
+    SystemInfo,
 };
 
 /// コマンドラインを画面に送るときの最大文字数。
@@ -107,15 +108,13 @@ impl Collector {
         }
     }
 
-    /// 指定したプロセスを終了する。TMiL 自身とその子孫、起動時刻が合わないプロセスは終了しない。
-    pub fn kill(&mut self, targets: &[KillTarget]) -> Vec<KillResult> {
-        // 親子関係を確かめるため、全プロセスの一覧を最新にする
+    /// 親子関係を確かめるため、全プロセスの一覧を最新にする（終了の前に呼ぶ）。
+    pub fn refresh_process_list(&mut self) {
         self.system.refresh_processes_specifics(
             ProcessesToUpdate::All,
             true,
             ProcessRefreshKind::nothing(),
         );
-        targets.iter().map(|&t| self.kill_one(t)).collect()
     }
 
     fn parent_of(&self, pid: u32) -> Option<u32> {
@@ -125,32 +124,29 @@ impl Collector {
             .map(Pid::as_u32)
     }
 
-    fn kill_one(&self, target: KillTarget) -> KillResult {
-        let pid = target.pid;
-        let fail = |msg: &str| KillResult {
-            pid,
-            ok: false,
-            error: Some(msg.to_owned()),
-        };
-        if let Some(root) = self.protected_root
-            && is_self_or_descendant(pid, root, |p| self.parent_of(p))
-        {
-            return fail(
-                "TMiL 自身と、TMiL の画面を表示しているプロセスは終了できません。TMiL を終了するときはトレイのメニューを使ってください。",
-            );
-        }
-        match self.system.process(Pid::from_u32(pid)) {
-            None => fail("プロセスが見つかりません。すでに終了している可能性があります。"),
-            Some(process) if process.start_time() != target.start_time => {
-                fail("プロセスが入れ替わっています。一覧を更新してからやり直してください。")
-            }
-            Some(process) if process.kill() => KillResult {
-                pid,
-                ok: true,
-                error: None,
-            },
-            Some(_) => fail("終了できませんでした。権限が足りない可能性があります。"),
-        }
+    /// 今その PID で動いているプロセスの様子。終了してよいかは状態機械が決める。
+    pub fn observe(&self, pid: u32) -> Option<ObservedProcess> {
+        let process = self.system.process(Pid::from_u32(pid))?;
+        Some(ObservedProcess {
+            start_time: process.start_time(),
+            protected: self
+                .protected_root
+                .is_some_and(|root| is_self_or_descendant(pid, root, |p| self.parent_of(p))),
+        })
+    }
+
+    /// プロセスを終了する。終了できたか（権限が足りなければ false）を返す。
+    pub fn terminate(&self, pid: u32) -> bool {
+        self.system
+            .process(Pid::from_u32(pid))
+            .is_some_and(sysinfo::Process::kill)
+    }
+
+    /// テスト用: 自分の子孫を守る仕組みを外す（子プロセスを終了させて確かめるため）。
+    #[cfg(test)]
+    pub(crate) fn without_self_protection(mut self) -> Self {
+        self.protected_root = None;
+        self
     }
 
     fn refresh(&mut self) {
@@ -420,7 +416,7 @@ mod tests {
     /// 実際の OS から値を取って、取りうる範囲に収まっているかを見る。
     mod system {
         use super::*;
-        use std::process::{Command, Stdio};
+        use crate::test_support::spawn_sleeper;
 
         fn collector() -> Collector {
             Collector::new().expect("collector")
@@ -465,108 +461,47 @@ mod tests {
             assert!(info.physical_cores.is_none_or(|p| p >= 1));
         }
 
-        fn spawn_sleeper() -> std::process::Child {
-            if cfg!(windows) {
-                Command::new("ping")
-                    .args(["-n", "30", "127.0.0.1"])
-                    .stdout(Stdio::null())
-                    .spawn()
-            } else {
-                Command::new("sleep").arg("30").spawn()
-            }
-            .expect("spawn child")
-        }
-
-        /// 一覧に出ている子プロセスの終了指定（起動時刻つき）を作る。
-        fn target_of(c: &mut Collector, pid: u32) -> KillTarget {
-            let snap = c.snapshot();
-            let p = snap
-                .processes
-                .iter()
-                .find(|p| p.pid == pid)
-                .expect("child in list");
-            KillTarget {
-                pid,
-                start_time: p.start_time,
-            }
-        }
-
         #[test]
-        fn kill_terminates_child_process() {
+        fn own_process_and_children_are_protected() {
             let mut child = spawn_sleeper();
             let mut c = collector();
-            // テストでは子プロセスを終了させたいので、自分の子孫を守る仕組みを外す
-            c.protected_root = None;
-            let target = target_of(&mut c, child.id());
-            let result = c.kill(&[target]);
-            assert_eq!(result.len(), 1);
-            assert!(result[0].ok, "{:?}", result[0].error);
-            let status = child.wait().expect("wait child");
-            assert!(!status.success());
+            c.refresh_process_list();
+            let me = c.observe(std::process::id()).expect("self");
+            let kid = c.observe(child.id()).expect("child");
+            let _ = child.kill();
+            let _ = child.wait();
+            assert!(me.protected);
+            assert!(kid.protected, "子プロセスも守る");
         }
 
         #[test]
-        fn kill_refuses_own_process() {
+        fn observe_reports_start_time_from_snapshot() {
             let mut c = collector();
-            let me = std::process::id();
-            let target = target_of(&mut c, me);
-            let result = c.kill(&[target]);
-            assert!(!result[0].ok);
-            assert!(result[0].error.as_deref().unwrap().contains("TMiL"));
+            let snap = c.snapshot();
+            let me = snap
+                .processes
+                .iter()
+                .find(|p| p.pid == std::process::id())
+                .unwrap();
+            assert_eq!(c.observe(me.pid).unwrap().start_time, me.start_time);
         }
 
         #[test]
-        fn kill_unknown_pid_reports_error() {
+        fn without_protection_children_are_not_protected_and_can_be_terminated() {
+            let mut child = spawn_sleeper();
+            let mut c = collector().without_self_protection();
+            c.refresh_process_list();
+            assert!(!c.observe(child.id()).expect("child").protected);
+            assert!(c.terminate(child.id()));
+            assert!(!child.wait().expect("wait").success());
+        }
+
+        #[test]
+        fn unknown_pid_is_not_observed_or_terminated() {
             let mut c = collector();
-            let result = c.kill(&[KillTarget {
-                pid: u32::MAX - 1,
-                start_time: 0,
-            }]);
-            assert!(!result[0].ok);
-            assert!(result[0].error.is_some());
-        }
-
-        #[test]
-        fn kill_empty_list_returns_empty() {
-            assert_eq!(collector().kill(&[]), Vec::new());
-        }
-
-        mod regression {
-            use super::*;
-
-            /// TMiL の WebView など、自分の子プロセスまで終了できてしまい画面が落ちていた。
-            #[test]
-            fn kill_refuses_own_child_process() {
-                let mut child = spawn_sleeper();
-                let mut c = collector();
-                let target = target_of(&mut c, child.id());
-                let result = c.kill(&[target]);
-                let alive = child.try_wait().expect("try_wait").is_none();
-                let _ = child.kill();
-                let _ = child.wait();
-                assert!(!result[0].ok);
-                assert!(alive, "子プロセスが終了されている");
-            }
-
-            /// 一覧が古いと、PID が再利用された別のプロセスを終了しうる。起動時刻が違えば終了しない。
-            #[test]
-            fn kill_refuses_when_start_time_differs() {
-                let mut child = spawn_sleeper();
-                let mut c = collector();
-                c.protected_root = None;
-                let target = target_of(&mut c, child.id());
-                let stale = KillTarget {
-                    start_time: target.start_time + 1,
-                    ..target
-                };
-                let result = c.kill(&[stale]);
-                let alive = child.try_wait().expect("try_wait").is_none();
-                let _ = child.kill();
-                let _ = child.wait();
-                assert!(!result[0].ok);
-                assert!(result[0].error.as_deref().unwrap().contains("入れ替わって"));
-                assert!(alive, "別のプロセスとみなして終了してはいけない");
-            }
+            c.refresh_process_list();
+            assert_eq!(c.observe(u32::MAX - 1), None);
+            assert!(!c.terminate(u32::MAX - 1));
         }
     }
 }
