@@ -40,6 +40,19 @@ KillProtectedStep(s, e) ==
     THEN To(s, "kill")
     ELSE Step(s, e)
 
+\* 別のアプリの置き換えを確認なしで上書きし、「元に戻す」で消していた
+OverwroteOtherToolStep(s, e) ==
+  IF e.kind = "replacementRequested" /\ Running(s) /\ s.pending = "idle"
+    THEN To([s EXCEPT !.pending = IF e.enable THEN "enable" ELSE "disable"],
+            IF e.enable THEN "startEnable" ELSE "startDisable")
+    ELSE Step(s, e)
+
+\* 計測に失敗しても「直前の結果あり」になり、無い結果を返そうとしていた
+CachedOnFailureStep(s, e) ==
+  IF e.kind = "sampleFinished" /\ s.sampling
+    THEN To([s EXCEPT !.sampling = FALSE, !.cached = TRUE], "nothing")
+    ELSE Step(s, e)
+
 \* PID が再利用された別のプロセスを終了しうる
 KillReusedPidStep(s, e) ==
   IF e.kind = "killRequested" /\ Running(s) /\ e.exists /\ ~e.protected

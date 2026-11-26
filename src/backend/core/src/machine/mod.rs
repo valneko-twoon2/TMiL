@@ -110,7 +110,10 @@ pub enum Event {
     SnapshotRequested {
         stale: bool,
     },
-    SampleFinished,
+    /// 計測が終わった。`ok` は結果を取れて保存できたか
+    SampleFinished {
+        ok: bool,
+    },
     /// 置き換えの状態を確かめた
     ReplacementObserved(Registry),
     ReplacementRequested {
@@ -134,6 +137,7 @@ pub enum Rejection {
     NotFound,
     Protected,
     Replaced,
+    OtherTool,
 }
 
 impl fmt::Display for Rejection {
@@ -147,6 +151,9 @@ impl fmt::Display for Rejection {
                 "TMiL 自身と、TMiL の画面を表示しているプロセスは終了できません。TMiL を終了するときはトレイのメニューを使ってください。"
             }
             Self::Replaced => "プロセスが入れ替わっています。一覧を更新してからやり直してください。",
+            Self::OtherTool => {
+                "別のアプリがタスク マネージャーを置き換えています。そのアプリ側で解除してから切り替えてください。"
+            }
         })
     }
 }
@@ -221,6 +228,9 @@ fn replacement_request_step(s: State, enable: bool) -> Transition {
         to(s, Effect::Reject(Rejection::Quitting))
     } else if s.pending != Pending::Idle {
         to(s, Effect::Reject(Rejection::Busy))
+    } else if s.registry == Registry::Other {
+        // 別のアプリの設定は上書きも削除もしない
+        to(s, Effect::Reject(Rejection::OtherTool))
     } else {
         let pending = if enable {
             Pending::Enable
@@ -267,10 +277,10 @@ pub fn step(s: State, event: &Event) -> Option<Transition> {
             effect: Effect::Exit,
         }),
         Event::SnapshotRequested { stale } => Some(snapshot_step(s, stale)),
-        Event::SampleFinished => s.sampling.then_some(Transition {
+        Event::SampleFinished { ok } => s.sampling.then_some(Transition {
             state: State {
                 sampling: false,
-                cached: true,
+                cached: s.cached || ok,
                 ..s
             },
             effect: Effect::Nothing,

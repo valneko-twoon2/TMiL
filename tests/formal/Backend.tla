@@ -26,15 +26,17 @@ VARIABLES
   procs,      \* PID ごとに今動いているプロセスの番号（0 = 無い）
   nextInc,    \* 次に起動するプロセスの番号
   shown,      \* 画面の一覧に出ているプロセスの番号（0 = 出ていない）
+  cacheExists, \* 殻が直前の計測結果を実際に持っているか
   violation   \* 破った約束の名前（"none" = 破っていない）
 
-vars == <<m, registry, elev, fresh, procs, nextInc, shown, violation>>
+vars == <<m, registry, elev, fresh, procs, nextInc, shown, cacheExists, violation>>
 
 ActualRegistries == {"none", "tmil", "other"}
 
 Violations ==
   {"none", "sampledWhileHiddenOrQuitting", "overlappingSamples", "resampledTooSoon",
    "falseReplacementSuccess", "overlappingElevation", "actedWhileQuitting",
+   "overwroteOtherTool", "servedMissingCache",
    "killedProtected", "killedReplacedProcess", "killedMissingProcess"}
 
 TypeOK ==
@@ -45,6 +47,7 @@ TypeOK ==
   /\ procs \in [Pids -> 0..MaxIncarnation]
   /\ nextInc \in 2..(MaxIncarnation + 1)
   /\ shown \in [Pids -> 0..MaxIncarnation]
+  /\ cacheExists \in BOOLEAN
   /\ violation \in Violations
 
 Init ==
@@ -55,6 +58,7 @@ Init ==
   /\ procs = [p \in Pids |-> 1]
   /\ nextInc = 2
   /\ shown = [p \in Pids |-> 0]
+  /\ cacheExists = FALSE
   /\ violation = "none"
 
 (***************************************************************************)
@@ -62,16 +66,19 @@ Init ==
 (* これまでに直した不具合（グラフが跳ねる、UAC の取り消しが成功扱い、など）*)
 (* がそれぞれの約束に当たる。                                              *)
 (***************************************************************************)
-Broken(r) ==
-  IF r.effect = "sample" /\ (m.window # "visible" \/ m.life # "running")
+Broken(s, r) ==
+  IF r.effect = "sample" /\ (s.window # "visible" \/ s.life # "running")
     THEN "sampledWhileHiddenOrQuitting"
-  ELSE IF r.effect = "sample" /\ m.sampling THEN "overlappingSamples"
-  ELSE IF r.effect = "sample" /\ m.cached /\ fresh THEN "resampledTooSoon"
-  ELSE IF r.effect = "replacementOk" /\ registry # Target(m.pending)
+  ELSE IF r.effect = "sample" /\ s.sampling THEN "overlappingSamples"
+  ELSE IF r.effect = "sample" /\ s.cached /\ fresh THEN "resampledTooSoon"
+  ELSE IF r.effect = "serveCached" /\ ~cacheExists THEN "servedMissingCache"
+  ELSE IF r.effect = "replacementOk" /\ registry # Target(s.pending)
     THEN "falseReplacementSuccess"
-  ELSE IF r.effect \in {"startEnable", "startDisable"} /\ (elev # "idle" \/ m.pending # "idle")
+  ELSE IF r.effect \in {"startEnable", "startDisable"} /\ s.registry = "other"
+    THEN "overwroteOtherTool"
+  ELSE IF r.effect \in {"startEnable", "startDisable"} /\ (elev # "idle" \/ s.pending # "idle")
     THEN "overlappingElevation"
-  ELSE IF m.life = "quitting" /\ r.effect \in {"sample", "kill", "startEnable", "startDisable"}
+  ELSE IF s.life = "quitting" /\ r.effect \in {"sample", "kill", "startEnable", "startDisable"}
     THEN "actedWhileQuitting"
   ELSE "none"
 
@@ -79,58 +86,66 @@ Broken(r) ==
 Accept(r) ==
   /\ r.ok
   /\ m' = r.state
-  /\ violation' = IF violation = "none" THEN Broken(r) ELSE violation
+  /\ violation' = IF violation = "none" THEN Broken(m, r) ELSE violation
 
 ShowWindow ==
   LET r == MStep(m, [kind |-> "windowShown"]) IN
-  Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown>>
+  Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown, cacheExists>>
 
 HideWindow ==
   LET r == MStep(m, [kind |-> "windowHidden"]) IN
-  Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown>>
+  Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown, cacheExists>>
 
 Quit ==
   LET r == MStep(m, [kind |-> "quitRequested"]) IN
-  Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown>>
+  Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown, cacheExists>>
 
 \* 画面が計測を頼む。古いかどうかは殻が時刻から判断して伝える
 Poll ==
   LET r == MStep(m, [kind |-> "snapshotRequested", stale |-> ~fresh]) IN
-  Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown>>
+  Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown, cacheExists>>
 
-\* 計測が終わる。画面には今のプロセスが出る
+\* 計測が終わる。成功すれば結果が保存され、画面には今のプロセスが出る（失敗もありうる）
 FinishSample ==
-  LET r == MStep(m, [kind |-> "sampleFinished"]) IN
-  /\ Accept(r)
-  /\ fresh' = TRUE
-  /\ shown' = procs
-  /\ UNCHANGED <<registry, elev, procs, nextInc>>
+  \E ok \in BOOLEAN :
+    LET r == MStep(m, [kind |-> "sampleFinished", ok |-> ok]) IN
+    /\ Accept(r)
+    /\ cacheExists' = (cacheExists \/ ok)
+    /\ fresh' = (fresh \/ ok)
+    /\ shown' = IF ok THEN procs ELSE shown
+    /\ UNCHANGED <<registry, elev, procs, nextInc>>
 
 TimePasses ==
   /\ fresh
   /\ fresh' = FALSE
-  /\ UNCHANGED <<m, registry, elev, procs, nextInc, shown, violation>>
+  /\ UNCHANGED <<m, registry, elev, procs, nextInc, shown, cacheExists, violation>>
 
 ObserveReplacement ==
   LET r == MStep(m, [kind |-> "replacementObserved", registry |-> registry]) IN
-  Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown>>
+  Accept(r) /\ UNCHANGED <<registry, elev, fresh, procs, nextInc, shown, cacheExists>>
 
+\* 殻は頼む直前に置き換えの状態を確かめてから依頼する（2 つの出来事を続けて伝える）
 RequestReplacement(enable) ==
-  LET r == MStep(m, [kind |-> "replacementRequested", enable |-> enable]) IN
-  /\ Accept(r)
+  LET obs == MStep(m, [kind |-> "replacementObserved", registry |-> registry])
+      s1  == IF obs.ok THEN obs.state ELSE m
+      r   == MStep(s1, [kind |-> "replacementRequested", enable |-> enable])
+  IN
+  /\ r.ok
+  /\ m' = r.state
+  /\ violation' = IF violation = "none" THEN Broken(s1, r) ELSE violation
   /\ elev' = IF r.effect \in {"startEnable", "startDisable"} THEN "running" ELSE elev
-  /\ UNCHANGED <<registry, fresh, procs, nextInc, shown>>
+  /\ UNCHANGED <<registry, fresh, procs, nextInc, shown, cacheExists>>
 
 UacApproves ==
   /\ elev = "running"
   /\ registry' = Target(m.pending)
   /\ elev' = "done"
-  /\ UNCHANGED <<m, fresh, procs, nextInc, shown, violation>>
+  /\ UNCHANGED <<m, fresh, procs, nextInc, shown, cacheExists, violation>>
 
 UacCancels ==
   /\ elev = "running"
   /\ elev' = "done"
-  /\ UNCHANGED <<m, registry, fresh, procs, nextInc, shown, violation>>
+  /\ UNCHANGED <<m, registry, fresh, procs, nextInc, shown, cacheExists, violation>>
 
 \* 書き込みが終わり、殻が改めて状態を確かめて伝える
 ElevationReturns ==
@@ -138,12 +153,12 @@ ElevationReturns ==
   /\ elev = "done"
   /\ Accept(r)
   /\ elev' = "idle"
-  /\ UNCHANGED <<registry, fresh, procs, nextInc, shown>>
+  /\ UNCHANGED <<registry, fresh, procs, nextInc, shown, cacheExists>>
 
 \* 他のツール（Process Explorer など）が置き換えの設定を書き換える
 OtherToolWrites ==
   /\ registry' \in {"none", "other"} \ {registry}
-  /\ UNCHANGED <<m, elev, fresh, procs, nextInc, shown, violation>>
+  /\ UNCHANGED <<m, elev, fresh, procs, nextInc, shown, cacheExists, violation>>
 
 \* 利用者が、画面の一覧に出ているプロセスの終了を頼む
 RequestKill(p) ==
@@ -161,17 +176,17 @@ RequestKill(p) ==
                  ELSE IF p \in Protected THEN "killedProtected"
                  ELSE IF procs[p] = 0 THEN "killedMissingProcess"
                  ELSE IF procs[p] # shown[p] THEN "killedReplacedProcess"
-                 ELSE Broken(r)
+                 ELSE Broken(m, r)
        ELSE /\ procs' = procs
-            /\ violation' = IF violation = "none" THEN Broken(r) ELSE violation
-  /\ UNCHANGED <<registry, elev, fresh, nextInc, shown>>
+            /\ violation' = IF violation = "none" THEN Broken(m, r) ELSE violation
+  /\ UNCHANGED <<registry, elev, fresh, nextInc, shown, cacheExists>>
 
 \* OS がプロセスを終了させる（TMiL 自身とその子孫は動き続ける）
 ProcessExits(p) ==
   /\ p \notin Protected
   /\ procs[p] # 0
   /\ procs' = [procs EXCEPT ![p] = 0]
-  /\ UNCHANGED <<m, registry, elev, fresh, nextInc, shown, violation>>
+  /\ UNCHANGED <<m, registry, elev, fresh, nextInc, shown, cacheExists, violation>>
 
 \* OS が同じ PID で別のプロセスを起動する
 ProcessStarts(p) ==
@@ -180,7 +195,7 @@ ProcessStarts(p) ==
   /\ nextInc <= MaxIncarnation
   /\ procs' = [procs EXCEPT ![p] = nextInc]
   /\ nextInc' = nextInc + 1
-  /\ UNCHANGED <<m, registry, elev, fresh, shown, violation>>
+  /\ UNCHANGED <<m, registry, elev, fresh, shown, cacheExists, violation>>
 
 Next ==
   \/ ShowWindow \/ HideWindow \/ Quit
@@ -203,6 +218,9 @@ Spec ==
 
 \* 約束を 1 つも破らない
 Safe == violation = "none"
+
+\* 状態機械が「直前の結果あり」と思っているのは、殻が実際に持っているときだけ
+CacheBeliefCorrect == m.cached = cacheExists
 
 \* 書き込みが動いているのは、状態機械が切り替え中のときだけ
 ElevationConsistent == (elev = "idle") <=> (m.pending = "idle")

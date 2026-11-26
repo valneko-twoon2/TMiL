@@ -20,6 +20,8 @@ export function regressionChecks() {
     { config: 'regressions/false-replacement-success.cfg', expect: 'falseReplacementSuccess' },
     { config: 'regressions/killed-protected.cfg', expect: 'killedProtected' },
     { config: 'regressions/killed-reused-pid.cfg', expect: 'killedReplacedProcess' },
+    { config: 'regressions/overwrote-other-tool.cfg', expect: 'overwroteOtherTool' },
+    { config: 'regressions/cached-on-failure.cfg', expect: 'servedMissingCache' },
   ].map((c) => ({ ...c, module: 'Regressions', label: `不具合版で ${c.expect} を見つける` }));
 }
 

@@ -88,11 +88,14 @@ impl Backend {
             Some(Effect::Sample) => {
                 // machine のロックは手放してから計測する
                 let sampled = lock(&self.collector).map(|mut c| c.snapshot());
-                if let Ok(snap) = &sampled {
-                    *lock(&self.cache)? = Some((Instant::now(), snap.clone()));
-                }
-                // 計測に失敗しても「計測中」は必ず終わらせる
-                self.dispatch(&Event::SampleFinished)?;
+                let saved = sampled.as_ref().is_ok_and(|snap| {
+                    lock(&self.cache).is_ok_and(|mut cache| {
+                        *cache = Some((Instant::now(), snap.clone()));
+                        true
+                    })
+                });
+                // 計測や保存に失敗しても「計測中」は必ず終わらせ、成否を伝える
+                self.dispatch(&Event::SampleFinished { ok: saved })?;
                 sampled
             }
             Some(Effect::ServeCached) => self.cached(),
@@ -107,7 +110,20 @@ impl Backend {
     }
 
     /// プロセスを終了する。終了してよいかは 1 つずつ状態機械が決める。
+    /// 終了できたプロセスは直前の結果からも除き、次の計測を待たずに一覧から消えるようにする。
     pub fn kill(&self, targets: &[KillTarget]) -> Result<Vec<KillResult>, String> {
+        let results = self.kill_each(targets)?;
+        let killed: Vec<u32> = results.iter().filter(|r| r.ok).map(|r| r.pid).collect();
+        if !killed.is_empty()
+            && let Some((_, snap)) = lock(&self.cache)?.as_mut()
+        {
+            snap.processes.retain(|p| !killed.contains(&p.pid));
+            snap.cpu.process_count = snap.processes.len();
+        }
+        Ok(results)
+    }
+
+    fn kill_each(&self, targets: &[KillTarget]) -> Result<Vec<KillResult>, String> {
         let mut collector = lock(&self.collector)?;
         collector.refresh_process_list();
         targets
@@ -174,13 +190,15 @@ impl Backend {
     }
 
     /// 置き換えを切り替える。`elevate` は管理者としての書き込み（UAC の確認が出る）、
-    /// `observe` はその後の状態の確認。どちらも machine のロックを持たずに呼ぶ。
+    /// `observe` は状態の確認（書き込みの前後に呼ぶ）。どちらも machine のロックを持たずに呼ぶ。
     pub fn set_replacement(
         &self,
         enable: bool,
         elevate: impl FnOnce(bool) -> Result<(), String>,
-        observe: impl FnOnce() -> ReplacementStatus,
+        observe: impl Fn() -> ReplacementStatus,
     ) -> Result<ReplacementStatus, String> {
+        // 別のアプリが置き換えていないかを、頼む直前に確かめる（状態機械が判断する）
+        self.dispatch(&Event::ReplacementObserved(registry_of(&observe())))?;
         match self.dispatch(&Event::ReplacementRequested { enable })? {
             Some(Effect::StartElevation { .. }) => {}
             Some(Effect::Reject(r)) => return Err(r.to_string()),

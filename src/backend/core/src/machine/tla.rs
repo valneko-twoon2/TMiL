@@ -78,14 +78,19 @@ fn simple(kind: &str, event: Event) -> AbstractEvent {
     }
 }
 
-/// 全出来事（24 通り）。プロセス終了は「存在するか・守るべきか・起動時刻が同じか」で分ける。
+/// 全出来事（25 通り）。プロセス終了は「存在するか・守るべきか・起動時刻が同じか」で分ける。
 pub(crate) fn all_events() -> Vec<AbstractEvent> {
     let mut out = vec![
         simple("windowShown", Event::WindowShown),
         simple("windowHidden", Event::WindowHidden),
         simple("quitRequested", Event::QuitRequested),
-        simple("sampleFinished", Event::SampleFinished),
     ];
+    for ok in BOOLS {
+        out.push(AbstractEvent {
+            tla: format!(r#"[kind |-> "sampleFinished", ok |-> {}]"#, tla_bool(ok)),
+            event: Event::SampleFinished { ok },
+        });
+    }
     for stale in BOOLS {
         out.push(AbstractEvent {
             tla: format!(
@@ -193,11 +198,12 @@ pub(crate) fn effect_tla(e: Effect) -> &'static str {
         Effect::Reject(Rejection::NotFound) => "rejectNotFound",
         Effect::Reject(Rejection::Protected) => "rejectProtected",
         Effect::Reject(Rejection::Replaced) => "rejectReplaced",
+        Effect::Reject(Rejection::OtherTool) => "rejectOtherTool",
     }
 }
 
 /// 全ての「行うこと」の名前（遷移表の番号の並び）。
-pub(crate) const EFFECTS: [&str; 17] = [
+pub(crate) const EFFECTS: [&str; 18] = [
     "nothing",
     "sample",
     "serveCached",
@@ -215,6 +221,7 @@ pub(crate) const EFFECTS: [&str; 17] = [
     "rejectNotFound",
     "rejectProtected",
     "rejectReplaced",
+    "rejectOtherTool",
 ];
 
 fn sequence(items: &[String]) -> String {

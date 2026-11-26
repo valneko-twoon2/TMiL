@@ -44,7 +44,7 @@ mod equivalence {
         let t = step(State::INITIAL, &Event::SnapshotRequested { stale: true }).unwrap();
         assert_eq!(t.effect, Effect::Sample);
         assert!(t.state.sampling);
-        let done = step(t.state, &Event::SampleFinished).unwrap();
+        let done = step(t.state, &Event::SampleFinished { ok: true }).unwrap();
         assert!(!done.state.sampling);
         assert!(done.state.cached);
     }
@@ -127,6 +127,7 @@ mod equivalence {
             Rejection::NotFound,
             Rejection::Protected,
             Rejection::Replaced,
+            Rejection::OtherTool,
         ] {
             assert!(r.to_string().ends_with('。'), "{r:?}");
         }
@@ -139,7 +140,10 @@ mod boundary {
     #[test]
     fn events_that_do_not_apply_are_ignored() {
         assert_eq!(step(State::INITIAL, &Event::WindowShown), None);
-        assert_eq!(step(State::INITIAL, &Event::SampleFinished), None);
+        assert_eq!(
+            step(State::INITIAL, &Event::SampleFinished { ok: true }),
+            None
+        );
         assert_eq!(
             step(
                 State::INITIAL,
@@ -303,6 +307,38 @@ mod regression {
         assert_eq!(again.state.pending, Pending::Enable);
     }
 
+    /// 計測に失敗しても「直前の結果あり」になり、無い結果を返そうとしていた。
+    #[test]
+    fn failed_sample_does_not_mark_cache() {
+        let sampling = State {
+            sampling: true,
+            ..State::INITIAL
+        };
+        let t = step(sampling, &Event::SampleFinished { ok: false }).unwrap();
+        assert!(!t.state.sampling);
+        assert!(!t.state.cached);
+        let cached = State {
+            cached: true,
+            ..sampling
+        };
+        let t = step(cached, &Event::SampleFinished { ok: false }).unwrap();
+        assert!(t.state.cached, "前の結果は残っている");
+    }
+
+    /// 別のツールの置き換えを確認なしで上書きし、「元に戻す」で消していた。
+    #[test]
+    fn other_tools_replacement_is_left_alone() {
+        let other = State {
+            registry: Registry::Other,
+            ..State::INITIAL
+        };
+        for enable in [true, false] {
+            let t = step(other, &Event::ReplacementRequested { enable }).unwrap();
+            assert_eq!(t.effect, Effect::Reject(Rejection::OtherTool));
+            assert_eq!(t.state.pending, Pending::Idle);
+        }
+    }
+
     /// TMiL 自身の WebView まで終了できてしまい、画面が落ちていた。
     #[test]
     fn protected_process_is_never_killed() {
@@ -357,8 +393,12 @@ mod formal {
             (Effect::ReplacementSucceeded, Event::ElevationFinished(observed)) => {
                 (s.pending.target() != Some(*observed)).then_some("成功していないのに成功とした")
             }
+            (Effect::StartElevation { .. }, _) if s.registry == Registry::Other => {
+                Some("別のアプリの置き換えを書き換えた")
+            }
             (Effect::StartElevation { .. }, _) => (!running || s.pending != Pending::Idle)
                 .then_some("切り替えを重ねた・終了中に始めた"),
+            (Effect::ServeCached, _) if !s.cached => Some("無い結果を返した"),
             _ => None,
         }
     }
@@ -402,8 +442,19 @@ mod formal {
                 }
             }
         }
-        // registry = unknown のまま切り替え中、なども含めて全 192 通りに届く
-        assert_eq!(seen.len(), tla::all_states().len());
+        // 別のアプリが置き換えている（other）と分かっている間は切り替えを始めないので、
+        // 「other かつ切り替え中」の 32 通りにだけは届かない。それ以外の 160 通りには届く
+        let unreachable: Vec<State> = tla::all_states()
+            .into_iter()
+            .filter(|s| !seen.contains(s))
+            .collect();
+        assert!(
+            unreachable
+                .iter()
+                .all(|s| s.registry == Registry::Other && s.pending != Pending::Idle),
+            "{unreachable:?}"
+        );
+        assert_eq!(unreachable.len(), 32);
     }
 
     #[test]

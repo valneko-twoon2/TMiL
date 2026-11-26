@@ -234,4 +234,35 @@ mod regression {
         let result = b.kill(&[target]).unwrap();
         assert!(!result[0].ok);
     }
+
+    /// 終了したプロセスが、次の計測まで一覧に残っていた。
+    #[test]
+    fn killed_process_disappears_from_cached_snapshot() {
+        let mut child = spawn_sleeper();
+        let b = Backend::with_collector(Collector::new().unwrap().without_self_protection());
+        let target = target_of(&b, child.id());
+        assert!(b.kill(&[target]).unwrap()[0].ok);
+        let _ = child.wait();
+        let next = b.snapshot().unwrap();
+        assert!(next.processes.iter().all(|p| p.pid != target.pid));
+        assert_eq!(next.cpu.process_count, next.processes.len());
+    }
+
+    /// 別のアプリの置き換えを確認なしで上書きしていた。UAC も出さずに断る。
+    #[test]
+    fn other_tools_replacement_is_not_overwritten() {
+        let b = backend();
+        let elevated = std::cell::Cell::new(false);
+        let result = b.set_replacement(
+            true,
+            |_| {
+                elevated.set(true);
+                Ok(())
+            },
+            || status(false, Some("procexp.exe")),
+        );
+        assert!(result.unwrap_err().contains("別のアプリ"));
+        assert!(!elevated.get(), "UAC を出してはいけない");
+        assert_eq!(b.state().unwrap().pending, Pending::Idle);
+    }
 }

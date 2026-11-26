@@ -22,8 +22,9 @@ InitialState ==
 
 \* 出来事。プロセス終了は「存在するか・守るべきか・起動時刻が同じか」に抽象化する
 EventSpace ==
-       [kind : {"windowShown", "windowHidden", "quitRequested", "sampleFinished"}]
+       [kind : {"windowShown", "windowHidden", "quitRequested"}]
   \cup [kind : {"snapshotRequested"}, stale : BOOLEAN]
+  \cup [kind : {"sampleFinished"}, ok : BOOLEAN]
   \cup [kind : {"replacementObserved", "elevationFinished"}, registry : Registries]
   \cup [kind : {"replacementRequested"}, enable : BOOLEAN]
   \cup [kind : {"killRequested"}, exists : BOOLEAN, protected : BOOLEAN,
@@ -34,7 +35,7 @@ EffectSpace ==
   {"nothing", "sample", "serveCached", "emitShown", "emitHidden", "exit",
    "startEnable", "startDisable", "replacementOk", "replacementFailed", "kill",
    "rejectHidden", "rejectBusy", "rejectQuitting", "rejectNotFound",
-   "rejectProtected", "rejectReplaced"}
+   "rejectProtected", "rejectReplaced", "rejectOtherTool"}
 
 \* 遷移の結果。受け付けない出来事は ok = FALSE
 NA == [ok |-> FALSE]
@@ -51,10 +52,11 @@ SnapshotStep(s, stale) ==
   ELSE IF s.cached /\ ~stale THEN To(s, "serveCached")
   ELSE To([s EXCEPT !.sampling = TRUE], "sample")
 
-\* 置き換えの依頼: 終了中・切り替え中は断る
+\* 置き換えの依頼: 終了中・切り替え中・別のアプリが置き換えているときは断る
 ReplacementRequestStep(s, enable) ==
   IF s.life = "quitting" THEN To(s, "rejectQuitting")
   ELSE IF s.pending # "idle" THEN To(s, "rejectBusy")
+  ELSE IF s.registry = "other" THEN To(s, "rejectOtherTool")
   ELSE To([s EXCEPT !.pending = IF enable THEN "enable" ELSE "disable"],
           IF enable THEN "startEnable" ELSE "startDisable")
 
@@ -86,7 +88,7 @@ Step(s, e) ==
     [] e.kind = "snapshotRequested" -> SnapshotStep(s, e.stale)
     [] e.kind = "sampleFinished" ->
          IF s.sampling
-           THEN To([s EXCEPT !.sampling = FALSE, !.cached = TRUE], "nothing") ELSE NA
+           THEN To([s EXCEPT !.sampling = FALSE, !.cached = s.cached \/ e.ok], "nothing") ELSE NA
     [] e.kind = "replacementObserved" ->
          IF s.pending = "idle" /\ e.registry # "unknown"
            THEN To([s EXCEPT !.registry = e.registry], "nothing") ELSE NA

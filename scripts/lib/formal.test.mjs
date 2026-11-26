@@ -49,7 +49,7 @@ describe('TLA+ の検査設定', () => {
   describe('regression', () => {
     it('不具合版は違反名ごとに 1 つずつ、Regressions.tla で回す', () => {
       const checks = regressionChecks();
-      expect(checks.length).toBe(6);
+      expect(checks.length).toBe(8);
       expect(new Set(checks.map((c) => c.expect)).size).toBe(checks.length);
       expect(checks.every((c) => c.module === 'Regressions' && c.config.startsWith('regressions/'))).toBe(
         true,
