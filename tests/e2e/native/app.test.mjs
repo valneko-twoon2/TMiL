@@ -1,8 +1,9 @@
 // 実際に TMiL を起動して操作する E2E（tauri-driver + WebDriver）。
 // バックエンドの変更を確かめたいときに使う。実行は scripts/test/e2e-native.mjs から。
 import assert from 'node:assert/strict';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { after, before, describe, it } from 'node:test';
+import { after, afterEach, before, describe, it } from 'node:test';
 
 // selenium-webdriver は src/frontend の依存なので、そこを起点に読み込む（tests/ からは node_modules が見えない）
 const require = createRequire(new URL('../../../src/frontend/package.json', import.meta.url));
@@ -29,9 +30,24 @@ before(async () => {
   driver = await new Builder().withCapabilities(capabilities).usingServer(server).build();
 });
 
+// 失敗したときは、画面と DOM を test-results/native に残す（CI では成果物として置く）
+afterEach(async (t) => {
+  if (!driver || t.passed) return;
+  await saveEvidence(t.name).catch(() => undefined);
+});
+
 after(async () => {
   await driver?.quit();
 });
+
+/** 画面と DOM を保存する。失敗の原因を後から見るため。 */
+async function saveEvidence(name) {
+  const dir = new URL('../../../test-results/native/', import.meta.url);
+  mkdirSync(dir, { recursive: true });
+  const safe = name.replace(/[^\w-]+/g, '_');
+  writeFileSync(new URL(`${safe}.png`, dir), await driver.takeScreenshot(), 'base64');
+  writeFileSync(new URL(`${safe}.html`, dir), await driver.getPageSource());
+}
 
 describe('実アプリ', () => {
   it('プロセス一覧に実際のプロセスが並ぶ', async () => {
