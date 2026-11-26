@@ -4,10 +4,10 @@
 //   node scripts/docs/test-inventory.mjs --check   最新か確かめる（差があれば失敗）
 // 種類はテスト名に含まれるタグ（describe / mod の名前）で決める。docs/testing/tags.md を参照。
 import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
-import { join, relative } from 'node:path';
-import { capture, nodeBin, ROOT, run } from '../lib/proc.mjs';
+import { join, relative, resolve } from 'node:path';
+import { BACKEND, capture, FRONTEND, nodeBin, ROOT, run } from '../lib/proc.mjs';
 import { propertiesInCfg } from '../lib/formal.mjs';
-import { buildInventory, renderInventory } from '../lib/inventory.mjs';
+import { buildInventory, parseJunit, renderInventory } from '../lib/inventory.mjs';
 
 const OUTPUT = join(ROOT, 'docs', 'testing', 'inventory.md');
 const rel = (p) => relative(ROOT, p).replaceAll('\\', '/');
@@ -15,11 +15,12 @@ const rel = (p) => relative(ROOT, p).replaceAll('\\', '/');
 /** @type {import('../lib/inventory.mjs').TestCase[]} */
 const cases = [];
 
-// Vitest（フロントとツール）: it.each を展開した件数を取るため実行結果を使う
+// Vitest（フロント）: it.each を展開した件数を取るため実行結果を使う
 const vitestOut = join(ROOT, 'reports', 'vitest-inventory.json');
 mkdirSync(join(ROOT, 'reports'), { recursive: true });
 run(process.execPath, [nodeBin('vitest', 'vitest'), 'run', '--reporter=json', `--outputFile=${vitestOut}`], {
   quiet: true,
+  cwd: FRONTEND,
 });
 const vitest = JSON.parse(readFileSync(vitestOut, 'utf8'));
 rmSync(vitestOut);
@@ -30,17 +31,20 @@ for (const file of vitest.testResults) {
   }
 }
 
+// scripts/ のテスト（node:test）: ループで作るテストも数えるため実行結果を使う
+const junit = capture(process.execPath, ['--test', '--test-reporter=junit', 'scripts/**/*.test.mjs']);
+for (const c of parseJunit(junit)) {
+  cases.push({ runner: 'node-test', file: rel(c.file), path: c.path });
+}
+
 // Rust
-const rustList = capture('cargo', [
-  'test',
-  '-p',
-  'tmil-core',
-  '--quiet',
-  '--',
-  '--list',
-  '--format',
-  'terse',
-]);
+const rustList = capture(
+  'cargo',
+  ['test', '-p', 'tmil-core', '--quiet', '--', '--list', '--format', 'terse'],
+  {
+    cwd: BACKEND,
+  },
+);
 for (const line of rustList.split('\n')) {
   const m = /^(.+): test$/.exec(line.trim());
   if (!m?.[1]) continue;
@@ -82,14 +86,17 @@ if (existsSync(formalDir)) {
 }
 
 // Playwright（E2E モックと VRT）
-const pwList = capture(process.execPath, [nodeBin('@playwright/test', 'playwright'), 'test', '--list']);
+// ファイルは src/frontend（設定の場所）から見た場所で出るので、リポジトリ直下からに直す
+const pwList = capture(process.execPath, [nodeBin('@playwright/test', 'playwright'), 'test', '--list'], {
+  cwd: FRONTEND,
+});
 for (const line of pwList.split('\n')) {
   const m = /^\s*\[([^\]]+)\] › (\S+?):\d+:\d+ › (.+)$/.exec(line);
   if (!m?.[1] || !m[2] || !m[3]) continue;
   cases.push({
     runner: 'playwright',
     project: m[1],
-    file: m[2].replaceAll('\\', '/'),
+    file: rel(resolve(FRONTEND, m[2])),
     path: m[3].split(' › '),
   });
 }

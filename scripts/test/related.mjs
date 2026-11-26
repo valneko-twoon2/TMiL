@@ -5,8 +5,9 @@
 //   --e2e-mock / --vrt / --e2e-native を付けると、その E2E も回す
 // 全部回すのは CI（または npm test）に任せる。
 import { changedFiles, filesChangedSince } from '../lib/git.mjs';
-import { run, runNodeBin } from '../lib/proc.mjs';
+import { BACKEND, FRONTEND, run, runNodeBin } from '../lib/proc.mjs';
 import { planTests } from '../lib/related.mjs';
+import { toolTestArgs } from '../lib/tools.mjs';
 
 const args = process.argv.slice(2);
 const sinceIndex = args.indexOf('--since');
@@ -24,27 +25,43 @@ const step = (name, status) => {
   if (status !== 0) failures.push(name);
 };
 
+// Vitest と Playwright は src/frontend で動かすので、ファイルもそこから見た場所で渡す
+const frontendOpts = { cwd: FRONTEND };
+const fromFrontend = (f) => f.slice('src/frontend/'.length);
+
 if (plan.frontend.length > 0) {
   step(
     'vitest related',
-    runNodeBin('vitest', 'vitest', ['related', '--run', '--passWithNoTests', ...plan.frontend]).status,
+    runNodeBin(
+      'vitest',
+      'vitest',
+      ['related', '--run', '--passWithNoTests', ...plan.frontend.map(fromFrontend)],
+      frontendOpts,
+    ).status,
   );
 }
 if (plan.contract) {
   step(
     '契約（フロント）',
-    runNodeBin('vitest', 'vitest', ['run', 'src/frontend/lib/model/contract.test.ts']).status,
+    runNodeBin('vitest', 'vitest', ['run', 'lib/model/contract.test.ts'], frontendOpts).status,
   );
+}
+if (plan.tools) {
+  step('ツール', run(process.execPath, toolTestArgs()).status);
 }
 for (const filter of plan.rustFilters) {
   const label = filter === '' ? 'cargo test（全体）' : `cargo test ${filter}`;
-  step(label, run('cargo', ['test', '-p', 'tmil-core', '--quiet', '--', ...(filter ? [filter] : [])]).status);
+  const cargoArgs = ['test', '-p', 'tmil-core', '--quiet', '--', ...(filter ? [filter] : [])];
+  step(label, run('cargo', cargoArgs, { cwd: BACKEND }).status);
 }
 if (args.includes('--e2e-mock')) {
-  step('E2E（モック）', runNodeBin('@playwright/test', 'playwright', ['test', '--project=e2e-mock']).status);
+  step(
+    'E2E（モック）',
+    runNodeBin('@playwright/test', 'playwright', ['test', '--project=e2e-mock'], frontendOpts).status,
+  );
 }
 if (args.includes('--vrt')) {
-  step('VRT', runNodeBin('@playwright/test', 'playwright', ['test', '--project=vrt']).status);
+  step('VRT', runNodeBin('@playwright/test', 'playwright', ['test', '--project=vrt'], frontendOpts).status);
 }
 if (args.includes('--e2e-native')) {
   step('E2E（実アプリ）', run(process.execPath, ['scripts/test/e2e-native.mjs']).status);

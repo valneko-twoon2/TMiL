@@ -6,17 +6,20 @@
 // Tauri 本体（tmil クレート）は受け渡しだけなので、テストとカバレッジの対象外にしている。
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, run } from '../lib/proc.mjs';
+import { BACKEND, ROOT, run } from '../lib/proc.mjs';
 
 const args = process.argv.slice(2);
 const coverage = args.includes('--coverage');
 const sep = args.indexOf('--');
 const filter = sep === -1 ? [] : args.slice(sep + 1);
+const cargo = (cargoArgs) => run('cargo', cargoArgs, { cwd: BACKEND });
 
-if (coverage) mkdirSync(join(ROOT, 'coverage', 'backend'), { recursive: true });
+// 結果はリポジトリ直下の coverage/ にまとめる（フロントと並べる）
+const outDir = join(ROOT, 'coverage', 'backend');
+if (coverage) mkdirSync(outDir, { recursive: true });
 
 const result = coverage
-  ? run('cargo', [
+  ? cargo([
       'llvm-cov',
       '-p',
       'tmil-core',
@@ -24,13 +27,13 @@ const result = coverage
       '80',
       '--lcov',
       '--output-path',
-      'coverage/backend/lcov.info',
+      join(outDir, 'lcov.info'),
       '--',
       ...filter,
     ])
-  : run('cargo', ['test', '-p', 'tmil-core', '--', ...filter]);
+  : cargo(['test', '-p', 'tmil-core', '--', ...filter]);
 
 if (coverage && result.status === 0) {
-  run('cargo', ['llvm-cov', 'report', '-p', 'tmil-core', '--summary-only']);
+  cargo(['llvm-cov', 'report', '-p', 'tmil-core', '--summary-only']);
 }
 process.exit(result.status);

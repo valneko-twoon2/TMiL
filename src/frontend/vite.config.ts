@@ -8,7 +8,8 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 };
 
 export default defineConfig(({ mode }) => ({
-  root: 'src/frontend',
+  // どこから起動しても、このフォルダー（src/frontend）を基準にする
+  root: import.meta.dirname,
   publicDir: '../../assets',
   plugins: [svelte()],
   clearScreen: false,
@@ -21,12 +22,11 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
     host: host ?? false,
     ws: host ? { protocol: 'ws', host, port: 1421 } : undefined,
-    watch: { ignored: ['**/src/backend/**'] },
   },
   preview: { port: 4173, strictPort: true },
   build: {
     // モック版（E2E・VRT 用）は本番ビルドと出力先を分ける
-    outDir: mode === 'mock' ? '../../dist-mock' : '../../dist',
+    outDir: mode === 'mock' ? 'dist-mock' : 'dist',
     emptyOutDir: true,
     target: 'es2022',
     sourcemap: false,

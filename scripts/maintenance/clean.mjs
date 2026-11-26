@@ -8,17 +8,17 @@ import { ROOT } from '../lib/proc.mjs';
 
 const rustOnly = process.argv.includes('--rust');
 const targets = rustOnly
-  ? ['target', 'tests/fuzz/target']
+  ? ['src/backend/target', 'tests/fuzz/target']
   : [
-      'target',
+      'src/backend/target',
       'tests/fuzz/target',
-      'dist',
-      'dist-mock',
+      'src/frontend/dist',
+      'src/frontend/dist-mock',
       'coverage',
       'reports',
       'test-results',
       'playwright-report',
-      '.stryker-tmp',
+      'src/frontend/.stryker-tmp',
       'src/backend/app/gen',
     ];
 

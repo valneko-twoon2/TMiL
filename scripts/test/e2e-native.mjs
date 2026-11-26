@@ -11,13 +11,17 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { nativeTestArgs } from '../lib/e2e.mjs';
-import { ROOT, run, runNodeBin, toolEnv } from '../lib/proc.mjs';
+import { BACKEND, FRONTEND, run, runNodeBin, toolEnv } from '../lib/proc.mjs';
+import { tauriEnv } from '../lib/tauri.mjs';
 
 const skipBuild = process.argv.includes('--skip-build');
-const exe = join(ROOT, 'target', 'debug', process.platform === 'win32' ? 'tmil.exe' : 'tmil');
+const exe = join(BACKEND, 'target', 'debug', process.platform === 'win32' ? 'tmil.exe' : 'tmil');
 
 if (!skipBuild) {
-  const build = runNodeBin('@tauri-apps/cli', 'tauri', ['build', '--debug', '--no-bundle']);
+  const build = runNodeBin('@tauri-apps/cli', 'tauri', ['build', '--debug', '--no-bundle'], {
+    cwd: FRONTEND,
+    env: tauriEnv(),
+  });
   if (build.status !== 0) process.exit(build.status);
 }
 if (!existsSync(exe)) {

@@ -15,9 +15,10 @@ import {
   isRustTarget,
   isTypeCheckTarget,
   normalizePath,
+  prettierArgs,
 } from '../lib/files.mjs';
 import { changedFiles, stagedFiles } from '../lib/git.mjs';
-import { ROOT, run, runNodeBin } from '../lib/proc.mjs';
+import { BACKEND, FRONTEND, ROOT, run, runNodeBin } from '../lib/proc.mjs';
 
 const args = process.argv.slice(2);
 const fix = args.includes('--fix');
@@ -64,13 +65,7 @@ const prettierFiles = pick(isPrettierTarget);
 if (frontendOn && (all || prettierFiles.length > 0)) {
   step(
     'prettier',
-    () =>
-      runNodeBin('prettier', 'prettier', [
-        fix ? '--write' : '--check',
-        '--log-level',
-        'warn',
-        ...(all ? ['.'] : prettierFiles),
-      ]).status,
+    () => runNodeBin('prettier', 'prettier', prettierArgs(prettierFiles, fix), { cwd: FRONTEND }).status,
   );
 }
 
@@ -79,32 +74,43 @@ if (frontendOn && (all || pick(isTypeCheckTarget).length > 0)) {
   step(
     'svelte-check',
     () =>
-      runNodeBin('svelte-check', 'svelte-check', [
-        '--tsconfig',
-        './tsconfig.json',
-        '--fail-on-warnings',
-        '--output',
-        'human',
-      ]).status,
+      runNodeBin(
+        'svelte-check',
+        'svelte-check',
+        ['--tsconfig', './tsconfig.json', '--fail-on-warnings', '--output', 'human'],
+        { cwd: FRONTEND },
+      ).status,
+  );
+  // tests/ の TypeScript は tests/tsconfig.json で別に検査する
+  step(
+    'tsc（tests）',
+    () => runNodeBin('typescript', 'tsc', ['-p', '../../tests/tsconfig.json'], { cwd: FRONTEND }).status,
   );
 }
 
 // Rust
 if (backendOn && (all || pick(isRustTarget).length > 0)) {
-  step('rustfmt', () => run('cargo', ['fmt', '--all', ...(fix ? [] : ['--', '--check'])]).status);
+  step(
+    'rustfmt',
+    () => run('cargo', ['fmt', '--all', ...(fix ? [] : ['--', '--check'])], { cwd: BACKEND }).status,
+  );
   step(
     'clippy',
     () =>
-      run('cargo', [
-        'clippy',
-        '--workspace',
-        '--all-targets',
-        '--quiet',
-        ...(fix ? ['--fix', '--allow-dirty', '--allow-staged'] : []),
-        '--',
-        '-D',
-        'warnings',
-      ]).status,
+      run(
+        'cargo',
+        [
+          'clippy',
+          '--workspace',
+          '--all-targets',
+          '--quiet',
+          ...(fix ? ['--fix', '--allow-dirty', '--allow-staged'] : []),
+          '--',
+          '-D',
+          'warnings',
+        ],
+        { cwd: BACKEND },
+      ).status,
   );
 }
 

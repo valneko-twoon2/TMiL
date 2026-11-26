@@ -40,10 +40,10 @@ jobs:
           queries: security-and-quality
           config: |
             paths-ignore:
-              - node_modules
-              - dist
-              - dist-mock
-              - target
+              - '**/node_modules'
+              - src/frontend/dist
+              - src/frontend/dist-mock
+              - src/backend/target
               - coverage
       - uses: github/codeql-action/analyze@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
         with:

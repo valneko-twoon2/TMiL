@@ -18,6 +18,7 @@ export function parseHostTriple(versionOutput) {
  * 1 ターゲットを時間を区切って回す cargo の引数。
  * ツールチェーンは PATH で選ぶので `+nightly` は付けない。
  * cargo-fuzz は自身のビルド先（配布版は musl）を既定のターゲットにするので、ホストを明示する。
+ * cargo-fuzz は実行した場所から上へ Cargo.toml を探すので、tests/fuzz で実行する。
  * @param {string} target
  * @param {number} seconds
  * @param {string | null} hostTriple
@@ -28,7 +29,7 @@ export function fuzzArgs(target, seconds, hostTriple) {
     'run',
     target,
     '--fuzz-dir',
-    'tests/fuzz',
+    '.',
     ...(hostTriple ? ['--target', hostTriple] : []),
     '--',
     `-max_total_time=${String(seconds)}`,

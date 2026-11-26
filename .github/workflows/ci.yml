@@ -33,7 +33,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
       - run: npm ci
+        working-directory: src/frontend
       - run: node scripts/lint/lint.mjs --frontend
 
   lint-backend:
@@ -49,8 +51,10 @@ jobs:
           toolchain: stable
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src/backend
       # Tauri はビルド時にフロントの出力先が必要なので、空のフォルダーを用意する
-      - run: mkdir -p dist
+      - run: mkdir -p src/frontend/dist
       - run: node scripts/lint/lint.mjs --backend
 
   test-frontend:
@@ -64,9 +68,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
       - run: npm ci
+        working-directory: src/frontend
       - name: 単体・スナップショット・契約・ファジング（カバレッジ 80% 未満で失敗）
         run: npx vitest run --coverage
+        working-directory: src/frontend
+      - name: ツール（scripts/）
+        run: node scripts/test/tools.mjs
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -96,6 +105,8 @@ jobs:
         with:
           tool: cargo-llvm-cov
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src/backend
       - name: 単体・スナップショット・契約・ファジング（カバレッジ 80% 未満で失敗）
         run: node scripts/test/backend.mjs --coverage
 
@@ -110,9 +121,13 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
       - run: npm ci
+        working-directory: src/frontend
       - run: npx playwright install --with-deps chromium
+        working-directory: src/frontend
       - run: npx playwright test --project=e2e-mock
+        working-directory: src/frontend
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
@@ -131,9 +146,13 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
       - run: npm ci
+        working-directory: src/frontend
       - run: npx playwright install --with-deps chromium
+        working-directory: src/frontend
       - run: npx playwright test --project=vrt
+        working-directory: src/frontend
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
@@ -157,13 +176,17 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
           toolchain: stable
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src/backend
       # 第三者が配布するバイナリを避け、crates.io から自前でビルドする（キャッシュされる）
       - run: cargo install tauri-driver --locked
       - run: npm ci
+        working-directory: src/frontend
       - run: xvfb-run --auto-servernum node scripts/test/e2e-native.mjs
 
   fuzz:
@@ -228,6 +251,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: npm audit（high 以上で失敗）
+        working-directory: src/frontend
         run: |
           {
             echo '## npm audit'
@@ -239,4 +263,5 @@ jobs:
       - name: cargo-deny（脆弱性・ライセンス・取得元）
         uses: EmbarkStudios/cargo-deny-action@81891abc19297b21343b15ef67dc61e4aea74fda # v2.1.4
         with:
+          manifest-path: src/backend/Cargo.toml
           command: check advisories bans licenses sources

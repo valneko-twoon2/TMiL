@@ -26,13 +26,13 @@ export function rustFilterFor(file) {
 /**
  * 変更ファイルから実行計画を作る。
  * @param {string[]} files
- * @returns {{ frontend: string[], rustFilters: string[], contract: boolean, uiChanged: boolean, backendChanged: boolean, formalChanged: boolean }}
+ * @returns {{ frontend: string[], tools: boolean, rustFilters: string[], contract: boolean, uiChanged: boolean, backendChanged: boolean, formalChanged: boolean }}
  */
 export function planTests(files) {
   const normalized = files.map(normalizePath);
-  const frontend = normalized.filter(
-    (f) => /^(src\/frontend|scripts)\/.*\.(ts|mjs|svelte|js)$/.test(f) && !f.endsWith('.snap'),
-  );
+  const frontend = normalized.filter((f) => /^src\/frontend\/.*\.(ts|svelte|js)$/.test(f));
+  // scripts/ のテストは数秒で終わるので、どれかを変えたら全部回す
+  const tools = normalized.some((f) => /^scripts\/.*\.mjs$/.test(f));
   const filters = new Set();
   for (const f of normalized) {
     const filter = rustFilterFor(f);
@@ -49,5 +49,5 @@ export function planTests(files) {
   const formalChanged = normalized.some(
     (f) => f.startsWith('src/backend/core/src/machine/') || f.startsWith('tests/formal/'),
   );
-  return { frontend, rustFilters, contract, uiChanged, backendChanged, formalChanged };
+  return { frontend, tools, rustFilters, contract, uiChanged, backendChanged, formalChanged };
 }

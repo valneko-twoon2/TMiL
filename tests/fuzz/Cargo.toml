@@ -11,7 +11,7 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4.13"
 tmil-core = { path = "../../src/backend/core" }
 
-# ルートのワークスペースとは切り離す（nightly と sanitizer でビルドするため）
+# src/backend のワークスペースとは切り離す（nightly と sanitizer でビルドするため）
 [workspace]
 members = ["."]
 

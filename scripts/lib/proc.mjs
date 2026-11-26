@@ -5,6 +5,10 @@ import { delimiter, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+/** フロント（npm のパッケージ）。package.json と node_modules はここにある。 */
+export const FRONTEND = join(ROOT, 'src', 'frontend');
+/** バック（Cargo のワークスペース）。Cargo.toml と target/ はここにある。 */
+export const BACKEND = join(ROOT, 'src', 'backend');
 
 /** @type {Map<string, NodeJS.ProcessEnv>} */
 const envCache = new Map();
@@ -33,7 +37,7 @@ export function toolEnv(toolchain) {
   const cached = envCache.get(cacheKey);
   if (cached) return cached;
   const args = toolchain ? ['which', '--toolchain', toolchain, 'cargo'] : ['which', 'cargo'];
-  const which = spawnSync('rustup', args, { encoding: 'utf8', cwd: ROOT });
+  const which = spawnSync('rustup', args, { encoding: 'utf8', cwd: BACKEND });
   const env =
     which.status === 0 ? prependPath(process.env, dirname(which.stdout.trim())) : { ...process.env };
   envCache.set(cacheKey, env);
@@ -67,15 +71,15 @@ export function capture(cmd, args, opts = {}) {
 }
 
 /**
- * node_modules にある CLI を node で直接起動する（.cmd を経由しない）。
+ * src/frontend/node_modules にある CLI を node で直接起動する（.cmd を経由しない）。
  * @param {string} pkg パッケージ名
  * @param {string} [binName] bin 名（省略時はパッケージ名）
  */
 export function nodeBin(pkg, binName) {
-  const pkgDir = join(ROOT, 'node_modules', pkg);
+  const pkgDir = join(FRONTEND, 'node_modules', pkg);
   const manifestPath = join(pkgDir, 'package.json');
   if (!existsSync(manifestPath)) {
-    throw new Error(`${pkg} が見つかりません。npm install を実行してください。`);
+    throw new Error(`${pkg} が見つかりません。src/frontend で npm install を実行してください。`);
   }
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   const bin = typeof manifest.bin === 'string' ? manifest.bin : manifest.bin?.[binName ?? pkg];

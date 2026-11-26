@@ -1,8 +1,13 @@
 // 実際に TMiL を起動して操作する E2E（tauri-driver + WebDriver）。
 // バックエンドの変更を確かめたいときに使う。実行は scripts/test/e2e-native.mjs から。
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
 import { after, before, describe, it } from 'node:test';
-import { Builder, By, Capabilities, until } from 'selenium-webdriver';
+
+// selenium-webdriver は src/frontend の依存なので、そこを起点に読み込む（tests/ からは node_modules が見えない）
+const require = createRequire(new URL('../../../src/frontend/package.json', import.meta.url));
+/** @type {typeof import('selenium-webdriver')} */
+const { Builder, By, Capabilities, until } = require('selenium-webdriver');
 
 const application = process.env.TMIL_APP;
 const server = process.env.TAURI_DRIVER_URL ?? 'http://127.0.0.1:4444/';

@@ -2,7 +2,7 @@
 # 実行: node scripts/test/mutation.mjs --backend
 
 # OS に依存して CI と手元で結果が変わる部分は対象外にする
-exclude_globs = ["src/backend/core/src/startup/win_registry.rs"]
+exclude_globs = ["core/src/startup/win_registry.rs"]
 
 # 実機の値を読むテストは遅いので、時間を長めに取る
 timeout_multiplier = 3.0

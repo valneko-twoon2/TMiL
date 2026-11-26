@@ -11,7 +11,8 @@ import { capture, ROOT, run } from '../lib/proc.mjs';
 const args = process.argv.slice(2);
 const timeIndex = args.indexOf('--time');
 const seconds = timeIndex === -1 ? 30 : Number(args[timeIndex + 1] ?? 30);
-const targets = readdirSync(join(ROOT, 'tests', 'fuzz', 'fuzz_targets'))
+const fuzzDir = join(ROOT, 'tests', 'fuzz');
+const targets = readdirSync(join(fuzzDir, 'fuzz_targets'))
   .filter((f) => f.endsWith('.rs'))
   .map((f) => f.replace(/\.rs$/, ''));
 
@@ -20,7 +21,7 @@ const host = parseHostTriple(capture('rustc', ['-vV'], { toolchain: FUZZ_TOOLCHA
 let failed = false;
 for (const target of targets) {
   console.log(`▶ ${target}（${String(seconds)} 秒）`);
-  const r = run('cargo', fuzzArgs(target, seconds, host), { toolchain: FUZZ_TOOLCHAIN });
+  const r = run('cargo', fuzzArgs(target, seconds, host), { toolchain: FUZZ_TOOLCHAIN, cwd: fuzzDir });
   if (r.status !== 0) failed = true;
 }
 process.exit(failed ? 1 : 0);

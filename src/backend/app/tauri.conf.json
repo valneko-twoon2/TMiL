@@ -1,13 +1,13 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "TMiL",
-  "version": "../../../package.json",
+  "version": "../../frontend/package.json",
   "identifier": "io.github.valneko-twoon2.tmil",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
-    "frontendDist": "../../../dist"
+    "frontendDist": "../../frontend/dist"
   },
   "app": {
     "windows": [

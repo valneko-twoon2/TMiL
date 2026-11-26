@@ -1,3 +1,6 @@
+// Lint の設定。src/frontend だけでなく scripts/ と tests/ の JS・TS も対象にする。
+// パターンはリポジトリ直下を基準に書く（scripts/lint/lint.mjs がルートから -c 付きで呼ぶ）。
+import { resolve } from 'node:path';
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import { defineConfig } from 'eslint/config';
@@ -6,19 +9,19 @@ import globals from 'globals';
 import ts from 'typescript-eslint';
 import svelteConfig from './svelte.config.js';
 
-export default defineConfig(
+const ROOT = resolve(import.meta.dirname, '..', '..');
+
+const configs = defineConfig(
   {
     ignores: [
-      'node_modules/',
-      'dist/',
-      'dist-mock/',
+      'src/frontend/dist/',
+      'src/frontend/dist-mock/',
+      'src/frontend/.stryker-tmp/',
+      'src/backend/',
       'coverage/',
-      'target/',
       'reports/',
       'test-results/',
       'playwright-report/',
-      '.stryker-tmp/',
-      'src/backend/',
       'tests/fuzz/',
     ],
   },
@@ -79,3 +82,6 @@ export default defineConfig(
     extends: [ts.configs.disableTypeChecked],
   },
 );
+
+// エディターがこのフォルダーを基準に読み込んでも、パターンの意味が変わらないようにする
+export default configs.map((config) => ({ basePath: ROOT, ...config }));

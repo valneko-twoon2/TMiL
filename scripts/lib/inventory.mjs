@@ -35,11 +35,15 @@ const TAGS = new Set(['equivalence', 'boundary', 'regression', 'snapshot', 'cont
  */
 export function kindOf(c) {
   if (c.runner === 'playwright') return c.project === 'vrt' ? 'vrt' : 'e2e-mock';
-  if (c.runner === 'node-test') return 'e2e-native';
+  // node:test は scripts/ のテストと実アプリの E2E の両方で使っている
+  if (c.runner === 'node-test' && !isTooling(c)) return 'e2e-native';
   if (c.runner === 'cargo-fuzz') return 'fuzz';
   if (c.runner === 'tlc') return 'formal';
   return c.path.find((segment) => TAGS.has(segment)) ?? 'unit';
 }
+
+/** @param {TestCase} c */
+const isTooling = (c) => c.file.startsWith('scripts/');
 
 /**
  * テスト 1 件の対象を決める。
@@ -47,9 +51,31 @@ export function kindOf(c) {
  */
 export function layerOf(c) {
   if (c.runner === 'cargo' || c.runner === 'cargo-fuzz' || c.runner === 'tlc') return 'backend';
+  if (isTooling(c)) return 'tooling';
   if (c.runner === 'node-test') return 'app';
-  if (c.file.startsWith('scripts/')) return 'tooling';
   return 'frontend';
+}
+
+const XML_ENTITIES = { '&quot;': '"', '&apos;': "'", '&lt;': '<', '&gt;': '>', '&amp;': '&' };
+const unescapeXml = (s) => s.replace(/&(quot|apos|lt|gt|amp);/g, (e) => XML_ENTITIES[e] ?? e);
+
+/**
+ * node --test の JUnit 形式の出力から、テスト 1 件ごとのファイルと名前（describe の入れ子）を取り出す。
+ * @param {string} xml
+ * @returns {{ file: string, path: string[] }[]}
+ */
+export function parseJunit(xml) {
+  /** @type {{ file: string, path: string[] }[]} */
+  const cases = [];
+  /** @type {string[]} */
+  const suites = [];
+  const tags = /<testsuite name="([^"]*)"[^>]*>|<\/testsuite>|<testcase name="([^"]*)"[^>]*?file="([^"]*)"/g;
+  for (const m of xml.matchAll(tags)) {
+    if (m[0] === '</testsuite>') suites.pop();
+    else if (m[1] !== undefined) suites.push(unescapeXml(m[1]));
+    else cases.push({ file: unescapeXml(m[3] ?? ''), path: [...suites, unescapeXml(m[2] ?? '')] });
+  }
+  return cases;
 }
 
 /**

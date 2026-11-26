@@ -19,14 +19,6 @@
     "noEmit": true,
     "sourceMap": false
   },
-  "include": [
-    "src/frontend/**/*.ts",
-    "src/frontend/**/*.svelte",
-    "tests/**/*.ts",
-    "tests/**/*.mjs",
-    "scripts/**/*.mjs",
-    "*.config.ts",
-    "*.config.js"
-  ],
-  "exclude": ["node_modules", "dist", "dist-mock", "coverage", "tests/fuzz"]
+  "include": ["**/*.ts", "**/*.svelte", "*.config.js"],
+  "exclude": ["node_modules", "dist", "dist-mock"]
 }

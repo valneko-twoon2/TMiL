@@ -42,7 +42,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          version="$(node -p "require('./package.json').version")"
+          version="$(node -p "require('./src/frontend/package.json').version")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           published="$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
             --jq ".[] | select(.tag_name == \"v$version\" and .draft == false) | .id")"
@@ -93,15 +93,21 @@ jobs:
         with:
           node-version: '24'
           cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
           toolchain: stable
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src/backend
       - run: npm ci
+        working-directory: src/frontend
+      # 設定（src/backend/app）とフロント（src/frontend）の場所は scripts/dev/tauri.mjs が教える
       - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tauriScript: node scripts/dev/tauri.mjs
           releaseId: ${{ needs.prepare.outputs.release_id }}
 
   publish:

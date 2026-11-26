@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { fuzzArgs, parseHostTriple } from './fuzz.mjs';
 import { prependPath } from './proc.mjs';
 
@@ -11,13 +12,14 @@ LLVM version: 21.1.0`;
 
 describe('fuzzArgs', () => {
   describe('equivalence', () => {
+    // ルートの Cargo.toml を src/backend に移したので、tests/fuzz で実行してそこを指す
     it('ターゲット・ホスト・時間を渡す', () => {
-      expect(fuzzArgs('command_line', 30, 'x86_64-unknown-linux-gnu')).toEqual([
+      assert.deepEqual(fuzzArgs('command_line', 30, 'x86_64-unknown-linux-gnu'), [
         'fuzz',
         'run',
         'command_line',
         '--fuzz-dir',
-        'tests/fuzz',
+        '.',
         '--target',
         'x86_64-unknown-linux-gnu',
         '--',
@@ -26,31 +28,34 @@ describe('fuzzArgs', () => {
     });
 
     it('rustc -vV からホストを取り出す', () => {
-      expect(parseHostTriple(RUSTC_VV)).toBe('x86_64-unknown-linux-gnu');
+      assert.equal(parseHostTriple(RUSTC_VV), 'x86_64-unknown-linux-gnu');
     });
   });
 
   describe('boundary', () => {
     it('ホストが分からなければ --target を付けない', () => {
-      expect(fuzzArgs('x', 1, null)).not.toContain('--target');
+      assert.ok(!fuzzArgs('x', 1, null).includes('--target'));
     });
 
     it('host 行が無い・空なら null', () => {
-      expect(parseHostTriple('')).toBeNull();
-      expect(parseHostTriple('host: \n')).toBeNull();
+      assert.equal(parseHostTriple(''), null);
+      assert.equal(parseHostTriple('host: \n'), null);
     });
   });
 
   describe('regression', () => {
     // PATH でツールチェーンを直接選んでいるため、cargo +nightly が「no such command」になっていた
     it('+toolchain の書き方を使わない', () => {
-      expect(fuzzArgs('x', 1, null).some((a) => a.startsWith('+'))).toBe(false);
+      assert.equal(
+        fuzzArgs('x', 1, null).some((a) => a.startsWith('+')),
+        false,
+      );
     });
 
     // 配布版の cargo-fuzz が musl を既定にし、sanitizer と静的 libc の組み合わせで失敗していた
     it('ホストのターゲットを明示する', () => {
       const args = fuzzArgs('x', 1, 'x86_64-unknown-linux-gnu');
-      expect(args[args.indexOf('--target') + 1]).toBe('x86_64-unknown-linux-gnu');
+      assert.equal(args[args.indexOf('--target') + 1], 'x86_64-unknown-linux-gnu');
     });
   });
 });
@@ -58,25 +63,25 @@ describe('fuzzArgs', () => {
 describe('prependPath', () => {
   describe('equivalence', () => {
     it('PATH の先頭に足す', () => {
-      expect(prependPath({ PATH: '/usr/bin' }, '/opt/bin', ':').PATH).toBe('/opt/bin:/usr/bin');
+      assert.equal(prependPath({ PATH: '/usr/bin' }, '/opt/bin', ':').PATH, '/opt/bin:/usr/bin');
     });
 
     it('Windows の Path キーにも足す', () => {
       const env = prependPath({ Path: 'C:\\Windows' }, 'C:\\rust\\bin', ';');
-      expect(env.Path).toBe('C:\\rust\\bin;C:\\Windows');
-      expect(env.PATH).toBeUndefined();
+      assert.equal(env.Path, 'C:\\rust\\bin;C:\\Windows');
+      assert.equal(env.PATH, undefined);
     });
   });
 
   describe('boundary', () => {
     it('PATH が無ければ作る', () => {
-      expect(prependPath({}, '/opt/bin', ':').PATH).toBe('/opt/bin');
+      assert.equal(prependPath({}, '/opt/bin', ':').PATH, '/opt/bin');
     });
 
     it('元の環境変数は変えない', () => {
       const env = { PATH: '/usr/bin' };
       prependPath(env, '/opt/bin', ':');
-      expect(env.PATH).toBe('/usr/bin');
+      assert.equal(env.PATH, '/usr/bin');
     });
   });
 });

@@ -3,14 +3,11 @@
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
   testRunner: 'vitest',
-  mutate: [
-    'src/frontend/lib/**/*.ts',
-    '!src/frontend/lib/**/*.test.ts',
-    '!src/frontend/lib/**/*.svelte.ts',
-    '!src/frontend/lib/mock/**',
-  ],
+  mutate: ['lib/**/*.ts', '!lib/**/*.test.ts', '!lib/**/*.svelte.ts', '!lib/mock/**'],
+  // テストが src/frontend の外（tests/contract/fixtures）を読むので、コピーを作らずその場で変異させる。
+  // 終わると元に戻る
+  inPlace: true,
   reporters: ['clear-text', 'html'],
-  htmlReporter: { fileName: 'reports/mutation/frontend/index.html' },
-  tempDirName: '.stryker-tmp',
+  htmlReporter: { fileName: '../../reports/mutation/frontend/index.html' },
   thresholds: { high: 80, low: 60, break: null },
 };
