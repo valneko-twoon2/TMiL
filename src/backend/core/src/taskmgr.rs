@@ -60,6 +60,36 @@ pub fn quote_windows_arg(arg: &str) -> String {
     out
 }
 
+/// `quote_windows_arg` の逆変換。引用符の外に区切り（空白・タブ）があり、
+/// 2 つ以上の引数に分かれてしまう場合は `None` を返す。
+pub fn unquote_windows_arg(text: &str) -> Option<String> {
+    let mut out = String::new();
+    let mut in_quotes = false;
+    let mut backslashes = 0usize;
+    for c in text.chars() {
+        match c {
+            '\\' => backslashes += 1,
+            '"' => {
+                out.push_str(&"\\".repeat(backslashes / 2));
+                if backslashes % 2 == 1 {
+                    out.push('"');
+                } else {
+                    in_quotes = !in_quotes;
+                }
+                backslashes = 0;
+            }
+            ' ' | '\t' if !in_quotes => return None,
+            _ => {
+                out.push_str(&"\\".repeat(backslashes));
+                out.push(c);
+                backslashes = 0;
+            }
+        }
+    }
+    out.push_str(&"\\".repeat(backslashes));
+    Some(out)
+}
+
 /// `reg.exe` に渡す引数。
 pub fn reg_args(enable: bool, exe: &Path) -> Vec<String> {
     let key = format!(r"HKLM\{IFEO_KEY}");
@@ -233,6 +263,51 @@ mod tests {
         #[test]
         fn quote_backslashes_before_inner_quote() {
             assert_eq!(quote_windows_arg(r#"a\"b"#), r#""a\\\"b""#);
+        }
+
+        #[test]
+        fn unquote_rejects_unquoted_separator() {
+            assert_eq!(unquote_windows_arg("a b"), None);
+            assert_eq!(unquote_windows_arg("a\tb"), None);
+        }
+
+        #[test]
+        fn unquote_plain_and_trailing_backslashes() {
+            assert_eq!(unquote_windows_arg(""), Some(String::new()));
+            assert_eq!(unquote_windows_arg(r"a\\"), Some(r"a\\".to_owned()));
+            assert_eq!(
+                unquote_windows_arg(r#""a\\\"b""#),
+                Some(r#"a\"b"#.to_owned())
+            );
+        }
+    }
+
+    /// 乱数で作った文字列をクォートして読み戻し、元に戻ることを確かめる（簡易ファジング）。
+    /// 本格的なファジングは tests/fuzz（cargo-fuzz）で行う。
+    mod fuzz {
+        use super::*;
+
+        #[test]
+        fn quote_roundtrips_random_strings() {
+            let alphabet: Vec<char> = "ab \t\\\"\n'é漢\u{3000}".chars().collect();
+            let mut state: u64 = 0x2545_F491_4F6C_DD1D;
+            for _ in 0..5000 {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                let len = usize::try_from(state % 16).unwrap();
+                let text: String = (0..len)
+                    .map(|i| {
+                        let shift = u32::try_from(i % 8).unwrap() * 8;
+                        alphabet[usize::try_from((state >> shift) & 0xFF).unwrap() % alphabet.len()]
+                    })
+                    .collect();
+                assert_eq!(
+                    unquote_windows_arg(&quote_windows_arg(&text)),
+                    Some(text.clone()),
+                    "{text:?}"
+                );
+            }
         }
     }
 }

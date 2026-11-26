@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = ["src/backend/core", "src/backend/app"]
+exclude = ["tests/fuzz"]
 
 [workspace.package]
 version = "0.1.0"
