@@ -1,12 +1,14 @@
 // E2E・VRT 用の偽バックエンド。値は呼び出し回数だけで決まり、乱数は使わない。
 import type {
   KillResult,
+  KillTarget,
   ProcessInfo,
   ReplacementStatus,
   Snapshot,
   StartupEntry,
   SystemInfo,
 } from '../model/types';
+import { isKillTarget } from '../model/guards';
 
 const GB = 1024 ** 3;
 const MB = 1024 ** 2;
@@ -134,6 +136,7 @@ function processes(tick: number, killed: ReadonlySet<number>): ProcessInfo[] {
         diskWrittenPerSec:
           seed.name === 'Code.exe' && i === 0 ? Math.round(300 * 1024 * wave(tick, 1, 2)) : 0,
         runTimeSecs: 3600 + tick,
+        startTime: 1_767_222_000 + id,
       });
     }
   });
@@ -217,8 +220,8 @@ export const MOCK_SYSTEM_INFO: SystemInfo = {
   logicalCores: 8,
 };
 
-function kill(state: MockState, pids: number[]): KillResult[] {
-  return pids.map((pid) => {
+function kill(state: MockState, targets: KillTarget[]): KillResult[] {
+  return targets.map(({ pid }) => {
     if (pid === 4) return { pid, ok: false, error: '終了できませんでした。権限が足りない可能性があります。' };
     state.killed.add(pid);
     return { pid, ok: true, error: null };
@@ -240,10 +243,7 @@ export function handleCommand(state: MockState, cmd: string, args: Record<string
     case 'system_info':
       return MOCK_SYSTEM_INFO;
     case 'kill_processes':
-      return kill(
-        state,
-        Array.isArray(args.pids) ? args.pids.filter((p): p is number => typeof p === 'number') : [],
-      );
+      return kill(state, Array.isArray(args.targets) ? args.targets.filter(isKillTarget) : []);
     case 'startup_entries':
       return state.startup;
     case 'set_startup_enabled': {

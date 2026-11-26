@@ -1,7 +1,7 @@
 //! フロントエンドへ渡すデータの型。JSON のキーは camelCase にそろえる。
 //! 形を変えたら `tests/contract/fixtures` の契約も更新すること。
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// 1 回の計測結果。
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -109,6 +109,16 @@ pub struct ProcessInfo {
     pub disk_written_per_sec: u64,
     /// 起動してからの秒数
     pub run_time_secs: u64,
+    /// 起動した時刻（UNIX 秒）。終了するときに同じプロセスかを確かめるのに使う
+    pub start_time: u64,
+}
+
+/// 終了するプロセスの指定。PID が別のプロセスに再利用されていないかを起動時刻で確かめる。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KillTarget {
+    pub pid: u32,
+    pub start_time: u64,
 }
 
 /// 変化しないシステム情報。

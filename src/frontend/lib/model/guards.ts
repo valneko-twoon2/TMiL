@@ -6,6 +6,7 @@ import {
   type CpuStats,
   type DiskStats,
   type KillResult,
+  type KillTarget,
   type MemoryStats,
   type NetworkStats,
   type ProcessInfo,
@@ -92,6 +93,7 @@ export const isProcessInfo = shape<ProcessInfo>({
   diskReadPerSec: isCount,
   diskWrittenPerSec: isCount,
   runTimeSecs: isCount,
+  startTime: isCount,
 });
 
 export const isSnapshot = shape<Snapshot>({
@@ -119,6 +121,9 @@ export const isKillResult = shape<KillResult>({
   error: nullable(isStr),
 });
 export const isKillResults = arrayOf(isKillResult);
+
+export const isKillTarget = shape<KillTarget>({ pid: isCount, startTime: isCount });
+export const isKillTargets = arrayOf(isKillTarget);
 
 export const isStartupEntry = shape<StartupEntry>({
   id: isStr,

@@ -15,6 +15,7 @@ const process: ProcessInfo = {
   diskReadPerSec: 0,
   diskWrittenPerSec: 0,
   runTimeSecs: 0,
+  startTime: 0,
 };
 
 describe('guards', () => {

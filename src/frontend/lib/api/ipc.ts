@@ -8,7 +8,14 @@ import {
   isStartupEntries,
   isSystemInfo,
 } from '../model/guards';
-import type { KillResult, ReplacementStatus, Snapshot, StartupEntry, SystemInfo } from '../model/types';
+import type {
+  KillResult,
+  KillTarget,
+  ReplacementStatus,
+  Snapshot,
+  StartupEntry,
+  SystemInfo,
+} from '../model/types';
 
 export type Invoke = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
 
@@ -30,7 +37,7 @@ export function toError(cause: unknown): Error {
 export interface Api {
   snapshot(): Promise<Snapshot>;
   systemInfo(): Promise<SystemInfo>;
-  killProcesses(pids: number[]): Promise<KillResult[]>;
+  killProcesses(targets: KillTarget[]): Promise<KillResult[]>;
   startupEntries(): Promise<StartupEntry[]>;
   setStartupEnabled(id: string, enabled: boolean): Promise<void>;
   taskmgrReplacement(): Promise<ReplacementStatus>;
@@ -57,7 +64,7 @@ export function createApi(call: Invoke): Api {
   return {
     snapshot: () => request('snapshot', isSnapshot),
     systemInfo: () => request('system_info', isSystemInfo),
-    killProcesses: (pids) => request('kill_processes', isKillResults, { pids }),
+    killProcesses: (targets) => request('kill_processes', isKillResults, { targets }),
     startupEntries: () => request('startup_entries', isStartupEntries),
     setStartupEnabled: async (id, enabled) => {
       await request('set_startup_enabled', isNull, { id, enabled });

@@ -5,4 +5,4 @@ allow-indexing-slicing-in-tests = true
 allow-print-in-tests = true
 too-many-lines-threshold = 80
 cognitive-complexity-threshold = 15
-doc-valid-idents = ["TMiL", ".."]
+doc-valid-idents = ["TMiL", "WebView", "WebView2", ".."]

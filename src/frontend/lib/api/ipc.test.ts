@@ -27,7 +27,11 @@ describe('createApi', () => {
       const a = make(fixture('system-info'));
       cases.push([() => a.api.systemInfo(), 'system_info', undefined, a.call]);
       const b = make(fixture('kill-results'));
-      cases.push([() => b.api.killProcesses([1, 2]), 'kill_processes', { pids: [1, 2] }, b.call]);
+      const targets = [
+        { pid: 1, startTime: 10 },
+        { pid: 2, startTime: 20 },
+      ];
+      cases.push([() => b.api.killProcesses(targets), 'kill_processes', { targets }, b.call]);
       const c = make(fixture('startup-entries'));
       cases.push([() => c.api.startupEntries(), 'startup_entries', undefined, c.call]);
       const d = make(null);
@@ -76,7 +80,7 @@ describe('createApi', () => {
     it('空の PID 一覧もそのまま渡す', async () => {
       const { api, call } = apiReturning([]);
       await expect(api.killProcesses([])).resolves.toEqual([]);
-      expect(call).toHaveBeenCalledWith('kill_processes', { pids: [] });
+      expect(call).toHaveBeenCalledWith('kill_processes', { targets: [] });
     });
   });
 });

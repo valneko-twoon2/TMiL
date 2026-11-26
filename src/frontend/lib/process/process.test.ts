@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { ProcessInfo } from '../model/types';
-import { DETAIL_NUMERIC, detailValue, GROUP_NUMERIC, groupValue, selectedPids } from './columns';
+import {
+  DETAIL_NUMERIC,
+  detailValue,
+  GROUP_NUMERIC,
+  groupValue,
+  selectedTargets,
+  toKillTarget,
+} from './columns';
 import { displayName, filterProcesses, groupProcesses, nextSort, sortBy } from './process';
 
 function proc(pid: number, name: string, extra: Partial<ProcessInfo> = {}): ProcessInfo {
@@ -17,6 +24,7 @@ function proc(pid: number, name: string, extra: Partial<ProcessInfo> = {}): Proc
     diskReadPerSec: 10,
     diskWrittenPerSec: 5,
     runTimeSecs: 0,
+    startTime: 1000 + pid,
     ...extra,
   };
 }
@@ -153,19 +161,23 @@ describe('columns', () => {
       expect(groupValue(g, 'disk')).toBe(15);
     });
 
-    it('選択から終了対象の PID を求める', () => {
+    it('選択から終了対象を求める（起動時刻つき）', () => {
       const groups = groupProcesses([proc(1, 'a'), proc(2, 'a'), proc(3, 'b')]);
-      expect(selectedPids({ kind: 'group', key: 'a' }, groups)).toEqual([1, 2]);
-      expect(selectedPids({ kind: 'process', pid: 3 }, groups)).toEqual([3]);
+      expect(selectedTargets({ kind: 'group', key: 'a' }, groups)).toEqual([
+        { pid: 1, startTime: 1001 },
+        { pid: 2, startTime: 1002 },
+      ]);
+      expect(selectedTargets({ kind: 'process', pid: 3 }, groups)).toEqual([{ pid: 3, startTime: 1003 }]);
+      expect(toKillTarget(proc(9, 'x'))).toEqual({ pid: 9, startTime: 1009 });
     });
   });
 
   describe('boundary', () => {
     it('選択なし・一覧から消えたものは対象外', () => {
       const groups = groupProcesses([proc(1, 'a')]);
-      expect(selectedPids(null, groups)).toEqual([]);
-      expect(selectedPids({ kind: 'group', key: 'gone' }, groups)).toEqual([]);
-      expect(selectedPids({ kind: 'process', pid: 99 }, groups)).toEqual([]);
+      expect(selectedTargets(null, groups)).toEqual([]);
+      expect(selectedTargets({ kind: 'group', key: 'gone' }, groups)).toEqual([]);
+      expect(selectedTargets({ kind: 'process', pid: 99 }, groups)).toEqual([]);
     });
   });
 });

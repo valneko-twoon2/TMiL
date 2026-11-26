@@ -1,5 +1,5 @@
 // プロセス表・詳細表の列定義と選択状態。
-import type { ProcessInfo } from '../model/types';
+import type { KillTarget, ProcessInfo } from '../model/types';
 import type { ProcessGroup } from './process';
 
 export type GroupColumn = 'name' | 'cpu' | 'memory' | 'disk';
@@ -47,12 +47,17 @@ export function detailValue(p: ProcessInfo, column: DetailColumn): string | numb
 /** 表で選んでいるもの。 */
 export type Selection = { kind: 'group'; key: string } | { kind: 'process'; pid: number } | null;
 
-/** 選択から終了対象の PID を求める。今の一覧に無いものは対象にしない。 */
-export function selectedPids(selection: Selection, groups: readonly ProcessGroup[]): number[] {
+/** プロセスを終了の指定に変える。 */
+export function toKillTarget(p: ProcessInfo): KillTarget {
+  return { pid: p.pid, startTime: p.startTime };
+}
+
+/** 選択から終了対象を求める。今の一覧に無いものは対象にしない。 */
+export function selectedTargets(selection: Selection, groups: readonly ProcessGroup[]): KillTarget[] {
   if (selection === null) return [];
   if (selection.kind === 'group') {
-    return groups.find((g) => g.key === selection.key)?.pids ?? [];
+    return groups.find((g) => g.key === selection.key)?.children.map(toKillTarget) ?? [];
   }
-  const exists = groups.some((g) => g.pids.includes(selection.pid));
-  return exists ? [selection.pid] : [];
+  const found = groups.flatMap((g) => g.children).find((p) => p.pid === selection.pid);
+  return found ? [toKillTarget(found)] : [];
 }

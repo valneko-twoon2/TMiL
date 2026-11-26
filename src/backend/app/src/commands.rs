@@ -4,7 +4,9 @@ use std::sync::MutexGuard;
 
 use tauri::State;
 use tmil_core::collector::Collector;
-use tmil_core::model::{KillResult, ReplacementStatus, Snapshot, StartupEntry, SystemInfo};
+use tmil_core::model::{
+    KillResult, KillTarget, ReplacementStatus, Snapshot, StartupEntry, SystemInfo,
+};
 use tmil_core::{startup, taskmgr};
 
 use crate::AppState;
@@ -36,9 +38,9 @@ pub(crate) async fn system_info(state: State<'_, AppState>) -> Result<SystemInfo
 #[tauri::command]
 pub(crate) async fn kill_processes(
     state: State<'_, AppState>,
-    pids: Vec<u32>,
+    targets: Vec<KillTarget>,
 ) -> Result<Vec<KillResult>, String> {
-    Ok(collector(&state)?.kill(&pids))
+    Ok(collector(&state)?.kill(&targets))
 }
 
 /// スタートアップ項目の一覧。

@@ -10,7 +10,7 @@
   import {
     GROUP_NUMERIC,
     groupValue,
-    selectedPids,
+    selectedTargets,
     type GroupColumn,
     type Selection,
   } from '../process/columns';
@@ -49,7 +49,7 @@
     memory: shareOf(snapshot?.memory.used ?? 0, memoryTotal),
     disk: (snapshot?.processes ?? []).reduce((sum, p) => sum + p.diskReadPerSec + p.diskWrittenPerSec, 0),
   });
-  const targets = $derived(selectedPids(selection, groups));
+  const targets = $derived(selectedTargets(selection, groups));
 
   function onsort(key: GroupColumn) {
     sort = nextSort(sort, key, GROUP_NUMERIC);

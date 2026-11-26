@@ -65,6 +65,14 @@ export interface ProcessInfo {
   diskReadPerSec: number;
   diskWrittenPerSec: number;
   runTimeSecs: number;
+  /** 起動した時刻（UNIX 秒）。終了するときに同じプロセスかを確かめる */
+  startTime: number;
+}
+
+/** 終了するプロセスの指定。 */
+export interface KillTarget {
+  pid: number;
+  startTime: number;
 }
 
 export interface SystemInfo {

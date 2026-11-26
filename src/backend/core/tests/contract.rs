@@ -13,8 +13,9 @@ mod contract {
 
     use serde::Serialize;
     use tmil_core::model::{
-        CpuStats, DiskKind, DiskStats, KillResult, MemoryStats, NetworkStats, ProcessInfo,
-        ProcessState, ReplacementStatus, Snapshot, StartupEntry, StartupLocation, SystemInfo,
+        CpuStats, DiskKind, DiskStats, KillResult, KillTarget, MemoryStats, NetworkStats,
+        ProcessInfo, ProcessState, ReplacementStatus, Snapshot, StartupEntry, StartupLocation,
+        SystemInfo,
     };
 
     fn fixtures_dir() -> PathBuf {
@@ -56,6 +57,7 @@ mod contract {
             disk_read_per_sec: 2048,
             disk_written_per_sec: 0,
             run_time_secs: 3600,
+            start_time: 1_767_222_000,
         }
     }
 
@@ -128,6 +130,25 @@ mod contract {
                 logical_cores: 8,
             },
         );
+    }
+
+    /// フロントから送られる値。見本どおりの JSON を読めることも確かめる。
+    #[test]
+    fn kill_targets() {
+        let targets = vec![
+            KillTarget {
+                pid: 100,
+                start_time: 1_767_222_000,
+            },
+            KillTarget {
+                pid: 101,
+                start_time: 0,
+            },
+        ];
+        check("kill-targets", &targets);
+        let text = std::fs::read_to_string(fixtures_dir().join("kill-targets.json")).unwrap();
+        let parsed: Vec<KillTarget> = serde_json::from_str(&text).unwrap();
+        assert_eq!(parsed, targets);
     }
 
     #[test]

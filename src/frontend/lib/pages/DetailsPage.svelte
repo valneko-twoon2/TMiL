@@ -5,7 +5,7 @@
   import SortHeader from '../components/SortHeader.svelte';
   import { formatBytes, formatPercent, formatRate } from '../format/format';
   import { processStateLabel } from '../format/labels';
-  import { DETAIL_NUMERIC, detailValue, type DetailColumn } from '../process/columns';
+  import { DETAIL_NUMERIC, detailValue, toKillTarget, type DetailColumn } from '../process/columns';
   import { filterProcesses, nextSort, sortBy, type SortState } from '../process/process';
   import type { Monitor } from '../state/monitor.svelte';
   import type { Toasts } from '../state/toast.svelte';
@@ -24,17 +24,18 @@
   let busy = $state(false);
 
   const rows = $derived(sortBy(filterProcesses(monitor.snapshot?.processes ?? [], query), sort, detailValue));
-  const exists = $derived(selected !== null && rows.some((r) => r.pid === selected));
+  const target = $derived(rows.find((r) => r.pid === selected));
+  const exists = $derived(target !== undefined);
 
   function onsort(key: DetailColumn) {
     sort = nextSort(sort, key, DETAIL_NUMERIC);
   }
 
   async function endTask() {
-    if (selected === null || !exists || busy) return;
+    if (target === undefined || busy) return;
     busy = true;
     try {
-      const [result] = await api.killProcesses([selected]);
+      const [result] = await api.killProcesses([toKillTarget(target)]);
       if (result && !result.ok) toasts.show(result.error ?? '終了できませんでした。', 'error');
       selected = null;
       await monitor.refresh();

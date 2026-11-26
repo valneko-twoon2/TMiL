@@ -29,6 +29,7 @@ const processArb: fc.Arbitrary<ProcessInfo> = fc.record({
   diskReadPerSec: fc.nat(),
   diskWrittenPerSec: fc.nat(),
   runTimeSecs: fc.nat(),
+  startTime: fc.nat(),
 });
 
 describe('ランダム入力', () => {
