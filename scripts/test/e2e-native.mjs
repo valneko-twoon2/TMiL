@@ -10,6 +10,7 @@ import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { nativeTestArgs } from '../lib/e2e.mjs';
 import { ROOT, run, runNodeBin, toolEnv } from '../lib/proc.mjs';
 
 const skipBuild = process.argv.includes('--skip-build');
@@ -37,7 +38,7 @@ driver.on('error', (e) => {
 let status;
 try {
   await sleep(2000);
-  status = run(process.execPath, ['--test', '--test-reporter=spec', 'tests/e2e/native/'], {
+  status = run(process.execPath, nativeTestArgs(), {
     env: { TMIL_APP: exe },
   }).status;
 } finally {
