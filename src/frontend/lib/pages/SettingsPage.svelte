@@ -113,7 +113,7 @@
       <p class="note">
         タスクバーの右クリックメニューや Ctrl+Shift+Esc で TMiL
         が開くようになります。切り替えには管理者の確認が出ます。 TMiL
-        をアンインストールする前に、必ず元に戻してください。
+        をインストーラーでアンインストールすると、自動で元に戻ります。
       </p>
       {#if replacement.other}
         <p class="note warn">別のアプリ（{replacement.other}）に置き換えられています。</p>

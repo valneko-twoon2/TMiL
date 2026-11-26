@@ -6,13 +6,15 @@
 | ------------------------- | --------------- | ------------------- | ---------------------------------- |
 | `snapshot`                | なし            | `Snapshot`          | 最新の計測結果                     |
 | `system_info`             | なし            | `SystemInfo`        | OS・CPU 名など変わらない情報       |
-| `kill_processes`          | `pids`          | `KillResult[]`      | プロセスを終了                     |
+| `kill_processes`          | `targets`       | `KillResult[]`      | プロセスを終了（PID と起動時刻）   |
 | `startup_entries`         | なし            | `StartupEntry[]`    | スタートアップ項目                 |
 | `set_startup_enabled`     | `id`, `enabled` | `null`              | スタートアップの有効・無効         |
 | `taskmgr_replacement`     | なし            | `ReplacementStatus` | タスク マネージャー置き換えの状態  |
 | `set_taskmgr_replacement` | `enabled`       | `ReplacementStatus` | 置き換えの切り替え（Windows のみ） |
 
 エラーは日本語の文字列で返します。
+
+`kill_processes` は PID と起動時刻（`startTime`）の組を受け取ります。一覧を取ってから PID が別のプロセスに再利用されていたら終了しません。TMiL 自身とその子孫（WebView）も終了しません。
 
 ## 契約テスト
 

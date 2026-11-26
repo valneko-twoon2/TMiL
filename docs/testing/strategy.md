@@ -60,7 +60,13 @@ describe('regression', () => {
 
 フォントの違いで OS ごとに見た目が変わるため、基準画像は Linux（CI）で作ったものだけを使います。Windows で回して作られた `*-win32.png` は git に入りません。
 
-画面を意図して変えたら、GitHub Actions の「VRT 基準画像の更新」を develop で実行してください。基準画像を作り直して develop にコミットします。
+画面を意図して変えたら、次の手順で基準画像を作り直します。
+
+1. 変更を push してから、GitHub Actions の「VRT 基準画像の更新」を同じブランチで実行する（`gh workflow run vrt-update.yml --ref develop`）
+2. 終わったら手元で `npm run vrt:pull` を実行して取り込む
+3. 差分を確かめて `test: VRT の基準画像を更新` でコミットし、push する
+
+Actions から直接コミットしないのは、そのコミットに CI が走らず PR の必須チェックが止まるためです。
 
 ## ミューテーションテスト
 

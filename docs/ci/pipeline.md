@@ -31,7 +31,7 @@ main に push されたら、`package.json` のバージョンでリリースを
 
 ## vrt-update.yml
 
-VRT の基準画像を Linux で作り直して develop にコミットします（手動実行）。
+VRT の基準画像を Linux で作り直し、成果物として置きます（手動実行）。取り込みは手元で `npm run vrt:pull`。
 
 ## main のブランチ保護
 
