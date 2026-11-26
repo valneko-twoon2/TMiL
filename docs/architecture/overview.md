@@ -28,6 +28,7 @@ assets/                 ロゴ（画面の public フォルダーも兼ねる）
 - 処理はできるだけ純粋関数にしてテストしやすくする。画面（`.svelte`）とアプリ本体（`app`）は薄く保つ
 - OS ごとの違いは `core` に閉じ込める。Windows 専用の処理も、ロジックは trait 越しにどの OS でもテストできるようにする（例: `startup/registry.rs`）
 - 軽さを優先する。ウィンドウが隠れている間（トレイ常駐中）は計測を止める
+- Windows では WebView2 の GPU 処理を止めている（`tauri.conf.json` の `additionalBrowserArgs` の `--disable-gpu`）。グラフは SVG なので見た目は変わらず、専有メモリが約 100MB 減る（252MB → 149MB、手元の計測）
 
 ## データの流れ
 
