@@ -35,8 +35,11 @@
     page = next;
   }
 
+  // 間隔の値が変わったときだけ再設定する（テーマなど他の設定の変更では動かさない）
+  const interval = $derived(intervalOf(settings.value.refresh));
+
   $effect(() => {
-    monitor.setInterval(intervalOf(settings.value.refresh));
+    monitor.setInterval(interval);
   });
 
   $effect(() => {

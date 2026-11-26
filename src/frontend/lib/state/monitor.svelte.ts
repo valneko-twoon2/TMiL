@@ -1,4 +1,5 @@
 // 計測結果を定期的に取りに行く。ウィンドウが隠れている間は止める。
+// 取得は同時に 1 つだけにする（重なると転送量や CPU 使用率の計算が乱れるため）。
 import type { Api } from '../api/ipc';
 import { EMPTY_HISTORY, recordSnapshot, type HistoryMap } from '../history/history';
 import type { Snapshot, SystemInfo } from '../model/types';
@@ -13,14 +14,23 @@ export class Monitor {
   #timer: ReturnType<typeof setTimeout> | undefined;
   #interval = 0;
   #visible = true;
+  #running = false;
   #generation = 0;
+  #inFlight: Promise<void> | null = null;
 
   constructor(api: Api) {
     this.#api = api;
   }
 
-  /** 1 回だけ取得する。 */
-  async refresh(): Promise<void> {
+  /** 1 回取得する。取得中なら、その結果を待つだけにする。 */
+  refresh(): Promise<void> {
+    this.#inFlight ??= this.#fetch().finally(() => {
+      this.#inFlight = null;
+    });
+    return this.#inFlight;
+  }
+
+  async #fetch(): Promise<void> {
     try {
       const snapshot = await this.#api.snapshot();
       this.snapshot = snapshot;
@@ -39,8 +49,9 @@ export class Monitor {
     }
   }
 
-  /** 更新間隔を変える。0 で一時停止。 */
+  /** 更新間隔を変える。0 で一時停止。同じ間隔なら何もしない。 */
   setInterval(ms: number): void {
+    if (ms === this.#interval && (this.#running || ms <= 0)) return;
     this.#interval = ms;
     this.#reschedule();
   }
@@ -54,6 +65,7 @@ export class Monitor {
 
   stop(): void {
     this.#generation += 1;
+    this.#running = false;
     clearTimeout(this.#timer);
     this.#timer = undefined;
   }
@@ -61,6 +73,7 @@ export class Monitor {
   #reschedule(): void {
     this.stop();
     if (this.#interval <= 0 || !this.#visible) return;
+    this.#running = true;
     const generation = this.#generation;
     const loop = async (): Promise<void> => {
       await this.refresh();
