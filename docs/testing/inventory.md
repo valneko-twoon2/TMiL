@@ -3,24 +3,24 @@
 > 自動生成です。手で編集せず `npm run docs:tests` で更新してください。
 > 種類の決め方は [tags.md](tags.md) を参照。
 
-合計 **477** 件
+合計 **490** 件
 
 ## 種類 × 対象
 
 | 種類 | フロント | バック | ツール | アプリ全体 | 合計 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| 単体（同値分割） | 63 | 70 | 55 | 0 | 188 |
-| 単体（境界値） | 78 | 62 | 22 | 0 | 162 |
-| 単体（回帰） | 5 | 18 | 7 | 0 | 30 |
+| 単体（同値分割） | 64 | 70 | 55 | 0 | 189 |
+| 単体（境界値） | 79 | 62 | 22 | 0 | 163 |
+| 単体（回帰） | 8 | 23 | 7 | 0 | 38 |
 | 単体（その他） | 0 | 7 | 0 | 0 | 7 |
 | スナップショット | 11 | 1 | 0 | 0 | 12 |
 | 契約 | 11 | 6 | 0 | 0 | 17 |
 | ファジング | 10 | 6 | 0 | 0 | 16 |
-| 形式検証 | 0 | 17 | 0 | 0 | 17 |
+| 形式検証 | 0 | 20 | 0 | 0 | 20 |
 | VRT | 10 | 0 | 0 | 0 | 10 |
 | E2E（モック） | 13 | 0 | 0 | 0 | 13 |
 | E2E（実アプリ） | 0 | 0 | 0 | 5 | 5 |
-| **合計** | **201** | **187** | **84** | **5** | **477** |
+| **合計** | **206** | **195** | **84** | **5** | **490** |
 
 ## フロントの内訳
 
@@ -34,11 +34,11 @@
 | `src/frontend/lib/history/history.test.ts` | 11 | 単体（同値分割） 3 / 単体（境界値） 6 / 単体（回帰） 2 |
 | `src/frontend/lib/model/contract.test.ts` | 11 | 契約 11 |
 | `src/frontend/lib/model/guards.test.ts` | 10 | 単体（同値分割） 6 / 単体（境界値） 4 |
-| `src/frontend/lib/performance/resources.test.ts` | 7 | 単体（同値分割） 3 / 単体（境界値） 4 |
+| `src/frontend/lib/performance/resources.test.ts` | 11 | 単体（同値分割） 4 / 単体（境界値） 5 / 単体（回帰） 2 |
 | `src/frontend/lib/process/process.test.ts` | 20 | 単体（同値分割） 12 / 単体（境界値） 8 |
 | `src/frontend/lib/settings/settings.test.ts` | 14 | 単体（同値分割） 6 / 単体（境界値） 8 |
 | `src/frontend/lib/startup/startup.test.ts` | 3 | 単体（同値分割） 2 / 単体（境界値） 1 |
-| `src/frontend/lib/state/monitor.test.ts` | 5 | 単体（同値分割） 2 / 単体（境界値） 1 / 単体（回帰） 2 |
+| `src/frontend/lib/state/monitor.test.ts` | 6 | 単体（同値分割） 2 / 単体（境界値） 1 / 単体（回帰） 3 |
 | `tests/e2e/mock/app.spec.ts` | 13 | E2E（モック） 13 |
 | `tests/vrt/pages.spec.ts` | 10 | VRT 10 |
 
@@ -48,7 +48,7 @@
 | --- | ---: | --- |
 | `backend::boundary` | 5 | 単体（境界値） 5 |
 | `backend::equivalence` | 9 | 単体（同値分割） 9 |
-| `backend::regression` | 5 | 単体（回帰） 5 |
+| `backend::regression` | 7 | 単体（回帰） 7 |
 | `collector::boundary` | 3 | 単体（境界値） 3 |
 | `collector::equivalence` | 6 | 単体（同値分割） 6 |
 | `collector::regression` | 2 | 単体（回帰） 2 |
@@ -57,7 +57,7 @@
 | `machine::boundary` | 8 | 単体（境界値） 8 |
 | `machine::equivalence` | 10 | 単体（同値分割） 10 |
 | `machine::formal` | 5 | 形式検証 5 |
-| `machine::regression` | 7 | 単体（回帰） 7 |
+| `machine::regression` | 9 | 単体（回帰） 9 |
 | `metrics::boundary` | 10 | 単体（境界値） 10 |
 | `metrics::equivalence` | 5 | 単体（同値分割） 5 |
 | `model::boundary` | 2 | 単体（境界値） 2 |
@@ -76,6 +76,7 @@
 | `startup::equivalence` | 4 | 単体（同値分割） 4 |
 | `startup::registry::boundary` | 5 | 単体（境界値） 5 |
 | `startup::registry::equivalence` | 6 | 単体（同値分割） 6 |
+| `startup::registry::regression` | 1 | 単体（回帰） 1 |
 | `startup::win_registry::boundary` | 1 | 単体（境界値） 1 |
 | `startup::win_registry::equivalence` | 2 | 単体（同値分割） 2 |
 | `startup::xdg::boundary` | 5 | 単体（境界値） 5 |
@@ -84,9 +85,9 @@
 | `taskmgr::equivalence` | 7 | 単体（同値分割） 7 |
 | `taskmgr::fuzz` | 1 | ファジング 1 |
 | `taskmgr::regression` | 2 | 単体（回帰） 2 |
-| `tests/formal/Backend.cfg` | 5 | 形式検証 5 |
+| `tests/formal/Backend.cfg` | 6 | 形式検証 6 |
 | `tests/formal/MachineConformance.cfg` | 1 | 形式検証 1 |
-| `tests/formal/regressions` | 6 | 形式検証 6 |
+| `tests/formal/regressions` | 8 | 形式検証 8 |
 | `tests/fuzz/fuzz_targets/command_line.rs` | 1 | ファジング 1 |
 | `tests/fuzz/fuzz_targets/desktop_entry.rs` | 1 | ファジング 1 |
 | `tests/fuzz/fuzz_targets/windows_quote.rs` | 1 | ファジング 1 |
