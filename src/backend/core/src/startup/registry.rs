@@ -122,13 +122,21 @@ pub fn list(store: &dyn RegistryStore, folders: &StartupFolders) -> Vec<StartupE
         for (name, command) in store.string_values(hive, path) {
             let flag = store.binary_value(hive, &approved(approval_kind), &name);
             let can_toggle = location == StartupLocation::RegistryUser;
-            entries.push(entry(
+            // 32 ビット用の Run は別のキーなので、同じ名前でも別の項目として ID を分ける
+            let id_name = if path == RUN32 {
+                format!(r"WOW6432Node\{name}")
+            } else {
+                name.clone()
+            };
+            let mut e = entry(
                 location,
-                &name,
+                &id_name,
                 command,
                 approval::is_enabled(flag.as_deref()),
                 can_toggle,
-            ));
+            );
+            e.name = name;
+            entries.push(e);
         }
     }
     let folder_sources = [
@@ -418,11 +426,29 @@ mod tests {
         }
 
         #[test]
-        fn duplicate_machine_entries_in_run_and_run32_are_merged() {
+        fn same_value_listed_twice_in_one_key_is_listed_once() {
             let reg = FakeRegistry::default()
                 .with_run(Hive::LocalMachine, RUN, "Same", "a.exe")
-                .with_run(Hive::LocalMachine, RUN32, "Same", "b.exe");
+                .with_run(Hive::LocalMachine, RUN, "Same", "a.exe");
             assert_eq!(list(&reg, &StartupFolders::default()).len(), 1);
+        }
+    }
+
+    mod regression {
+        use super::*;
+
+        /// 64 ビットと 32 ビットの Run に同じ名前があると、別のプログラムなのに片方が消えていた。
+        #[test]
+        fn run_and_run32_entries_with_same_name_are_both_listed() {
+            let reg = FakeRegistry::default()
+                .with_run(Hive::LocalMachine, RUN, "Updater", "a.exe")
+                .with_run(Hive::LocalMachine, RUN32, "Updater", "b.exe");
+            let list = list(&reg, &StartupFolders::default());
+            assert_eq!(list.len(), 2);
+            let programs: Vec<&str> = list.iter().map(|e| e.program.as_str()).collect();
+            assert!(programs.contains(&"a.exe") && programs.contains(&"b.exe"));
+            assert_ne!(list[0].id, list[1].id);
+            assert!(list.iter().all(|e| e.name == "Updater"));
         }
     }
 }
