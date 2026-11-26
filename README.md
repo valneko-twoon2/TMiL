@@ -60,6 +60,7 @@
 ## 🛠 開発
 
 ```sh
+cd src/frontend      # npm のコマンドはここで実行する
 npm install          # 依存関係と git フック
 npm run tauri dev    # アプリを起動
 npm run dev:mock     # ブラウザだけで画面を確認（偽のバックエンド）

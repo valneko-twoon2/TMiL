@@ -24,6 +24,6 @@
 | Claude `PostToolUse` | `scripts/hooks/claude/post-edit.mjs` | 編集したファイルを LF にし、整形と Lint               |
 | Claude `Stop`        | `scripts/hooks/claude/stop.mjs`      | 未コミット・未 push の変更があれば止める              |
 
-git フックは `npm install` で自動的に有効になります（`core.hooksPath=.githooks`）。フックを飛ばすオプションは使いません。
+git フックは `src/frontend` での `npm install` で自動的に有効になります（`core.hooksPath=.githooks`）。フックを飛ばすオプションは使いません。
 
 Claude のフックはコマンド文字列を見て止めるので、禁止オプションの名前を含むテキストを Bash のヒアドキュメントで書くと止まります。ドキュメントはファイル書き込みで作ってください。

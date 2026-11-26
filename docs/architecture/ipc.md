@@ -27,5 +27,5 @@
 型を変えたら次の順で直します。
 
 1. `model.rs` を変更
-2. `UPDATE_CONTRACT=1 cargo test -p tmil-core --test contract` で見本を作り直す
+2. `UPDATE_CONTRACT=1 cargo test -p tmil-core --test contract`（`src/backend` で）で見本を作り直す
 3. `types.ts` と `guards.ts` を合わせて、フロントの契約テストを通す

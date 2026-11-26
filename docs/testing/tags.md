@@ -19,7 +19,7 @@ VRT・E2E はフォルダー（Playwright のプロジェクト）で決まる�
 
 ## 付け方
 
-Rust はモジュール名、フロントは `describe` の名前にします。
+Rust はモジュール名、フロント（Vitest）とツール（`scripts` の node:test）は `describe` の名前にします。
 
 ```rust
 #[cfg(test)]
@@ -46,16 +46,20 @@ describe('formatBytes', () => {
 ## 絞り込み実行
 
 ```sh
+# src/backend で
 cargo test -p tmil-core boundary          # Rust の境界値テストだけ
+# src/frontend で
 npx vitest run -t "boundary"              # フロントの境界値テストだけ
 npx playwright test --project=e2e-mock    # E2E（モック）だけ
+# リポジトリ直下で
+node --test --test-name-pattern=boundary "scripts/**/*.test.mjs"   # ツールの境界値テストだけ
 ```
 
 ## 対象（フロント・バックなど）の決め方
 
-| 対象       | 条件                                     |
-| ---------- | ---------------------------------------- |
-| フロント   | `src/frontend` のテスト、Playwright      |
-| バック     | Rust のテスト、cargo-fuzz                |
-| ツール     | `scripts` のテスト（フックやスクリプト） |
-| アプリ全体 | 実アプリの E2E                           |
+| 対象       | 条件                                                |
+| ---------- | --------------------------------------------------- |
+| フロント   | `src/frontend` のテスト、Playwright                 |
+| バック     | Rust のテスト、cargo-fuzz                           |
+| ツール     | `scripts` のテスト（フックやスクリプト。node:test） |
+| アプリ全体 | 実アプリの E2E                                      |

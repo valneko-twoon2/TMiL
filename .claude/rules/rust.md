@@ -3,7 +3,6 @@ paths:
   - 'src/backend/**'
   - 'tests/fuzz/**'
   - 'tests/formal/**'
-  - 'Cargo.toml'
 ---
 
 # Rust のルール
@@ -17,7 +16,7 @@ paths:
 ## 状態機械
 
 - バックエンドの判断（計測するか・終了してよいか・切り替えてよいか など）は `machine::step` だけで行う。殻（`backend/`）と Tauri（`app/`）は `Effect` に従って実行するだけ
-- `step` を変えたら、遷移表を作り直し（`UPDATE_FORMAL=1 cargo test -p tmil-core machine::tests::formal`）、`tests/formal/BackendMachine.tla` の `Step` も同じ判断にする
+- `step` を変えたら、遷移表を作り直し（`src/backend` で `UPDATE_FORMAL=1 cargo test -p tmil-core machine::tests::formal`）、`tests/formal/BackendMachine.tla` の `Step` も同じ判断にする
 - 新しい約束は `Backend.tla` の `Broken` と Rust の `machine::tests::formal` の両方に足す。不具合を直したら、その不具合を戻した版を `Regressions.tla` に足す
 - ロックは「collector → machine」の順。machine のロックを持ったまま計測や UAC を待たない
 
@@ -35,4 +34,4 @@ paths:
 - 実機の値を読むテスト（sysinfo など）は値の範囲や関係を確かめる。具体的な値は決め打ちしない
 - ファイルを扱うテストは `startup::test_support::TempDir` を使う
 - スナップショットは insta。新しい `.snap.new` は中身を確かめてから `.snap` に変える
-- 関係するテストだけ回す: `cargo test -p tmil-core <モジュール名>::`
+- 関係するテストだけ回す: `cargo test -p tmil-core <モジュール名>::`（cargo は `src/backend` で実行する。設定もそこにある）

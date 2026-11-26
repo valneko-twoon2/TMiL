@@ -6,18 +6,18 @@
 
 すべて並列に動きます。
 
-| ジョブ                     | 内容                                                                          |
-| -------------------------- | ----------------------------------------------------------------------------- |
-| Lint（フロント）           | Prettier・ESLint・svelte-check                                                |
-| Lint（バック）             | rustfmt・clippy（警告もエラー）                                               |
-| テスト（フロント・ツール） | Vitest（単体・スナップショット・契約・ファジング）。カバレッジ 80% 未満で失敗 |
-| テスト（バック）           | cargo-llvm-cov。Ubuntu と Windows の両方。カバレッジ 80% 未満で失敗           |
-| E2E（モック）              | Playwright                                                                    |
-| VRT                        | Playwright のスクリーンショット比較                                           |
-| E2E（実アプリ）            | tauri-driver + Xvfb                                                           |
-| ファジング                 | cargo-fuzz を各ターゲット 30 秒                                               |
-| 形式検証（TLA+）           | TLC で、Rust と TLA+ の一致・約束・活性・不具合版の検出を確かめる             |
-| 依存関係の監査             | npm audit（high 以上で失敗）・cargo-deny（脆弱性・ライセンス・取得元）        |
+| ジョブ                     | 内容                                                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Lint（フロント）           | Prettier・ESLint・svelte-check                                                                                            |
+| Lint（バック）             | rustfmt・clippy（警告もエラー）                                                                                           |
+| テスト（フロント・ツール） | Vitest（単体・スナップショット・契約・ファジング）。カバレッジ 80% 未満で失敗。`scripts/` 自身のテスト（node:test）も回す |
+| テスト（バック）           | cargo-llvm-cov。Ubuntu と Windows の両方。カバレッジ 80% 未満で失敗                                                       |
+| E2E（モック）              | Playwright                                                                                                                |
+| VRT                        | Playwright のスクリーンショット比較                                                                                       |
+| E2E（実アプリ）            | tauri-driver + Xvfb                                                                                                       |
+| ファジング                 | cargo-fuzz を各ターゲット 30 秒                                                                                           |
+| 形式検証（TLA+）           | TLC で、Rust と TLA+ の一致・約束・活性・不具合版の検出を確かめる                                                         |
+| 依存関係の監査             | npm audit（high 以上で失敗）・cargo-deny（脆弱性・ライセンス・取得元）                                                    |
 
 ## codeql.yml
 
@@ -28,7 +28,7 @@
 
 ## release.yml
 
-main に push されたら、`package.json` のバージョンでリリースを作ります。詳しくは [../release/release.md](../release/release.md)。
+main に push されたら、`src/frontend/package.json` のバージョンでリリースを作ります。詳しくは [../release/release.md](../release/release.md)。
 
 ## vrt-update.yml
 

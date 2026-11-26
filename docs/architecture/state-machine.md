@@ -104,7 +104,7 @@ Rust のテストが、全状態 × 全出来事（192 × 25 = 4800 通り）の
 ## 状態機械を変えるとき
 
 1. `machine/mod.rs` の `step` を変え、Rust のテストを直す（`regression` と `formal` も）
-2. 遷移表を作り直す: `UPDATE_FORMAL=1 cargo test -p tmil-core machine::tests::formal`
+2. 遷移表を作り直す: `UPDATE_FORMAL=1 cargo test -p tmil-core machine::tests::formal`（`src/backend` で）
 3. `tests/formal/BackendMachine.tla` の `Step` を同じ判断に直す
 4. 新しい約束があれば `Backend.tla` の `Broken` に足す。不具合を直したときは、その不具合を戻した版を `Regressions.tla` と `regressions/*.cfg`、`scripts/lib/formal.mjs` に足す
 5. `npm run test:formal` で確かめる（Java 11 以上と tla2tools.jar が必要）。手元で回せないときは CI に任せる

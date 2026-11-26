@@ -14,15 +14,20 @@
 | tauri-driver          | 実アプリの E2E     | `cargo install tauri-driver --locked`                            |
 | cargo-fuzz + nightly  | ファジング         | `cargo install cargo-fuzz` と `rustup toolchain install nightly` |
 | cargo-mutants         | ミューテーション   | `cargo install cargo-mutants`                                    |
-| Playwright のブラウザ | E2E（モック）・VRT | `npx playwright install chromium`                                |
+| Playwright のブラウザ | E2E（モック）・VRT | `npx playwright install chromium`（`src/frontend` で）           |
 
 ## 手順
 
+npm のコマンドは `src/frontend` で実行します。package.json と node_modules はそこにあります。
+
 ```sh
+cd src/frontend
 npm install          # git フック（.githooks）も自動で有効になる
 npm run tauri dev    # アプリを起動
 npm run dev:mock     # ブラウザだけで画面を確認（偽のバックエンド）
 ```
+
+cargo を直接使うときは `src/backend`（Cargo のワークスペース）で実行します。
 
 ## よく使うコマンド
 
@@ -36,4 +41,4 @@ npm run dev:mock     # ブラウザだけで画面を確認（偽のバックエ
 
 ## Rust のキャッシュについて
 
-`target/` が膨らまないよう、デバッグ情報と増分ビルドは作らない設定にしています（`Cargo.toml` の `[profile.*]`）。それでも大きくなったら `npm run clean -- --rust` で消してください。
+`src/backend/target/` が膨らまないよう、デバッグ情報と増分ビルドは作らない設定にしています（`src/backend/Cargo.toml` の `[profile.*]`）。それでも大きくなったら `npm run clean -- --rust` で消してください。

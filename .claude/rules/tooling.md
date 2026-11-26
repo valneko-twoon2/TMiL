@@ -11,9 +11,10 @@ paths:
 ## スクリプト（scripts/）
 
 - Node.js の `.mjs` で書く。npm の依存は足さない
-- 種類ごとのフォルダーに置く: `hooks/git` `hooks/claude` `lint` `test` `docs` `release` `maintenance` `setup`。共通処理とその純粋関数は `lib/`
+- 種類ごとのフォルダーに置く: `hooks/git` `hooks/claude` `lint` `test` `docs` `release` `maintenance` `setup` `dev`。共通処理とその純粋関数は `lib/`
 - Windows と Linux の両方で動かす。シェルを通さず、子プロセスは `lib/proc.mjs` の `run` / `runNodeBin` で起動する
-- 判断ロジックは `lib/` に純粋関数として置き、`*.test.mjs` でテストする
+- 判断ロジックは `lib/` に純粋関数として置き、`*.test.mjs` でテストする。テストは `node:test` と `node:assert` で書く（npm の依存を使わない）
+- フロント・バックの場所は `lib/proc.mjs` の `FRONTEND`・`BACKEND` を使う。npm のツールは `runNodeBin`（`src/frontend/node_modules` から探す）、cargo は `cwd: BACKEND` で動かす
 
 ## GitHub Actions（.github/）
 

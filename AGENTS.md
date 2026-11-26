@@ -20,6 +20,8 @@ TMiL は Rust + Tauri 2 + Svelte 5 で作る軽量タスクマネージャーで
 
 ## コマンド
 
+npm のコマンドは `src/frontend` で実行します（`cd src/frontend`）。
+
 | コマンド                                   | 内容                                                       |
 | ------------------------------------------ | ---------------------------------------------------------- |
 | `npm run tauri dev`                        | アプリを起動                                               |
@@ -28,22 +30,26 @@ TMiL は Rust + Tauri 2 + Svelte 5 で作る軽量タスクマネージャーで
 | `npm run test:related`                     | 変更に関係するテスト（`-- --e2e-mock` などで E2E も）      |
 | `npm test`                                 | テストを並列で全部（ミューテーション以外）                 |
 | `npm run test:front` / `npm run test:back` | フロント / バックだけ                                      |
+| `npm run test:tools`                       | `scripts/` 自身のテスト（node:test）                       |
 | `npm run test:formal`                      | TLA+ の形式検証（Java と tla2tools.jar が必要。普段は CI） |
 | `npm run docs:tests`                       | テスト件数の集計（docs/testing/inventory.md）を更新        |
 | `npm run release:bump -- x.y.z`            | バージョンを上げる                                         |
 
-Rust のコマンドは `scripts/` 経由で呼ぶと、rustup のプロキシが使えない環境でもツールチェーンを探して動きます。
+cargo を直接使うときは `src/backend` で実行します。Rust のコマンドは `scripts/` 経由で呼ぶと、rustup のプロキシが使えない環境でもツールチェーンを探して動きます。
 
 ## フォルダー
 
-| 場所                | 内容                                                                                   |
-| ------------------- | -------------------------------------------------------------------------------------- |
-| `src/frontend/`     | 画面（Svelte 5）                                                                       |
-| `src/backend/core/` | 状態機械・システム情報の取得・スタートアップ管理（Tauri 非依存。テストの中心）         |
-| `src/backend/app/`  | Tauri 本体（受け渡し・トレイ・ウィンドウだけ）                                         |
-| `tests/`            | 契約の見本・E2E・VRT・cargo-fuzz・TLA+（`formal/`）                                    |
-| `scripts/`          | 開発用スクリプト（`hooks` `lint` `test` `docs` `release` `maintenance` `setup` `lib`） |
-| `docs/`             | ドキュメント（目次は docs/README.md）                                                  |
+設定ファイルはリポジトリ直下に置かず、それぞれの層に置きます。
+
+| 場所                | 内容                                                                                         |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| `src/frontend/`     | 画面（Svelte 5）と npm のパッケージ・設定（Vite・Vitest・ESLint・Playwright など）           |
+| `src/backend/`      | Cargo のワークスペースと設定（clippy・rustfmt・cargo-deny・cargo-mutants）                   |
+| `src/backend/core/` | 状態機械・システム情報の取得・スタートアップ管理（Tauri 非依存。テストの中心）               |
+| `src/backend/app/`  | Tauri 本体（受け渡し・トレイ・ウィンドウだけ）                                               |
+| `tests/`            | 契約の見本・E2E・VRT・cargo-fuzz・TLA+（`formal/`）。TypeScript のテスト用の tsconfig        |
+| `scripts/`          | 開発用スクリプト（`hooks` `lint` `test` `docs` `release` `maintenance` `setup` `dev` `lib`） |
+| `docs/`             | ドキュメント（目次は docs/README.md）                                                        |
 
 ## スキル（.claude/skills/）
 

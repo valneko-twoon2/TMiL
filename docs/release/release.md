@@ -6,10 +6,11 @@
 2. バージョンを上げる
 
    ```sh
+   cd src/frontend
    npm run release:bump -- 0.2.0
    ```
 
-   `package.json`・`package-lock.json`・`Cargo.toml`・`Cargo.lock`・`CHANGELOG.md` が更新されます（`tauri.conf.json` は `package.json` を参照）。
+   `src/frontend` の `package.json`・`package-lock.json`、`src/backend` の `Cargo.toml`・`Cargo.lock`、`CHANGELOG.md` が更新されます（`tauri.conf.json` は `src/frontend/package.json` を参照）。
 
 3. `chore: v0.2.0 をリリース` でコミットして push
 4. develop → main の PR を作る（本文はテンプレートに沿う）
