@@ -5,8 +5,8 @@
 // 普段は Rust の単体テスト内の簡易ファジング（mod fuzz）が回るので、こちらは CI（Linux）で使う。
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { FUZZ_TOOLCHAIN, fuzzArgs } from '../lib/fuzz.mjs';
-import { ROOT, run } from '../lib/proc.mjs';
+import { FUZZ_TOOLCHAIN, fuzzArgs, parseHostTriple } from '../lib/fuzz.mjs';
+import { capture, ROOT, run } from '../lib/proc.mjs';
 
 const args = process.argv.slice(2);
 const timeIndex = args.indexOf('--time');
@@ -15,10 +15,12 @@ const targets = readdirSync(join(ROOT, 'tests', 'fuzz', 'fuzz_targets'))
   .filter((f) => f.endsWith('.rs'))
   .map((f) => f.replace(/\.rs$/, ''));
 
+const host = parseHostTriple(capture('rustc', ['-vV'], { toolchain: FUZZ_TOOLCHAIN }));
+
 let failed = false;
 for (const target of targets) {
   console.log(`▶ ${target}（${String(seconds)} 秒）`);
-  const r = run('cargo', fuzzArgs(target, seconds), { toolchain: FUZZ_TOOLCHAIN });
+  const r = run('cargo', fuzzArgs(target, seconds, host), { toolchain: FUZZ_TOOLCHAIN });
   if (r.status !== 0) failed = true;
 }
 process.exit(failed ? 1 : 0);
