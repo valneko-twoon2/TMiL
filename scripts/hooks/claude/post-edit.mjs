@@ -3,7 +3,7 @@
 // Lint で問題があれば exit 2 で Claude に返す。clippy と svelte-check はコミット時に回す。
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
-import { isEslintTarget, isPrettierTarget, isTextFile, normalizePath } from '../../lib/files.mjs';
+import { eslintArgs, isEslintTarget, isPrettierTarget, isTextFile, normalizePath } from '../../lib/files.mjs';
 import { ROOT, run, runNodeBin } from '../../lib/proc.mjs';
 import { block, readHookInput } from './read-input.mjs';
 
@@ -27,7 +27,7 @@ if (hasNodeModules && isPrettierTarget(rel)) {
 }
 
 if (hasNodeModules && isEslintTarget(rel)) {
-  const r = runNodeBin('eslint', 'eslint', ['--max-warnings', '0', '--fix', rel], { quiet: true });
+  const r = runNodeBin('eslint', 'eslint', eslintArgs([rel], true), { quiet: true });
   if (r.status !== 0) problems.push(`[eslint]\n${r.stdout}${r.stderr}`.trim());
 }
 

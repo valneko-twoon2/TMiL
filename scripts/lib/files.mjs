@@ -34,3 +34,18 @@ export const isTextFile = (f) =>
   !/\.(png|ico|icns|jpe?g|gif|webp|woff2?|ttf|exe|dll|so|dylib|zip|gz)$/i.test(norm(f));
 
 export { norm as normalizePath };
+
+/**
+ * ESLint の引数。ignore 対象のファイルを渡しても警告で失敗しないようにする。
+ * @param {string[]} files 空なら全体
+ * @param {boolean} fix
+ */
+export function eslintArgs(files, fix) {
+  return [
+    '--max-warnings',
+    '0',
+    '--no-warn-ignored',
+    ...(fix ? ['--fix'] : []),
+    ...(files.length > 0 ? files : ['.']),
+  ];
+}

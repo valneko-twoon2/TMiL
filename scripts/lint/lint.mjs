@@ -9,6 +9,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  eslintArgs,
   isEslintTarget,
   isPrettierTarget,
   isRustTarget,
@@ -55,16 +56,7 @@ function step(name, fn) {
 // ESLint（--fix のあとに Prettier で整えるので先に回す）
 const eslintFiles = pick(isEslintTarget);
 if (frontendOn && (all || eslintFiles.length > 0)) {
-  step(
-    'eslint',
-    () =>
-      runNodeBin('eslint', 'eslint', [
-        '--max-warnings',
-        '0',
-        ...(fix ? ['--fix'] : []),
-        ...(all ? ['.'] : eslintFiles),
-      ]).status,
-  );
+  step('eslint', () => runNodeBin('eslint', 'eslint', eslintArgs(all ? [] : eslintFiles, fix)).status);
 }
 
 // Prettier
