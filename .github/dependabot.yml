@@ -16,6 +16,13 @@ updates:
     groups:
       npm-minor-patch:
         update-types: [minor, patch]
+    ignore:
+      # Node.js 24 を使っているので、型定義も 24 系に合わせる
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
+      # typescript-eslint が対応するまで TypeScript 7 には上げない
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: cargo
     directory: /
