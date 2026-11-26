@@ -1,0 +1,136 @@
+{
+  "timestampMs": 1767225600000,
+  "cpu": {
+    "usage": 25.5,
+    "perCore": [
+      20.0,
+      31.0
+    ],
+    "frequencyMhz": 3200,
+    "processCount": 5,
+    "uptimeSecs": 93784
+  },
+  "memory": {
+    "total": 17179869184,
+    "used": 8589934592,
+    "available": 8589934592,
+    "swapTotal": 4294967296,
+    "swapUsed": 0
+  },
+  "disks": [
+    {
+      "name": "nvme0n1",
+      "mountPoint": "/",
+      "fileSystem": "ext4",
+      "kind": "ssd",
+      "removable": false,
+      "total": 512000000000,
+      "available": 200000000000,
+      "readPerSec": 4096,
+      "writtenPerSec": 1024
+    },
+    {
+      "name": "sda",
+      "mountPoint": "/",
+      "fileSystem": "ext4",
+      "kind": "hdd",
+      "removable": false,
+      "total": 512000000000,
+      "available": 200000000000,
+      "readPerSec": 4096,
+      "writtenPerSec": 1024
+    },
+    {
+      "name": "loop0",
+      "mountPoint": "/",
+      "fileSystem": "ext4",
+      "kind": "unknown",
+      "removable": false,
+      "total": 512000000000,
+      "available": 200000000000,
+      "readPerSec": 4096,
+      "writtenPerSec": 1024
+    }
+  ],
+  "networks": [
+    {
+      "name": "eth0",
+      "receivedPerSec": 1000,
+      "transmittedPerSec": 200,
+      "totalReceived": 1000000,
+      "totalTransmitted": 200000
+    }
+  ],
+  "processes": [
+    {
+      "pid": 1,
+      "parentPid": null,
+      "name": "init",
+      "exe": "/usr/bin/init",
+      "command": "init --flag",
+      "state": "sleeping",
+      "user": "user",
+      "cpu": 12.5,
+      "memory": 1048576,
+      "diskReadPerSec": 2048,
+      "diskWrittenPerSec": 0,
+      "runTimeSecs": 3600
+    },
+    {
+      "pid": 100,
+      "parentPid": 1,
+      "name": "app",
+      "exe": "/usr/bin/app",
+      "command": "app --flag",
+      "state": "running",
+      "user": "user",
+      "cpu": 12.5,
+      "memory": 1048576,
+      "diskReadPerSec": 2048,
+      "diskWrittenPerSec": 0,
+      "runTimeSecs": 3600
+    },
+    {
+      "pid": 101,
+      "parentPid": 1,
+      "name": "paused",
+      "exe": "/usr/bin/paused",
+      "command": "paused --flag",
+      "state": "stopped",
+      "user": "user",
+      "cpu": 12.5,
+      "memory": 1048576,
+      "diskReadPerSec": 2048,
+      "diskWrittenPerSec": 0,
+      "runTimeSecs": 3600
+    },
+    {
+      "pid": 102,
+      "parentPid": 1,
+      "name": "defunct",
+      "exe": "/usr/bin/defunct",
+      "command": "defunct --flag",
+      "state": "zombie",
+      "user": "user",
+      "cpu": 12.5,
+      "memory": 1048576,
+      "diskReadPerSec": 2048,
+      "diskWrittenPerSec": 0,
+      "runTimeSecs": 3600
+    },
+    {
+      "pid": 103,
+      "parentPid": 1,
+      "name": "odd",
+      "exe": "/usr/bin/odd",
+      "command": "odd --flag",
+      "state": "other",
+      "user": "user",
+      "cpu": 12.5,
+      "memory": 1048576,
+      "diskReadPerSec": 2048,
+      "diskWrittenPerSec": 0,
+      "runTimeSecs": 3600
+    }
+  ]
+}

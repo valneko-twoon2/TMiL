@@ -14,3 +14,4 @@ tests/fuzz/
 **/__snapshots__/
 **/*-snapshots/
 docs/testing/inventory.md
+tests/contract/fixtures/
