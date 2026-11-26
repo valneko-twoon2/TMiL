@@ -33,8 +33,11 @@ export class Monitor {
   async #fetch(): Promise<void> {
     try {
       const snapshot = await this.#api.snapshot();
+      // バックエンドが直前の結果を返したときは、同じ点を履歴に足さない
+      if (snapshot.timestampMs !== this.snapshot?.timestampMs) {
+        this.history = recordSnapshot(this.history, snapshot);
+      }
       this.snapshot = snapshot;
-      this.history = recordSnapshot(this.history, snapshot);
       this.error = null;
     } catch (cause) {
       this.error = cause instanceof Error ? cause.message : String(cause);

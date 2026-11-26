@@ -83,7 +83,9 @@ describe('画面部品', () => {
     });
 
     it('パフォーマンス', () => {
-      expect(render(PerformancePage, { props: { monitor: filledMonitor() } }).body).toMatchSnapshot();
+      expect(
+        render(PerformancePage, { props: { monitor: filledMonitor(), intervalMs: 1000 } }).body,
+      ).toMatchSnapshot();
     });
 
     it('スタートアップ（読み込み前）', () => {

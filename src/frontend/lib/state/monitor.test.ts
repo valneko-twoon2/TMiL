@@ -90,4 +90,15 @@ describe('Monitor', () => {
       t.monitor.stop();
     });
   });
+
+  describe('regression', () => {
+    // バックエンドが直前の結果を返したときも履歴に足し、グラフに同じ点が並んでいた
+    it('同じ時刻の計測結果は履歴に 2 度足さない', async () => {
+      const snap = snapshotFixture();
+      const monitor = new Monitor(createApi(() => Promise.resolve(snap)));
+      await monitor.refresh();
+      await monitor.refresh();
+      expect(monitor.history.get('cpu')).toEqual([snap.cpu.usage]);
+    });
+  });
 });

@@ -1,14 +1,16 @@
 <script lang="ts">
   import LineChart from '../components/LineChart.svelte';
   import PageHeader from '../components/PageHeader.svelte';
-  import { buildResources, resourceStats } from '../performance/resources';
+  import { buildResources, historySpanLabel, resourceStats } from '../performance/resources';
   import type { Monitor } from '../state/monitor.svelte';
 
   interface Props {
     monitor: Monitor;
+    /** 更新間隔（ミリ秒）。グラフの横軸の長さに使う */
+    intervalMs: number;
   }
 
-  const { monitor }: Props = $props();
+  const { monitor, intervalMs }: Props = $props();
   let selectedId = $state('cpu');
 
   const resources = $derived(
@@ -71,7 +73,7 @@
       <div class="big-chart">
         <LineChart series={current.series} max={current.max} label="{current.title} のグラフ" />
       </div>
-      <div class="axis bottom"><span>60 秒</span><span>0</span></div>
+      <div class="axis bottom"><span>{historySpanLabel(intervalMs)}</span><span>0</span></div>
       <dl class="stats">
         {#each stats as s (s.label)}
           <div class="stat">

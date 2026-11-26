@@ -9,7 +9,7 @@ import {
   formatUptime,
 } from '../format/format';
 import { shareOf } from '../format/heat';
-import { diskKeys, historyKey, type HistoryMap } from '../history/history';
+import { diskKeys, HISTORY_CAPACITY, historyKey, type HistoryMap } from '../history/history';
 import type { DiskKind, NetworkStats, Snapshot, SystemInfo } from '../model/types';
 
 export type ResourceKind = 'cpu' | 'memory' | 'disk' | 'network';
@@ -51,10 +51,19 @@ export const RESOURCE_COLORS: Record<ResourceKind, string> = {
 const DISK_KIND_LABEL: Record<DiskKind, string> = { ssd: 'SSD', hdd: 'HDD', unknown: '不明' };
 
 /** 一覧に出すネットワーク（ループバックと通信実績の無いものは除く）。 */
+/** ループバックの名前（Linux の lo・lo0、Windows の Loopback Pseudo-Interface）。名前全体で判定する。 */
+const LOOPBACK = /^(lo\d*|loopback\b.*)$/i;
+
 export function visibleNetworks(networks: readonly NetworkStats[]): NetworkStats[] {
   return networks.filter(
-    (n) => !/^(lo|loopback)/i.test(n.name) && n.totalReceived + n.totalTransmitted + n.receivedPerSec > 0,
+    (n) => !LOOPBACK.test(n.name) && n.totalReceived + n.totalTransmitted + n.receivedPerSec > 0,
   );
+}
+
+/** グラフの横軸の長さ（更新間隔 × 履歴の数）。一時停止中は回数で表す。 */
+export function historySpanLabel(intervalMs: number): string {
+  if (intervalMs <= 0) return `直近 ${String(HISTORY_CAPACITY)} 回`;
+  return `${String((intervalMs * HISTORY_CAPACITY) / 1000)} 秒`;
 }
 
 export function buildResources(snapshot: Snapshot, history: HistoryMap, info: SystemInfo | null): Resource[] {

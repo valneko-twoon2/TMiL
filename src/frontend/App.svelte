@@ -93,7 +93,7 @@
       {#if page === 'processes'}
         <ProcessesPage {monitor} {api} {toasts} {query} />
       {:else if page === 'performance'}
-        <PerformancePage {monitor} />
+        <PerformancePage {monitor} intervalMs={interval} />
       {:else if page === 'startup'}
         <StartupPage {api} {toasts} {query} />
       {:else if page === 'details'}

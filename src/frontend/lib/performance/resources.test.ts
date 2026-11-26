@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { EMPTY_HISTORY, recordSnapshot } from '../history/history';
 import { snapshotFixture, systemInfoFixture } from '../../test/fixtures';
-import { buildResources, resourceStats, visibleNetworks } from './resources';
+import { buildResources, historySpanLabel, resourceStats, visibleNetworks } from './resources';
 
 const snapshot = snapshotFixture();
 const info = systemInfoFixture();
@@ -72,6 +72,40 @@ describe('buildResources', () => {
       const disk = buildResources(snap, EMPTY_HISTORY, info).find((r) => r.kind === 'disk');
       if (!disk) throw new Error('disk');
       expect(resourceStats(disk, snap, info).find((s) => s.label === 'ファイルシステム')?.value).toBe('-');
+    });
+  });
+});
+
+describe('visibleNetworks', () => {
+  describe('regression', () => {
+    // 名前が lo で始まるだけのアダプター（Local Area Connection など）までループバック扱いで消えていた
+    it('lo で始まる普通のアダプターは出す', () => {
+      const base = { receivedPerSec: 1, transmittedPerSec: 1, totalReceived: 1, totalTransmitted: 1 };
+      const names = ['Local Area Connection', 'lowpan0', 'lo', 'lo0', 'Loopback Pseudo-Interface 1'];
+      const shown = visibleNetworks(names.map((name) => ({ ...base, name }))).map((n) => n.name);
+      expect(shown).toEqual(['Local Area Connection', 'lowpan0']);
+    });
+  });
+});
+
+describe('historySpanLabel', () => {
+  describe('equivalence', () => {
+    it('更新間隔 × 60 回分を秒で表す', () => {
+      expect(historySpanLabel(1000)).toBe('60 秒');
+      expect(historySpanLabel(4000)).toBe('240 秒');
+    });
+  });
+
+  describe('boundary', () => {
+    it('一時停止中は回数で表す', () => {
+      expect(historySpanLabel(0)).toBe('直近 60 回');
+    });
+  });
+
+  describe('regression', () => {
+    // 更新間隔に関係なく「60 秒」と表示していた
+    it('更新間隔 0.5 秒なら 30 秒', () => {
+      expect(historySpanLabel(500)).toBe('30 秒');
     });
   });
 });
