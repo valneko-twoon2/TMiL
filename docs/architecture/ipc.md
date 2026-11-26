@@ -1,0 +1,29 @@
+# フロントとバックのやり取り（契約）
+
+## コマンド
+
+| コマンド                  | 引数            | 戻り値              | 内容                               |
+| ------------------------- | --------------- | ------------------- | ---------------------------------- |
+| `snapshot`                | なし            | `Snapshot`          | 最新の計測結果                     |
+| `system_info`             | なし            | `SystemInfo`        | OS・CPU 名など変わらない情報       |
+| `kill_processes`          | `pids`          | `KillResult[]`      | プロセスを終了                     |
+| `startup_entries`         | なし            | `StartupEntry[]`    | スタートアップ項目                 |
+| `set_startup_enabled`     | `id`, `enabled` | `null`              | スタートアップの有効・無効         |
+| `taskmgr_replacement`     | なし            | `ReplacementStatus` | タスク マネージャー置き換えの状態  |
+| `set_taskmgr_replacement` | `enabled`       | `ReplacementStatus` | 置き換えの切り替え（Windows のみ） |
+
+エラーは日本語の文字列で返します。
+
+## 契約テスト
+
+型は Rust（`src/backend/core/src/model.rs`）と TypeScript（`src/frontend/lib/model/types.ts`）の両方にあります。ずれを防ぐため、JSON の見本を間に置いています。
+
+- `tests/contract/fixtures/*.json` が見本
+- Rust 側（`src/backend/core/tests/contract.rs`）: 型を JSON にした結果が見本と一致するか
+- フロント側（`src/frontend/lib/model/contract.test.ts`）: 見本を検証関数が受け取れるか、列挙値の種類が一致するか
+
+型を変えたら次の順で直します。
+
+1. `model.rs` を変更
+2. `UPDATE_CONTRACT=1 cargo test -p tmil-core --test contract` で見本を作り直す
+3. `types.ts` と `guards.ts` を合わせて、フロントの契約テストを通す
