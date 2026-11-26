@@ -87,3 +87,11 @@ export function nodeBin(pkg, binName) {
 export function runNodeBin(pkg, binName, args, opts = {}) {
   return run(process.execPath, [nodeBin(pkg, binName), ...args], opts);
 }
+
+/**
+ * 複数の終了コードをまとめる（どれかが失敗なら最初の失敗を返す）。
+ * @param {number[]} statuses
+ */
+export function combineStatus(statuses) {
+  return statuses.find((s) => s !== 0) ?? 0;
+}
