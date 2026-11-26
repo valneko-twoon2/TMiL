@@ -30,7 +30,8 @@ describe('formal', () => {
         '/tmp/x',
       ]);
       expect(args.at(-1)).toBe('Backend');
-      expect(args).toContain('-noGenerateSpecTE');
+      // v1.7.4 の TLC には -noGenerateSpecTE が無く、付けると起動しない
+      expect(args).not.toContain('-noGenerateSpecTE');
     });
 
     it('cfg から検査する性質の名前を取り出す', () => {

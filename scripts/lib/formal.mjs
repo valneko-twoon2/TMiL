@@ -42,7 +42,6 @@ export function tlcArgs(jar, check, metaDir) {
     '-metadir',
     metaDir,
     '-cleanup',
-    '-noGenerateSpecTE',
     check.module,
   ];
 }
