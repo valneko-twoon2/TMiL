@@ -129,7 +129,7 @@ function processes(tick: number, killed: ReadonlySet<number>): ProcessInfo[] {
         exe:
           seed.name === 'System'
             ? ''
-            : String.raw`C:\Program Files\${seed.name.replace('.exe', '')}\${seed.name}`,
+            : ['C:', 'Program Files', seed.name.replace('.exe', ''), seed.name].join('\\'),
         command: seed.name === 'System' ? '' : `${seed.name} --instance=${String(i)}`,
         state: seed.state ?? 'running',
         user: seed.user,
