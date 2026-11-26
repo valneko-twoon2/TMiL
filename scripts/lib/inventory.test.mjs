@@ -18,6 +18,10 @@ describe('inventory', () => {
       expect(kindOf({ runner: 'playwright', project: 'e2e-mock', file: 'a', path: [] })).toBe('e2e-mock');
       expect(kindOf({ runner: 'node-test', file: 'a', path: [] })).toBe('e2e-native');
       expect(kindOf({ runner: 'cargo-fuzz', file: 'a', path: [] })).toBe('fuzz');
+      expect(kindOf({ runner: 'tlc', file: 'a', path: [] })).toBe('formal');
+      expect(kindOf({ runner: 'cargo', file: 'a', path: ['machine', 'tests', 'formal', 'x'] })).toBe(
+        'formal',
+      );
     });
 
     it('対象を決める', () => {
@@ -25,6 +29,7 @@ describe('inventory', () => {
       expect(layerOf({ runner: 'vitest', file: 'scripts/lib/x.test.mjs', path: [] })).toBe('tooling');
       expect(layerOf({ runner: 'cargo', file: 'x', path: [] })).toBe('backend');
       expect(layerOf({ runner: 'node-test', file: 'x', path: [] })).toBe('app');
+      expect(layerOf({ runner: 'tlc', file: 'x', path: [] })).toBe('backend');
     });
 
     it('表と内訳を作る', () => {

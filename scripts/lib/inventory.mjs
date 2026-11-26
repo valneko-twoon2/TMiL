@@ -1,7 +1,7 @@
 // テスト一覧の分類と Markdown 化（純粋関数）。
 
 /**
- * @typedef {{ runner: 'vitest' | 'cargo' | 'cargo-fuzz' | 'playwright' | 'node-test', file: string, path: string[], project?: string }} TestCase
+ * @typedef {{ runner: 'vitest' | 'cargo' | 'cargo-fuzz' | 'playwright' | 'node-test' | 'tlc', file: string, path: string[], project?: string }} TestCase
  */
 
 /** 種類（表示順）。 */
@@ -13,6 +13,7 @@ export const KINDS = [
   ['snapshot', 'スナップショット'],
   ['contract', '契約'],
   ['fuzz', 'ファジング'],
+  ['formal', '形式検証'],
   ['vrt', 'VRT'],
   ['e2e-mock', 'E2E（モック）'],
   ['e2e-native', 'E2E（実アプリ）'],
@@ -26,7 +27,7 @@ export const LAYERS = [
   ['app', 'アプリ全体'],
 ];
 
-const TAGS = new Set(['equivalence', 'boundary', 'regression', 'snapshot', 'contract', 'fuzz']);
+const TAGS = new Set(['equivalence', 'boundary', 'regression', 'snapshot', 'contract', 'fuzz', 'formal']);
 
 /**
  * テスト 1 件の種類を決める。名前の途中にあるタグを優先し、無ければ実行方法から決める。
@@ -36,6 +37,7 @@ export function kindOf(c) {
   if (c.runner === 'playwright') return c.project === 'vrt' ? 'vrt' : 'e2e-mock';
   if (c.runner === 'node-test') return 'e2e-native';
   if (c.runner === 'cargo-fuzz') return 'fuzz';
+  if (c.runner === 'tlc') return 'formal';
   return c.path.find((segment) => TAGS.has(segment)) ?? 'unit';
 }
 
@@ -44,7 +46,7 @@ export function kindOf(c) {
  * @param {TestCase} c
  */
 export function layerOf(c) {
-  if (c.runner === 'cargo' || c.runner === 'cargo-fuzz') return 'backend';
+  if (c.runner === 'cargo' || c.runner === 'cargo-fuzz' || c.runner === 'tlc') return 'backend';
   if (c.runner === 'node-test') return 'app';
   if (c.file.startsWith('scripts/')) return 'tooling';
   return 'frontend';

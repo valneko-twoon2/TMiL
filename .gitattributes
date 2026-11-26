@@ -17,3 +17,4 @@
 package-lock.json -diff linguist-generated
 Cargo.lock -diff linguist-generated
 docs/testing/inventory.md linguist-generated
+tests/formal/MachineTable.tla linguist-generated

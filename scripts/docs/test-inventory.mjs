@@ -6,6 +6,7 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { capture, nodeBin, ROOT, run } from '../lib/proc.mjs';
+import { propertiesInCfg } from '../lib/formal.mjs';
 import { buildInventory, renderInventory } from '../lib/inventory.mjs';
 
 const OUTPUT = join(ROOT, 'docs', 'testing', 'inventory.md');
@@ -59,6 +60,17 @@ const fuzzDir = join(ROOT, 'tests', 'fuzz', 'fuzz_targets');
 if (existsSync(fuzzDir)) {
   for (const f of readdirSync(fuzzDir).filter((n) => n.endsWith('.rs'))) {
     cases.push({ runner: 'cargo-fuzz', file: `tests/fuzz/fuzz_targets/${f}`, path: ['fuzz', f] });
+  }
+}
+
+// TLA+（TLC で検査する性質。遷移表の一致は 1 件と数える）
+const formalDir = join(ROOT, 'tests', 'formal');
+if (existsSync(formalDir)) {
+  for (const f of readdirSync(formalDir).filter((n) => n.endsWith('.cfg'))) {
+    const names = propertiesInCfg(readFileSync(join(formalDir, f), 'utf8'));
+    for (const name of names.length > 0 ? names : [f.replace(/\.cfg$/, '')]) {
+      cases.push({ runner: 'tlc', file: `tests/formal/${f}`, path: [name] });
+    }
   }
 }
 
