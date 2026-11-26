@@ -1,0 +1,22 @@
+[package]
+name = "tmil-core"
+description = "TMiL のシステム情報取得とスタートアップ管理（Tauri 非依存）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde.workspace = true
+sysinfo.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+winreg.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

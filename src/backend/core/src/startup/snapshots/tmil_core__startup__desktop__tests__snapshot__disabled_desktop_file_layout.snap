@@ -1,0 +1,11 @@
+---
+source: src/backend/core/src/startup/desktop.rs
+assertion_line: 212
+expression: "with_enabled(SAMPLE, false)"
+---
+[Desktop Entry]
+Hidden=true
+X-GNOME-Autostart-enabled=false
+Type=Application
+Name=Sample App
+Exec=/usr/bin/sample --tray
