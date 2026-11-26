@@ -1,0 +1,16 @@
+node_modules/
+dist/
+dist-mock/
+coverage/
+target/
+reports/
+test-results/
+playwright-report/
+.stryker-tmp/
+package-lock.json
+src/backend/app/gen/
+src/backend/app/icons/
+tests/fuzz/
+**/__snapshots__/
+**/*-snapshots/
+docs/testing/inventory.md

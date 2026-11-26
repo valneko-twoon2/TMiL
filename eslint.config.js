@@ -1,0 +1,81 @@
+import js from '@eslint/js';
+import prettier from 'eslint-config-prettier';
+import { defineConfig } from 'eslint/config';
+import svelte from 'eslint-plugin-svelte';
+import globals from 'globals';
+import ts from 'typescript-eslint';
+import svelteConfig from './svelte.config.js';
+
+export default defineConfig(
+  {
+    ignores: [
+      'node_modules/',
+      'dist/',
+      'dist-mock/',
+      'coverage/',
+      'target/',
+      'reports/',
+      'test-results/',
+      'playwright-report/',
+      '.stryker-tmp/',
+      'src/backend/',
+      'tests/fuzz/',
+    ],
+  },
+  js.configs.recommended,
+  ts.configs.strictTypeChecked,
+  ts.configs.stylisticTypeChecked,
+  svelte.configs.recommended,
+  prettier,
+  svelte.configs.prettier,
+  {
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node },
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+        extraFileExtensions: ['.svelte'],
+      },
+    },
+    linterOptions: { reportUnusedDisableDirectives: 'error' },
+    rules: {
+      eqeqeq: 'error',
+      curly: ['error', 'multi-line'],
+      'no-var': 'error',
+      'prefer-const': 'error',
+      'object-shorthand': 'error',
+      'no-param-reassign': 'error',
+      'no-implicit-coercion': 'error',
+      complexity: ['error', 15],
+      'max-depth': ['error', 4],
+      '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/switch-exhaustiveness-check': 'error',
+      '@typescript-eslint/no-shadow': 'error',
+    },
+  },
+  {
+    files: ['**/*.svelte', '**/*.svelte.ts'],
+    languageOptions: {
+      parserOptions: { parser: ts.parser, svelteConfig },
+    },
+    rules: {
+      'svelte/block-lang': ['error', { script: 'ts', style: null }],
+      'svelte/require-each-key': 'error',
+      'svelte/no-at-html-tags': 'error',
+      'svelte/button-has-type': 'error',
+      'svelte/no-target-blank': 'error',
+      'svelte/prefer-svelte-reactivity': 'error',
+    },
+  },
+  {
+    files: ['src/frontend/**/*.ts', 'src/frontend/**/*.svelte'],
+    rules: {
+      'no-console': ['error', { allow: ['warn', 'error'] }],
+    },
+  },
+  {
+    // JS（スクリプト・設定）は型情報を使うルールを外す
+    files: ['**/*.js', '**/*.mjs'],
+    extends: [ts.configs.disableTypeChecked],
+  },
+);

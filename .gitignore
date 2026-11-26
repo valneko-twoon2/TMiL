@@ -1,0 +1,38 @@
+# 依存・ビルド成果物
+node_modules/
+dist/
+dist-mock/
+target/
+src/backend/app/gen/
+
+# テスト・カバレッジ
+coverage/
+test-results/
+playwright-report/
+reports/
+.stryker-tmp/
+mutants.out*/
+tests/fuzz/artifacts/
+tests/fuzz/corpus/
+tests/fuzz/coverage/
+tests/fuzz/target/
+*.profraw
+*.profdata
+lcov.info
+
+# エディタ・OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# ローカル設定
+.claude/settings.local.json
+*.local
+.env
+.env.*
+
+# VRT の基準画像は Linux（CI）のものだけを管理する
+tests/vrt/**/*-win32.png
+tests/vrt/**/*-darwin.png

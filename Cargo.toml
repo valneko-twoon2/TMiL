@@ -1,0 +1,77 @@
+[workspace]
+resolver = "3"
+members = ["src/backend/core", "src/backend/app"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+repository = "https://github.com/valneko-twoon2/TMiL"
+publish = false
+
+[workspace.dependencies]
+tmil-core = { path = "src/backend/core" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+sysinfo = { version = "0.40.4", default-features = false, features = ["disk", "network", "system", "user"] }
+winreg = "0.56.0"
+insta = { version = "1.49.0", features = ["json"] }
+tauri = { version = "2.12.7", features = ["tray-icon"] }
+tauri-build = { version = "2.7.6", features = [] }
+tauri-plugin-single-instance = "2.5.5"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+unreachable_pub = "warn"
+unused_qualifications = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# pedantic のうち効果に対して手間が大きいもの
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+# restriction から選んだもの
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+todo = "warn"
+unimplemented = "warn"
+dbg_macro = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+indexing_slicing = "warn"
+string_slice = "warn"
+clone_on_ref_ptr = "warn"
+allow_attributes_without_reason = "warn"
+rc_buffer = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+same_name_method = "warn"
+str_to_string = "warn"
+verbose_file_reads = "warn"
+
+# キャッシュ（target/）が膨らまないよう、デバッグ情報と増分ビルドは作らない
+[profile.dev]
+debug = false
+incremental = false
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.dev.build-override]
+debug = false
+
+[profile.test]
+debug = false
+incremental = false
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

@@ -1,0 +1,19 @@
+# すべてのテキストファイルを LF に固定する
+* text=auto eol=lf
+
+# バイナリ
+*.png binary
+*.ico binary
+*.icns binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+
+# 生成物は差分表示を抑える
+package-lock.json -diff linguist-generated
+Cargo.lock -diff linguist-generated
+docs/testing/inventory.md linguist-generated
