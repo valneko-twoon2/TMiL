@@ -8,7 +8,9 @@ const input = readHookInput();
 const messages = [];
 
 if (isDirty()) {
-  messages.push('未コミットの変更があります。規約どおりのメッセージでコミットしてください（例: feat: 〜を追加）。');
+  messages.push(
+    '未コミットの変更があります。規約どおりのメッセージでコミットしてください（例: feat: 〜を追加）。',
+  );
 }
 const unpushed = unpushedCount();
 if (unpushed !== null && unpushed > 0 && currentBranch() === 'develop') {

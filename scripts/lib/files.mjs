@@ -11,7 +11,8 @@ export const isPrettierTarget = (f) =>
   !norm(f).includes('__snapshots__/');
 
 /** ESLint で検査する対象。 */
-export const isEslintTarget = (f) => /\.(ts|js|mjs|cjs|svelte)$/.test(norm(f)) && !norm(f).includes('/fixtures/');
+export const isEslintTarget = (f) =>
+  /\.(ts|js|mjs|cjs|svelte)$/.test(norm(f)) && !norm(f).includes('/fixtures/');
 
 /** svelte-check（型検査）が必要になる対象。 */
 export const isTypeCheckTarget = (f) => /\.(ts|svelte)$/.test(norm(f)) || norm(f) === 'tsconfig.json';

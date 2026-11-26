@@ -5,6 +5,7 @@
 //   node scripts/lint/lint.mjs --changed     未コミットのファイルだけ
 //   node scripts/lint/lint.mjs --files a b   指定ファイルだけ
 //   --fix を付けると自動修正する
+//   --frontend / --backend でどちらかだけにする（CI で並列に回す用）
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -19,12 +20,18 @@ import { ROOT, run, runNodeBin } from '../lib/proc.mjs';
 
 const args = process.argv.slice(2);
 const fix = args.includes('--fix');
+const onlyFrontend = args.includes('--frontend');
+const onlyBackend = args.includes('--backend');
+const frontendOn = !onlyBackend;
+const backendOn = !onlyFrontend;
 
 /** @type {string[] | null} null は全体 */
 let targets = null;
 if (args.includes('--staged')) targets = stagedFiles();
 else if (args.includes('--changed')) targets = changedFiles();
-else if (args.includes('--files')) targets = args.slice(args.indexOf('--files') + 1).filter((a) => !a.startsWith('--'));
+else if (args.includes('--files')) {
+  targets = args.slice(args.indexOf('--files') + 1).filter((a) => !a.startsWith('--'));
+}
 
 if (targets) {
   targets = targets.map(normalizePath).filter((f) => existsSync(join(ROOT, f)));
@@ -45,51 +52,67 @@ function step(name, fn) {
   }
 }
 
-// Prettier
-const prettierFiles = pick(isPrettierTarget);
-if (all || prettierFiles.length > 0) {
-  step('prettier', () =>
-    runNodeBin('prettier', 'prettier', [fix ? '--write' : '--check', '--log-level', 'warn', ...(all ? ['.'] : prettierFiles)])
-      .status,
+// ESLint（--fix のあとに Prettier で整えるので先に回す）
+const eslintFiles = pick(isEslintTarget);
+if (frontendOn && (all || eslintFiles.length > 0)) {
+  step(
+    'eslint',
+    () =>
+      runNodeBin('eslint', 'eslint', [
+        '--max-warnings',
+        '0',
+        ...(fix ? ['--fix'] : []),
+        ...(all ? ['.'] : eslintFiles),
+      ]).status,
   );
 }
 
-// ESLint
-const eslintFiles = pick(isEslintTarget);
-if (all || eslintFiles.length > 0) {
-  step('eslint', () =>
-    runNodeBin('eslint', 'eslint', ['--max-warnings', '0', ...(fix ? ['--fix'] : []), ...(all ? ['.'] : eslintFiles)])
-      .status,
+// Prettier
+const prettierFiles = pick(isPrettierTarget);
+if (frontendOn && (all || prettierFiles.length > 0)) {
+  step(
+    'prettier',
+    () =>
+      runNodeBin('prettier', 'prettier', [
+        fix ? '--write' : '--check',
+        '--log-level',
+        'warn',
+        ...(all ? ['.'] : prettierFiles),
+      ]).status,
   );
 }
 
 // svelte-check（型検査はプロジェクト全体が単位）
-if (all || pick(isTypeCheckTarget).length > 0) {
-  step('svelte-check', () =>
-    runNodeBin('svelte-check', 'svelte-check', [
-      '--tsconfig',
-      './tsconfig.json',
-      '--fail-on-warnings',
-      '--output',
-      'human',
-    ]).status,
+if (frontendOn && (all || pick(isTypeCheckTarget).length > 0)) {
+  step(
+    'svelte-check',
+    () =>
+      runNodeBin('svelte-check', 'svelte-check', [
+        '--tsconfig',
+        './tsconfig.json',
+        '--fail-on-warnings',
+        '--output',
+        'human',
+      ]).status,
   );
 }
 
 // Rust
-if (all || pick(isRustTarget).length > 0) {
+if (backendOn && (all || pick(isRustTarget).length > 0)) {
   step('rustfmt', () => run('cargo', ['fmt', '--all', ...(fix ? [] : ['--', '--check'])]).status);
-  step('clippy', () =>
-    run('cargo', [
-      'clippy',
-      '--workspace',
-      '--all-targets',
-      '--quiet',
-      ...(fix ? ['--fix', '--allow-dirty', '--allow-staged'] : []),
-      '--',
-      '-D',
-      'warnings',
-    ]).status,
+  step(
+    'clippy',
+    () =>
+      run('cargo', [
+        'clippy',
+        '--workspace',
+        '--all-targets',
+        '--quiet',
+        ...(fix ? ['--fix', '--allow-dirty', '--allow-staged'] : []),
+        '--',
+        '-D',
+        'warnings',
+      ]).status,
   );
 }
 
