@@ -14,7 +14,7 @@
 3. `chore: v0.2.0 をリリース` でコミットして push
 4. develop → main の PR を作る（本文はテンプレートに沿う）
 5. CI と CodeQL が通り、レビューを確認したらマージ
-6. main への push で `release.yml` が動き、Windows と Linux のインストーラーを GitHub Releases に置く。本文は CHANGELOG の該当節そのまま
+6. main への push で `release.yml` が動く。下書きのリリースを 1 回だけ作り、Windows と Linux のインストーラーを添付してから公開する。本文は CHANGELOG の該当節そのまま
 
 ## CHANGELOG の書き方
 
