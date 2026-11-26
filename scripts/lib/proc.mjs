@@ -6,22 +6,37 @@ import { fileURLToPath } from 'node:url';
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-let cachedEnv;
+/** @type {Map<string, NodeJS.ProcessEnv>} */
+const envCache = new Map();
+
+/**
+ * 環境変数の PATH の先頭にフォルダーを足した新しい環境変数を返す。
+ * Windows では PATH のキーが `Path` のこともあるので、大文字小文字を無視して探す。
+ * @param {NodeJS.ProcessEnv} env
+ * @param {string} dir
+ * @param {string} [sep]
+ */
+export function prependPath(env, dir, sep = delimiter) {
+  const key = Object.keys(env).find((k) => k.toUpperCase() === 'PATH') ?? 'PATH';
+  const current = env[key];
+  return { ...env, [key]: current ? `${dir}${sep}${current}` : dir };
+}
 
 /**
  * rustup のプロキシ（シンボリックリンク）を経由せずに cargo を呼べるよう、
  * ツールチェーンの bin を PATH の先頭に足した環境変数を返す。
+ * プロキシを通らないので `cargo +nightly` の書き方は使えない。toolchain で指定する。
+ * @param {string} [toolchain] 省略時は既定のツールチェーン
  */
-export function toolEnv() {
-  if (cachedEnv) return cachedEnv;
-  const env = { ...process.env };
-  const which = spawnSync('rustup', ['which', 'cargo'], { encoding: 'utf8', cwd: ROOT });
-  if (which.status === 0) {
-    const bin = dirname(which.stdout.trim());
-    const key = Object.keys(env).find((k) => k.toUpperCase() === 'PATH') ?? 'PATH';
-    env[key] = `${bin}${delimiter}${env[key] ?? ''}`;
-  }
-  cachedEnv = env;
+export function toolEnv(toolchain) {
+  const cacheKey = toolchain ?? '';
+  const cached = envCache.get(cacheKey);
+  if (cached) return cached;
+  const args = toolchain ? ['which', '--toolchain', toolchain, 'cargo'] : ['which', 'cargo'];
+  const which = spawnSync('rustup', args, { encoding: 'utf8', cwd: ROOT });
+  const env =
+    which.status === 0 ? prependPath(process.env, dirname(which.stdout.trim())) : { ...process.env };
+  envCache.set(cacheKey, env);
   return env;
 }
 
@@ -29,12 +44,12 @@ export function toolEnv() {
  * コマンドを実行して終了コードを返す。
  * @param {string} cmd
  * @param {string[]} args
- * @param {{ quiet?: boolean, cwd?: string, env?: Record<string, string> }} [opts]
+ * @param {{ quiet?: boolean, cwd?: string, env?: Record<string, string>, toolchain?: string }} [opts]
  */
 export function run(cmd, args, opts = {}) {
   const result = spawnSync(cmd, args, {
     cwd: opts.cwd ?? ROOT,
-    env: { ...toolEnv(), ...opts.env },
+    env: { ...toolEnv(opts.toolchain), ...opts.env },
     stdio: opts.quiet ? 'pipe' : 'inherit',
     encoding: 'utf8',
   });
