@@ -69,6 +69,11 @@ if (frontendOn && (all || prettierFiles.length > 0)) {
   );
 }
 
+// 文書の置き方とリンク切れ（Markdown を変えたときと全体のとき）
+if (frontendOn && (all || pick((f) => f.endsWith('.md')).length > 0)) {
+  step('docs', () => run(process.execPath, ['scripts/docs/check-docs.mjs']).status);
+}
+
 // svelte-check（型検査はプロジェクト全体が単位）
 if (frontendOn && (all || pick(isTypeCheckTarget).length > 0)) {
   step(
