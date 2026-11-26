@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const isCI = Boolean(process.env.CI);
+// 手元で 4173 番が使われているときは E2E_PORT で変えられる
+const port = Number(process.env.E2E_PORT ?? 4173);
 
 // テストは tests/ にある。パッケージの場所は tests/tsconfig.json の paths で教えている
 export default defineConfig({
@@ -13,7 +15,7 @@ export default defineConfig({
     : 'list',
   use: {
     ...devices['Desktop Chrome'],
-    baseURL: 'http://localhost:4173',
+    baseURL: `http://localhost:${String(port)}`,
     locale: 'ja-JP',
     timezoneId: 'Asia/Tokyo',
     colorScheme: 'light',
@@ -27,8 +29,8 @@ export default defineConfig({
     { name: 'vrt', testDir: '../../tests/vrt' },
   ],
   webServer: {
-    command: 'npm run build:mock && npx vite preview --mode mock --port 4173 --strictPort',
-    url: 'http://localhost:4173',
+    command: `npm run build:mock && npx vite preview --mode mock --port ${String(port)} --strictPort`,
+    url: `http://localhost:${String(port)}`,
     reuseExistingServer: !isCI,
     timeout: 120_000,
   },
