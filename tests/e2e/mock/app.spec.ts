@@ -112,9 +112,125 @@ test.describe('詳細', () => {
     await page.getByTestId('detail-row').click({ button: 'right' });
     await page
       .getByRole('menu', { name: 'プロセスの操作' })
-      .getByRole('menuitem', { name: 'タスクを終了する' })
+      .getByRole('menuitem', { name: 'タスクの終了(E)' })
       .click();
     await expect(page.getByTestId('detail-row')).toHaveCount(0);
+  });
+
+  test('右クリックのメニューは本家の詳細タブと同じ並び', async ({ page }) => {
+    await open(page, '詳細');
+    await page.getByTestId('detail-row').first().click({ button: 'right' });
+    await expect(page.getByRole('menu', { name: 'プロセスの操作' }).getByRole('menuitem')).toHaveText([
+      'タスクの終了(E)',
+      'プロセス ツリーの終了(T)',
+      '優先度の設定(P)',
+      '関係の設定(F)',
+      'ファイルの場所を開く(O)',
+      'オンライン検索(N)',
+      'プロパティ(R)',
+    ]);
+  });
+
+  test('優先度を下の階層から選ぶと、次に開いたときにチェックが付く', async ({ page }) => {
+    await open(page, '詳細');
+    const row = () => page.getByTestId('detail-row').filter({ hasText: 'OneDrive' });
+    await row().click({ button: 'right' });
+    await page.getByRole('menuitem', { name: '優先度の設定(P)' }).hover();
+    const sub = page.getByRole('menu', { name: '優先度の設定' });
+    await expect(sub.getByRole('menuitemcheckbox', { name: '通常', exact: true })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await sub.getByRole('menuitemcheckbox', { name: '高', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('優先度を「高」にしました');
+
+    await row().click({ button: 'right' });
+    await page.keyboard.press('p');
+    await expect(sub.getByRole('menuitemcheckbox', { name: '高', exact: true })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await expect(sub.getByRole('menuitemcheckbox', { name: 'リアルタイム' })).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await expect(sub).toHaveCount(0);
+    await expect(page.getByRole('menuitem', { name: '優先度の設定(P)' })).toBeFocused();
+  });
+
+  test('関係の設定で CPU を外すと、次に開いたときも外れている', async ({ page }) => {
+    await open(page, '詳細');
+    const row = () => page.getByTestId('detail-row').filter({ hasText: 'OneDrive' });
+    await row().click({ button: 'right' });
+    await page.getByRole('menuitem', { name: '関係の設定(F)' }).click();
+    const dialog = page.getByRole('dialog', { name: 'プロセッサの関係' });
+    await expect(dialog.getByRole('checkbox', { name: 'CPU 0' })).toBeChecked();
+    await dialog.getByRole('checkbox', { name: 'CPU 0' }).uncheck();
+    await expect(dialog.getByRole('checkbox', { name: '<すべてのプロセッサ>' })).not.toBeChecked();
+    await dialog.getByRole('button', { name: 'OK' }).click();
+    await expect(dialog).toHaveCount(0);
+
+    await row().click({ button: 'right' });
+    await page.keyboard.press('f');
+    await expect(dialog.getByRole('checkbox', { name: 'CPU 0' })).not.toBeChecked();
+    await expect(dialog.getByRole('checkbox', { name: 'CPU 1' })).toBeChecked();
+    const all = dialog.getByRole('checkbox', { name: '<すべてのプロセッサ>' });
+    await all.check();
+    await expect(dialog.getByRole('checkbox', { name: 'CPU 0' })).toBeChecked();
+    await all.uncheck();
+    await expect(dialog.getByRole('checkbox', { name: 'CPU 1' })).not.toBeChecked();
+    await expect(dialog.getByRole('button', { name: 'OK' })).toBeDisabled();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+  });
+
+  test('プロセス ツリーの終了は確かめてから行う', async ({ page }) => {
+    await open(page, '詳細');
+    const row = page.getByTestId('detail-row').filter({ hasText: 'OneDrive' });
+    await row.click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'プロセス ツリーの終了(T)' }).click();
+    const dialog = page.getByRole('dialog', { name: /OneDrive\.exe のプロセス ツリーを終了しますか/ });
+    await expect(dialog).toContainText('合わせて 1 個');
+    await dialog.getByRole('button', { name: 'キャンセル' }).click();
+    await expect(row).toHaveCount(1);
+
+    await row.click({ button: 'right' });
+    await page.keyboard.press('t');
+    await dialog.getByRole('button', { name: 'プロセス ツリーの終了' }).click();
+    await expect(row).toHaveCount(0);
+  });
+
+  test('プロパティで詳しい情報を見られる', async ({ page }) => {
+    await open(page, '詳細');
+    await page.getByTestId('detail-row').filter({ hasText: 'explorer' }).click({ button: 'right' });
+    await page.keyboard.press('r');
+    const dialog = page.getByRole('dialog', { name: 'explorer.exe のプロパティ' });
+    await expect(dialog).toContainText('1008');
+    await expect(dialog).toContainText('C:\\Program Files\\explorer\\explorer.exe');
+    await dialog.getByRole('button', { name: '閉じる' }).click();
+    await expect(dialog).toHaveCount(0);
+  });
+
+  test('列の幅をドラッグで変えられ、次回も残る', async ({ page }) => {
+    await open(page, '詳細');
+    const header = page.getByRole('columnheader', { name: /^PID/ });
+    const before = (await header.boundingBox())?.width ?? 0;
+    // 作っている途中で、つかむ場所が半分隣の見出しに重なり、押すと並べ替えになる不具合があった
+    const handle = page.getByRole('button', { name: 'PID の幅を変える' });
+    const box = await handle.boundingBox();
+    if (!box) throw new Error('つかむ場所がありません');
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2, { steps: 4 });
+    await page.mouse.up();
+    const after = (await header.boundingBox())?.width ?? 0;
+    expect(after - before).toBeGreaterThan(60);
+
+    await page.reload();
+    await page.getByRole('navigation').getByRole('button', { name: '詳細' }).click();
+    expect((await header.boundingBox())?.width ?? 0).toBeCloseTo(after, 0);
+
+    // ダブルクリックで最初の幅に戻る
+    await handle.dblclick();
+    expect((await header.boundingBox())?.width ?? 0).toBeCloseTo(before, 0);
   });
 });
 
@@ -124,21 +240,22 @@ test.describe('右クリック', () => {
     await groupRow(page, 'Code (4)').click({ button: 'right' });
     const menu = page.getByRole('menu', { name: 'プロセスの操作' });
     await expect(menu.getByRole('menuitem')).toHaveText([
-      '展開する',
-      'タスクを終了する',
-      '詳細の表示に移動',
-      'ファイルの場所を開く',
+      '展開する(X)',
+      'タスクの終了(E)',
+      '詳細の表示に移動(D)',
+      'ファイルの場所を開く(O)',
+      'オンライン検索(N)',
     ]);
-    await expect(menu.getByRole('menuitem', { name: '展開する' })).toBeFocused();
+    await expect(menu.getByRole('menuitem', { name: '展開する(X)' })).toBeFocused();
     // 作っている途中で、区切りの数だけ矢印キーの移動先がずれる不具合があった
     await page.keyboard.press('ArrowDown');
-    await expect(menu.getByRole('menuitem', { name: 'タスクを終了する' })).toBeFocused();
+    await expect(menu.getByRole('menuitem', { name: 'タスクの終了(E)' })).toBeFocused();
     await page.keyboard.press('ArrowDown');
-    await expect(menu.getByRole('menuitem', { name: '詳細の表示に移動' })).toBeFocused();
+    await expect(menu.getByRole('menuitem', { name: '詳細の表示に移動(D)' })).toBeFocused();
     await page.keyboard.press('ArrowUp');
     await page.keyboard.press('ArrowUp');
     await page.keyboard.press('ArrowUp');
-    await expect(menu.getByRole('menuitem', { name: 'ファイルの場所を開く' })).toBeFocused();
+    await expect(menu.getByRole('menuitem', { name: 'オンライン検索(N)' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(menu).toHaveCount(0);
   });

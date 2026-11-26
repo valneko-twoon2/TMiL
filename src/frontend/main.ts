@@ -4,6 +4,7 @@ import { api } from './lib/api/ipc';
 import { IconStore } from './lib/state/icons.svelte';
 import { ContextMenus } from './lib/state/menus.svelte';
 import { Monitor } from './lib/state/monitor.svelte';
+import { ProcessActions } from './lib/state/processActions.svelte';
 import { SettingsStore } from './lib/state/settings.svelte';
 import { Toasts } from './lib/state/toast.svelte';
 import './app.css';
@@ -16,15 +17,19 @@ async function start(): Promise<void> {
   }
   const target = document.getElementById('app');
   if (!target) throw new Error('#app が見つかりません');
+  const monitor = new Monitor(api);
+  const toasts = new Toasts();
+  const menus = new ContextMenus();
   mount(App, {
     target,
     props: {
       api,
       settings: new SettingsStore(window.localStorage),
-      monitor: new Monitor(api),
-      toasts: new Toasts(),
+      monitor,
+      toasts,
       icons: new IconStore(api),
-      menus: new ContextMenus(),
+      menus,
+      processActions: new ProcessActions(api, monitor, toasts, menus),
     },
   });
 }

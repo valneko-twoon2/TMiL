@@ -10,6 +10,7 @@ describe('parseSettings', () => {
         theme: 'dark',
         startPage: 'performance',
         detailColumns: DEFAULT_SETTINGS.detailColumns,
+        columnWidths: {},
       });
     });
 
@@ -37,6 +38,11 @@ describe('parseSettings', () => {
       s.detailColumns.push('exe');
       expect(DEFAULT_SETTINGS.theme).toBe('system');
       expect(DEFAULT_SETTINGS.detailColumns).not.toContain('exe');
+    });
+
+    it('列の幅は保存された値を読む', () => {
+      const raw = JSON.stringify({ columnWidths: { 'details.pid': 90, broken: 1 } });
+      expect(parseSettings(raw).columnWidths).toEqual({ 'details.pid': 90 });
     });
 
     it('詳細タブの列は保存された値を整えて読む', () => {

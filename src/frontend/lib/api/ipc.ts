@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import {
   isKillResults,
   isNull,
+  isProcessControls,
   isProcessIcons,
   isReplacementStatus,
   isSnapshot,
@@ -12,6 +13,8 @@ import {
 import type {
   KillResult,
   KillTarget,
+  Priority,
+  ProcessControls,
   ProcessIcon,
   ReplacementStatus,
   Snapshot,
@@ -46,6 +49,10 @@ export interface Api {
   setTaskmgrReplacement(enabled: boolean): Promise<ReplacementStatus>;
   processIcons(exes: string[]): Promise<ProcessIcon[]>;
   revealFile(path: string): Promise<void>;
+  setProcessPriority(targets: KillTarget[], priority: Priority): Promise<KillResult[]>;
+  setProcessAffinity(targets: KillTarget[], cpus: number[]): Promise<KillResult[]>;
+  processControls(pid: number): Promise<ProcessControls>;
+  searchOnline(query: string): Promise<void>;
 }
 
 /** invoke を差し替えられる形で API を作る（テストではモックを渡す）。 */
@@ -78,6 +85,13 @@ export function createApi(call: Invoke): Api {
     processIcons: (exes) => request('process_icons', isProcessIcons, { exes }),
     revealFile: async (path) => {
       await request('reveal_file', isNull, { path });
+    },
+    setProcessPriority: (targets, priority) =>
+      request('set_process_priority', isKillResults, { targets, priority }),
+    setProcessAffinity: (targets, cpus) => request('set_process_affinity', isKillResults, { targets, cpus }),
+    processControls: (pid) => request('process_controls', isProcessControls, { pid }),
+    searchOnline: async (query) => {
+      await request('search_online', isNull, { query });
     },
   };
 }

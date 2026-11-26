@@ -12,6 +12,7 @@ import StartupPage from '../pages/StartupPage.svelte';
 import { IconStore } from '../state/icons.svelte';
 import { ContextMenus } from '../state/menus.svelte';
 import { Monitor } from '../state/monitor.svelte';
+import { ProcessActions } from '../state/processActions.svelte';
 import { SettingsStore } from '../state/settings.svelte';
 import { Toasts } from '../state/toast.svelte';
 import ContextMenuHost from './ContextMenuHost.svelte';
@@ -34,6 +35,8 @@ async function iconStore(exe: string | undefined): Promise<IconStore> {
   if (exe) await store.request([exe]);
   return store;
 }
+
+const actionsFor = (monitor: Monitor) => new ProcessActions(api, monitor, new Toasts(), new ContextMenus());
 
 const firstExe = (): string | undefined => snapshotFixture().processes[0]?.exe;
 
@@ -84,34 +87,36 @@ describe('画面部品', () => {
     });
 
     it('プロセス', async () => {
+      const monitor = filledMonitor();
       const props = {
-        monitor: filledMonitor(),
-        api,
-        toasts: new Toasts(),
+        monitor,
+        settings: new SettingsStore(undefined),
         icons: await iconStore(firstExe()),
         menus: new ContextMenus(),
+        processActions: actionsFor(monitor),
         query: '',
       };
       expect(render(ProcessesPage, { props }).body).toMatchSnapshot();
     });
 
     it('プロセス（読み込み中）', async () => {
+      const monitor = new Monitor(api);
       const props = {
-        monitor: new Monitor(api),
-        api,
-        toasts: new Toasts(),
+        monitor,
+        settings: new SettingsStore(undefined),
         icons: await iconStore(undefined),
         menus: new ContextMenus(),
+        processActions: actionsFor(monitor),
         query: '',
       };
       expect(render(ProcessesPage, { props }).body).toContain('読み込み中');
     });
 
     it('詳細', async () => {
+      const monitor = filledMonitor();
       const props = {
-        monitor: filledMonitor(),
-        api,
-        toasts: new Toasts(),
+        monitor,
+        processActions: actionsFor(monitor),
         settings: new SettingsStore(undefined),
         icons: await iconStore(firstExe()),
         menus: new ContextMenus(),
@@ -123,10 +128,10 @@ describe('画面部品', () => {
     it('詳細（選んだ列だけ出す）', async () => {
       const settings = new SettingsStore(undefined);
       settings.update({ detailColumns: ['name', 'parentPid', 'exe'] });
+      const monitor = filledMonitor();
       const props = {
-        monitor: filledMonitor(),
-        api,
-        toasts: new Toasts(),
+        monitor,
+        processActions: actionsFor(monitor),
         settings,
         icons: await iconStore(undefined),
         menus: new ContextMenus(),
@@ -174,6 +179,7 @@ describe('画面部品', () => {
         toasts: new Toasts(),
         icons: await iconStore(undefined),
         menus: new ContextMenus(),
+        settings: new SettingsStore(undefined),
         query: '',
       };
       expect(render(StartupPage, { props }).body).toMatchSnapshot();

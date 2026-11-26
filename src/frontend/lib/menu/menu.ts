@@ -6,6 +6,10 @@ export interface MenuItem {
   disabled?: boolean;
   /** チェック付きの項目（列の選択など）。undefined なら普通の項目 */
   checked?: boolean;
+  /** アクセス キー（1 文字）。メニューを開いているときに押すと選べる。表示は「名前(E)」 */
+  key?: string;
+  /** 下の階層のメニュー（優先度の設定など） */
+  children?: MenuEntry[];
 }
 
 export type MenuEntry = MenuItem | { separator: true };
@@ -14,6 +18,18 @@ export const SEPARATOR: MenuEntry = { separator: true };
 
 export function isItem(entry: MenuEntry): entry is MenuItem {
   return !('separator' in entry);
+}
+
+/** 画面に出す名前。アクセス キーがあれば「名前(E)」にする。 */
+export function itemLabel(item: MenuItem): string {
+  return item.key ? `${item.label}(${item.key.toUpperCase()})` : item.label;
+}
+
+/** 押したキーに当たる項目の位置（大文字・小文字は区別しない。使えない項目は除く）。無ければ -1。 */
+export function indexForKey(entries: readonly MenuEntry[], key: string): number {
+  if (key.length !== 1) return -1;
+  const wanted = key.toUpperCase();
+  return entries.findIndex((e) => isItem(e) && e.disabled !== true && e.key?.toUpperCase() === wanted);
 }
 
 /** 画面からはみ出さない位置。入りきらないときは左・上に開く。 */

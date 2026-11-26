@@ -3,6 +3,7 @@
   import { onMount, untrack } from 'svelte';
   import type { Api } from './lib/api/ipc';
   import ContextMenuHost from './lib/components/ContextMenuHost.svelte';
+  import ProcessDialogs from './lib/components/ProcessDialogs.svelte';
   import Icon from './lib/components/Icon.svelte';
   import NavRail from './lib/components/NavRail.svelte';
   import ToastHost from './lib/components/ToastHost.svelte';
@@ -15,6 +16,7 @@
   import { intervalOf, type Page } from './lib/settings/settings';
   import type { IconStore } from './lib/state/icons.svelte';
   import type { ContextMenus } from './lib/state/menus.svelte';
+  import type { ProcessActions } from './lib/state/processActions.svelte';
   import type { Monitor } from './lib/state/monitor.svelte';
   import type { SettingsStore } from './lib/state/settings.svelte';
   import type { Toasts } from './lib/state/toast.svelte';
@@ -26,9 +28,10 @@
     toasts: Toasts;
     icons: IconStore;
     menus: ContextMenus;
+    processActions: ProcessActions;
   }
 
-  const { api, settings, monitor, toasts, icons, menus }: Props = $props();
+  const { api, settings, monitor, toasts, icons, menus, processActions }: Props = $props();
 
   // 起動時だけ既定のページを使う（設定を変えても今の画面は動かさない）
   let page = $state<Page>(untrack(() => settings.value.startPage));
@@ -119,14 +122,30 @@
         <div class="banner" role="alert">情報を取得できません: {monitor.error}</div>
       {/if}
       {#if page === 'processes'}
-        <ProcessesPage {monitor} {api} {toasts} {icons} {menus} {query} ongotodetails={gotoDetails} />
+        <ProcessesPage
+          {monitor}
+          {settings}
+          {icons}
+          {menus}
+          {processActions}
+          {query}
+          ongotodetails={gotoDetails}
+        />
       {:else if page === 'performance'}
         <PerformancePage {monitor} intervalMs={interval} />
       {:else if page === 'startup'}
-        <StartupPage {api} {toasts} {icons} {menus} {query} />
+        <StartupPage {api} {toasts} {icons} {menus} {settings} {query} />
       {:else if page === 'details'}
         {#key detailsFocus}
-          <DetailsPage {monitor} {api} {toasts} {settings} {icons} {menus} {query} focusPid={detailsFocus} />
+          <DetailsPage
+            {monitor}
+            {settings}
+            {icons}
+            {menus}
+            {processActions}
+            {query}
+            focusPid={detailsFocus}
+          />
         {/key}
       {:else}
         <SettingsPage {settings} {api} {toasts} />
@@ -135,6 +154,7 @@
   </div>
   <ToastHost {toasts} />
   <ContextMenuHost {menus} />
+  <ProcessDialogs actions={processActions} />
 </div>
 
 <style>

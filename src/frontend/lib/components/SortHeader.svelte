@@ -1,5 +1,6 @@
 <script lang="ts" generics="K extends string">
   import type { SortState } from '../process/process';
+  import ResizeHandle from './ResizeHandle.svelte';
 
   interface Props {
     key: K;
@@ -9,14 +10,18 @@
     align?: 'left' | 'right';
     /** 見出しの上に出す合計値（CPU 使用率など） */
     summary?: string;
+    /** 列の幅（px）。指定すると右端をドラッグして変えられる */
+    width?: number;
+    onresize?: (width: number | null, done: boolean) => void;
   }
 
-  const { key, label, sort, onsort, align = 'left', summary }: Props = $props();
+  const { key, label, sort, onsort, align = 'left', summary, width, onresize }: Props = $props();
   const active = $derived(sort.key === key);
 </script>
 
 <th
   class:right={align === 'right'}
+  style:width={width === undefined ? undefined : `${String(width)}px`}
   aria-sort={active ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
 >
   <button
@@ -33,6 +38,9 @@
       {#if active}<span class="arrow">{sort.direction === 'asc' ? '▲' : '▼'}</span>{/if}
     </span>
   </button>
+  {#if width !== undefined && onresize}
+    <ResizeHandle {width} {label} {onresize} />
+  {/if}
 </th>
 
 <style>

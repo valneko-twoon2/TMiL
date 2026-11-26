@@ -1,11 +1,9 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte';
-  import type { Api } from '../api/ipc';
   import Icon from '../components/Icon.svelte';
   import PageHeader from '../components/PageHeader.svelte';
   import ProcessIcon from '../components/ProcessIcon.svelte';
   import SortHeader from '../components/SortHeader.svelte';
-  import { SEPARATOR } from '../menu/menu';
   import {
     DETAIL_COLUMNS,
     DETAIL_NUMERIC,
@@ -14,33 +12,32 @@
     detailValue,
     REQUIRED_DETAIL_COLUMN,
     toggleDetailColumn,
-    toKillTarget,
     type DetailColumn,
   } from '../process/columns';
   import { filterProcesses, nextSort, sortBy, type SortState } from '../process/process';
+  import { ColumnSizer } from '../state/columnSizer.svelte';
   import type { IconStore } from '../state/icons.svelte';
   import type { ContextMenus } from '../state/menus.svelte';
   import type { Monitor } from '../state/monitor.svelte';
+  import type { ProcessActions } from '../state/processActions.svelte';
   import type { SettingsStore } from '../state/settings.svelte';
-  import type { Toasts } from '../state/toast.svelte';
 
   interface Props {
     monitor: Monitor;
-    api: Api;
-    toasts: Toasts;
     settings: SettingsStore;
     icons: IconStore;
     menus: ContextMenus;
+    processActions: ProcessActions;
     query: string;
     /** 開いたときに選んでおくプロセス（プロセス タブの「詳細の表示に移動」） */
     focusPid?: number | null;
   }
 
-  const { monitor, api, toasts, settings, icons, menus, query, focusPid = null }: Props = $props();
+  const { monitor, settings, icons, menus, processActions, query, focusPid = null }: Props = $props();
 
   let sort = $state<SortState<DetailColumn>>({ key: 'name', direction: 'asc' });
   let selected = $state<number | null>(untrack(() => focusPid));
-  let busy = $state(false);
+  const sizer = untrack(() => new ColumnSizer(settings, 'details'));
 
   const columns = $derived(settings.value.detailColumns);
   // 隠した列で並べていたら、名前の順に戻す
@@ -51,11 +48,10 @@
     sortBy(filterProcesses(monitor.snapshot?.processes ?? [], query), activeSort, detailValue),
   );
   const target = $derived(rows.find((r) => r.pid === selected));
-  const exists = $derived(target !== undefined);
 
   // 「詳細の表示に移動」で来たときは、その行が見える位置まで動かす
   $effect(() => {
-    if (focusPid === null || !untrack(() => exists)) return;
+    if (focusPid === null || !untrack(() => target)) return;
     void tick().then(() => {
       document.querySelector(`[data-pid="${String(focusPid)}"]`)?.scrollIntoView({ block: 'center' });
     });
@@ -66,26 +62,9 @@
   }
 
   async function endTask() {
-    if (target === undefined || busy) return;
-    busy = true;
-    try {
-      const [result] = await api.killProcesses([toKillTarget(target)]);
-      if (result && !result.ok) toasts.show(result.error ?? '終了できませんでした。', 'error');
-      selected = null;
-      await monitor.refresh();
-    } catch (cause) {
-      toasts.show(cause instanceof Error ? cause.message : String(cause), 'error');
-    } finally {
-      busy = false;
-    }
-  }
-
-  async function reveal(path: string) {
-    try {
-      await api.revealFile(path);
-    } catch (cause) {
-      toasts.show(cause instanceof Error ? cause.message : String(cause), 'error');
-    }
+    if (target === undefined) return;
+    await processActions.end([target]);
+    selected = null;
   }
 
   function openColumnMenu(event: MouseEvent) {
@@ -100,25 +79,16 @@
       if (column) settings.update({ detailColumns: toggleDetailColumn(columns, column) });
     });
   }
-
-  function openRowMenu(event: MouseEvent, pid: number) {
-    selected = pid;
-    const row = rows.find((r) => r.pid === pid);
-    const entries = [
-      { id: 'end', label: 'タスクを終了する', disabled: busy },
-      SEPARATOR,
-      { id: 'reveal', label: 'ファイルの場所を開く', disabled: !row?.exe },
-    ];
-    menus.open(event, 'プロセスの操作', entries, (id) => {
-      if (id === 'end') void endTask();
-      else if (row?.exe) void reveal(row.exe);
-    });
-  }
 </script>
 
 <PageHeader title="詳細">
   {#snippet actions()}
-    <button type="button" class="command" disabled={!exists || busy} onclick={endTask}>
+    <button
+      type="button"
+      class="command"
+      disabled={target === undefined || processActions.busy}
+      onclick={endTask}
+    >
       <Icon name="endTask" />
       タスクを終了する
     </button>
@@ -132,7 +102,13 @@
     if (e.key === 'Delete') void endTask();
   }}
 >
-  <table class="table" aria-label="プロセスの詳細">
+  <table class="table resizable" aria-label="プロセスの詳細" style:min-width="{sizer.total(columns)}px">
+    <colgroup>
+      {#each columns as column (column)}
+        <col style:width="{sizer.width(column)}px" />
+      {/each}
+      <col />
+    </colgroup>
     <thead>
       <tr oncontextmenu={openColumnMenu} title="右クリックで列を選べます">
         {#each columns as column (column)}
@@ -142,8 +118,13 @@
             sort={activeSort}
             {onsort}
             align={DETAIL_NUMERIC.includes(column) ? 'right' : 'left'}
+            width={sizer.width(column)}
+            onresize={(width: number | null, done: boolean) => {
+              sizer.resize(column, width, done);
+            }}
           />
         {/each}
+        <th class="filler"></th>
       </tr>
     </thead>
     <tbody>
@@ -156,16 +137,23 @@
             if (e.key === 'Enter') selected = p.pid;
           }}
           oncontextmenu={(e) => {
-            openRowMenu(e, p.pid);
+            selected = p.pid;
+            processActions.openMenu(e, p, {
+              onend: () => {
+                void endTask();
+              },
+            });
           }}
           data-testid="detail-row"
           data-pid={p.pid}
         >
           {#each columns as column (column)}
             {#if column === 'name'}
-              <td class="name">
-                <ProcessIcon src={icons.get(p.exe)} />
-                <span>{p.name}</span>
+              <td>
+                <span class="name">
+                  <ProcessIcon src={icons.get(p.exe)} />
+                  <span class="text">{p.name}</span>
+                </span>
               </td>
             {:else if column === 'command' || column === 'exe'}
               <td class="long" title={detailText(p, column)}>{detailText(p, column)}</td>
@@ -173,10 +161,11 @@
               <td class:num={DETAIL_NUMERIC.includes(column)}>{detailText(p, column)}</td>
             {/if}
           {/each}
+          <td class="filler"></td>
         </tr>
       {:else}
         <tr>
-          <td colspan={columns.length} class="empty">
+          <td colspan={columns.length + 1} class="empty">
             {monitor.snapshot ? '該当するプロセスはありません' : '読み込み中…'}
           </td>
         </tr>
@@ -190,11 +179,13 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
   }
-  .long {
-    max-width: 360px;
+  .text {
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .long {
     color: var(--text-muted);
   }
 </style>

@@ -20,8 +20,9 @@ export class ContextMenus {
     event.preventDefault();
     event.stopPropagation();
     let { clientX: x, clientY: y } = event;
-    if (x === 0 && y === 0 && event.currentTarget instanceof Element) {
-      const rect = event.currentTarget.getBoundingClientRect();
+    const target = event.currentTarget;
+    if (x === 0 && y === 0 && typeof Element !== 'undefined' && target instanceof Element) {
+      const rect = target.getBoundingClientRect();
       x = rect.left + 16;
       y = rect.bottom;
     }

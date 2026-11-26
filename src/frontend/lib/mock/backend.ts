@@ -1,12 +1,14 @@
 // E2E・VRT 用の偽バックエンド。値は呼び出し回数だけで決まり、乱数は使わない。
-import type {
-  KillResult,
-  KillTarget,
-  ProcessInfo,
-  ReplacementStatus,
-  Snapshot,
-  StartupEntry,
-  SystemInfo,
+import {
+  PRIORITIES,
+  type KillResult,
+  type KillTarget,
+  type ProcessControls,
+  type ProcessInfo,
+  type ReplacementStatus,
+  type Snapshot,
+  type StartupEntry,
+  type SystemInfo,
 } from '../model/types';
 import { isKillTarget } from '../model/guards';
 
@@ -49,6 +51,10 @@ export interface MockState {
   replaced: boolean;
   /** 「ファイルの場所を開く」で渡された場所 */
   revealed: string[];
+  /** 「オンライン検索」で渡された言葉 */
+  searched: string[];
+  /** 変えた優先度と関係（PID ごと） */
+  controls: Map<number, ProcessControls>;
 }
 
 export function createMockState(): MockState {
@@ -57,6 +63,8 @@ export function createMockState(): MockState {
     killed: new Set(),
     replaced: false,
     revealed: [],
+    searched: [],
+    controls: new Map(),
     startup: [
       startup(
         'registryUser',
@@ -269,6 +277,28 @@ function revealFile(state: MockState, args: Record<string, unknown>): null {
   return null;
 }
 
+function targetsOf(args: Record<string, unknown>): KillTarget[] {
+  return Array.isArray(args.targets) ? args.targets.filter(isKillTarget) : [];
+}
+
+/** 優先度や関係を変える。System（PID 4）は権限が足りない扱い。 */
+function control(
+  state: MockState,
+  args: Record<string, unknown>,
+  patch: Partial<ProcessControls>,
+): KillResult[] {
+  return targetsOf(args).map(({ pid }) => {
+    if (pid === 4) return { pid, ok: false, error: '変更できませんでした。権限が足りない可能性があります。' };
+    state.controls.set(pid, { ...controlsOf(state, pid), ...patch });
+    return { pid, ok: true, error: null };
+  });
+}
+
+function controlsOf(state: MockState, pid: number): ProcessControls {
+  if (pid === 4) return { priority: null, affinity: null };
+  return state.controls.get(pid) ?? { priority: 'normal', affinity: Array.from({ length: 8 }, (_, i) => i) };
+}
+
 const HANDLERS: Record<string, Handler> = {
   snapshot: (state) => {
     const snap = mockSnapshot(state);
@@ -276,8 +306,7 @@ const HANDLERS: Record<string, Handler> = {
     return snap;
   },
   system_info: () => MOCK_SYSTEM_INFO,
-  kill_processes: (state, args) =>
-    kill(state, Array.isArray(args.targets) ? args.targets.filter(isKillTarget) : []),
+  kill_processes: (state, args) => kill(state, targetsOf(args)),
   startup_entries: (state) => state.startup,
   set_startup_enabled: setStartupEnabled,
   taskmgr_replacement: (state) => replacement(state),
@@ -290,6 +319,21 @@ const HANDLERS: Record<string, Handler> = {
       .filter((e): e is string => typeof e === 'string')
       .map((exe) => ({ exe, icon: mockIcon(exe) })),
   reveal_file: revealFile,
+  set_process_priority: (state, args) =>
+    control(state, args, { priority: PRIORITIES.find((p) => p === args.priority) ?? 'normal' }),
+  set_process_affinity: (state, args) => {
+    const cpus = Array.isArray(args.cpus) ? args.cpus.filter((c): c is number => typeof c === 'number') : [];
+    if (cpus.length === 0) throw new Error('少なくとも 1 つのプロセッサを選んでください。');
+    return control(state, args, { affinity: cpus });
+  },
+  process_controls: (state, args) => controlsOf(state, typeof args.pid === 'number' ? args.pid : 0),
+  search_online: (state, args) => {
+    if (typeof args.query !== 'string' || args.query.trim() === '') {
+      throw new Error('検索する言葉がありません。');
+    }
+    state.searched.push(args.query);
+    return null;
+  },
 };
 
 /** コマンド名と引数から応答を作る。知らないコマンドは例外にする。 */

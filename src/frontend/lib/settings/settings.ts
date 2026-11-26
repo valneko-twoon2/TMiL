@@ -1,5 +1,6 @@
 // ユーザー設定の型と読み書き。
 import { DEFAULT_DETAIL_COLUMNS, normalizeDetailColumns, type DetailColumn } from '../process/columns';
+import { parseWidths, type ColumnWidths } from '../table/widths';
 
 export const REFRESH_OPTIONS = [
   { id: 'high', label: '高', intervalMs: 500 },
@@ -25,6 +26,8 @@ export interface Settings {
   startPage: Page;
   /** 詳細タブに出す列 */
   detailColumns: DetailColumn[];
+  /** 表の列の幅（「表.列」→ px）。無い列は最初の幅 */
+  columnWidths: ColumnWidths;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -32,11 +35,13 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   startPage: 'processes',
   detailColumns: [...DEFAULT_DETAIL_COLUMNS],
+  columnWidths: {},
 };
 
 const defaults = (): Settings => ({
   ...DEFAULT_SETTINGS,
   detailColumns: [...DEFAULT_SETTINGS.detailColumns],
+  columnWidths: {},
 });
 
 export const SETTINGS_STORAGE_KEY = 'tmil.settings';
@@ -70,6 +75,7 @@ export function parseSettings(raw: string | null): Settings {
     ),
     startPage: pick(PAGES, rec.startPage, DEFAULT_SETTINGS.startPage),
     detailColumns: normalizeDetailColumns(rec.detailColumns),
+    columnWidths: parseWidths(rec.columnWidths),
   };
 }
 

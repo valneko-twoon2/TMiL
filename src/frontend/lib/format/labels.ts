@@ -1,5 +1,5 @@
 // 列挙値の表示名。
-import type { ProcessState, StartupLocation } from '../model/types';
+import type { ProcessState, StartupLocation, Priority } from '../model/types';
 
 const PROCESS_STATE_LABEL: Record<ProcessState, string> = {
   running: '実行中',
@@ -30,4 +30,18 @@ const STARTUP_LOCATION_LABEL: Record<StartupLocation, string> = {
 
 export function startupLocationLabel(location: StartupLocation): string {
   return STARTUP_LOCATION_LABEL[location];
+}
+
+const PRIORITY_LABEL: Record<Priority, string> = {
+  realtime: 'リアルタイム',
+  high: '高',
+  aboveNormal: '通常以上',
+  normal: '通常',
+  belowNormal: '通常以下',
+  low: '低',
+};
+
+/** 優先度の表示名（本家のタスク マネージャーと同じ言い方）。 */
+export function priorityLabel(priority: Priority): string {
+  return PRIORITY_LABEL[priority];
 }

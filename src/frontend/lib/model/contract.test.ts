@@ -5,6 +5,7 @@ import { toKillTarget } from '../process/columns';
 import {
   isKillResults,
   isKillTargets,
+  isProcessControls,
   isProcessIcons,
   isReplacementStatus,
   isSnapshot,
@@ -13,6 +14,7 @@ import {
 } from './guards';
 import {
   DISK_KINDS,
+  PRIORITIES,
   PROCESS_STATES,
   STARTUP_LOCATIONS,
   type KillTarget,
@@ -35,8 +37,14 @@ describe('バックエンドとの契約', () => {
       ['startup-entries', isStartupEntries],
       ['replacement-status', isReplacementStatus],
       ['process-icons', isProcessIcons],
+      // 見本は「読めた場合」と「読めなかった場合」の 2 つを並べている
+      ['process-controls', (v: unknown) => Array.isArray(v) && v.every(isProcessControls)],
     ] as const)('%s を受け取れる', (name, guard) => {
       expect(guard(fixture(name))).toBe(true);
+    });
+
+    it('優先度の種類と並びが両側で一致する', () => {
+      expect(fixture('priorities')).toEqual([...PRIORITIES]);
     });
 
     it('プロセス状態の種類が両側で一致する', () => {

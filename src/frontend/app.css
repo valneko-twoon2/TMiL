@@ -134,6 +134,28 @@ select:focus-visible {
   padding: 4px 10px;
   border-bottom: 1px solid transparent;
 }
+/* 列の幅を変えられる表。幅は colgroup で決め、入りきらない文字は「…」にする。
+   最後の空の列が余りを受け持つので、合計より広い画面でも各列の幅は変わらない */
+.table.resizable {
+  table-layout: fixed;
+}
+.table.resizable td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.table.resizable th {
+  overflow: visible;
+}
+.table .filler {
+  padding: 0;
+}
+.table th.filler {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
 .table tbody tr {
   cursor: default;
 }

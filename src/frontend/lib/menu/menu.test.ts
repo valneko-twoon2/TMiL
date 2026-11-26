@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { allowsNativeMenu, isItem, menuPosition, nextIndex, SEPARATOR, type MenuEntry } from './menu';
+import {
+  allowsNativeMenu,
+  indexForKey,
+  isItem,
+  itemLabel,
+  menuPosition,
+  nextIndex,
+  SEPARATOR,
+  type MenuEntry,
+} from './menu';
 
 const view = { width: 800, height: 600 };
 const size = { width: 200, height: 100 };
@@ -70,6 +79,35 @@ describe('isItem / allowsNativeMenu', () => {
     it('DOM の要素でなければ標準のメニューは出さない', () => {
       expect(allowsNativeMenu(null)).toBe(false);
       expect(allowsNativeMenu({} as EventTarget)).toBe(false);
+    });
+  });
+});
+
+describe('itemLabel / indexForKey', () => {
+  const withKeys: MenuEntry[] = [
+    { id: 'end', label: 'タスクの終了', key: 'E' },
+    SEPARATOR,
+    { id: 'tree', label: 'プロセス ツリーの終了', key: 't', disabled: true },
+    { id: 'plain', label: 'なし' },
+  ];
+
+  describe('equivalence', () => {
+    it('アクセス キーを名前の後ろに付ける', () => {
+      expect(itemLabel({ id: 'x', label: 'タスクの終了', key: 'e' })).toBe('タスクの終了(E)');
+      expect(itemLabel({ id: 'x', label: 'なし' })).toBe('なし');
+    });
+
+    it('大文字・小文字を区別せずに項目を探す', () => {
+      expect(indexForKey(withKeys, 'e')).toBe(0);
+      expect(indexForKey(withKeys, 'E')).toBe(0);
+    });
+  });
+
+  describe('boundary', () => {
+    it('使えない項目・無いキー・1 文字でないキーは -1', () => {
+      expect(indexForKey(withKeys, 't')).toBe(-1);
+      expect(indexForKey(withKeys, 'z')).toBe(-1);
+      expect(indexForKey(withKeys, 'Enter')).toBe(-1);
     });
   });
 });

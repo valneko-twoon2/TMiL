@@ -3,24 +3,24 @@
 > 自動生成です。手で編集せず `npm run docs:tests` で更新してください。
 > 種類の決め方は [tags.md](tags.md) を参照。
 
-合計 **594** 件
+合計 **666** 件
 
 ## 種類 × 対象
 
 | 種類 | フロント | バック | ツール | アプリ全体 | 合計 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| 単体（同値分割） | 78 | 89 | 65 | 0 | 232 |
-| 単体（境界値） | 100 | 81 | 27 | 0 | 208 |
+| 単体（同値分割） | 95 | 102 | 65 | 0 | 262 |
+| 単体（境界値） | 120 | 93 | 27 | 0 | 240 |
 | 単体（回帰） | 9 | 23 | 8 | 0 | 40 |
 | 単体（その他） | 0 | 8 | 0 | 0 | 8 |
 | スナップショット | 14 | 1 | 0 | 0 | 15 |
-| 契約 | 12 | 7 | 0 | 0 | 19 |
+| 契約 | 14 | 8 | 0 | 0 | 22 |
 | ファジング | 10 | 6 | 0 | 0 | 16 |
-| 形式検証 | 0 | 20 | 0 | 0 | 20 |
+| 形式検証 | 0 | 21 | 0 | 0 | 21 |
 | VRT | 10 | 0 | 0 | 0 | 10 |
-| E2E（モック） | 21 | 0 | 0 | 0 | 21 |
+| E2E（モック） | 27 | 0 | 0 | 0 | 27 |
 | E2E（実アプリ） | 0 | 0 | 0 | 5 | 5 |
-| **合計** | **254** | **235** | **100** | **5** | **594** |
+| **合計** | **299** | **262** | **100** | **5** | **666** |
 
 ## フロントの内訳
 
@@ -32,31 +32,34 @@
 | `src/frontend/lib/format/format.test.ts` | 62 | 単体（同値分割） 19 / 単体（境界値） 42 / 単体（回帰） 1 |
 | `src/frontend/lib/fuzz.test.ts` | 10 | ファジング 10 |
 | `src/frontend/lib/history/history.test.ts` | 11 | 単体（同値分割） 3 / 単体（境界値） 6 / 単体（回帰） 2 |
-| `src/frontend/lib/menu/menu.test.ts` | 10 | 単体（同値分割） 5 / 単体（境界値） 5 |
+| `src/frontend/lib/menu/menu.test.ts` | 13 | 単体（同値分割） 7 / 単体（境界値） 6 |
 | `src/frontend/lib/mock/backend.test.ts` | 5 | 単体（同値分割） 2 / 単体（境界値） 2 / 単体（回帰） 1 |
-| `src/frontend/lib/model/contract.test.ts` | 12 | 契約 12 |
+| `src/frontend/lib/model/contract.test.ts` | 14 | 契約 14 |
 | `src/frontend/lib/model/guards.test.ts` | 10 | 単体（同値分割） 6 / 単体（境界値） 4 |
 | `src/frontend/lib/performance/resources.test.ts` | 11 | 単体（同値分割） 4 / 単体（境界値） 5 / 単体（回帰） 2 |
 | `src/frontend/lib/process/process.test.ts` | 27 | 単体（同値分割） 15 / 単体（境界値） 12 |
-| `src/frontend/lib/settings/settings.test.ts` | 15 | 単体（同値分割） 6 / 単体（境界値） 9 |
+| `src/frontend/lib/process/tree.test.ts` | 5 | 単体（同値分割） 2 / 単体（境界値） 3 |
+| `src/frontend/lib/settings/settings.test.ts` | 16 | 単体（同値分割） 6 / 単体（境界値） 10 |
 | `src/frontend/lib/startup/startup.test.ts` | 3 | 単体（同値分割） 2 / 単体（境界値） 1 |
 | `src/frontend/lib/state/icons.test.ts` | 8 | 単体（同値分割） 3 / 単体（境界値） 5 |
 | `src/frontend/lib/state/monitor.test.ts` | 6 | 単体（同値分割） 2 / 単体（境界値） 1 / 単体（回帰） 3 |
-| `tests/e2e/mock/app.spec.ts` | 21 | E2E（モック） 21 |
+| `src/frontend/lib/state/processActions.test.ts` | 16 | 単体（同値分割） 9 / 単体（境界値） 7 |
+| `src/frontend/lib/table/widths.test.ts` | 12 | 単体（同値分割） 4 / 単体（境界値） 8 |
+| `tests/e2e/mock/app.spec.ts` | 27 | E2E（モック） 27 |
 | `tests/vrt/pages.spec.ts` | 10 | VRT 10 |
 
 ## バックの内訳
 
 | ファイル / モジュール | 件数 | 内訳 |
 | --- | ---: | --- |
-| `backend::boundary` | 5 | 単体（境界値） 5 |
-| `backend::equivalence` | 9 | 単体（同値分割） 9 |
+| `backend::boundary` | 8 | 単体（境界値） 8 |
+| `backend::equivalence` | 11 | 単体（同値分割） 11 |
 | `backend::regression` | 7 | 単体（回帰） 7 |
 | `collector::boundary` | 3 | 単体（境界値） 3 |
 | `collector::equivalence` | 6 | 単体（同値分割） 6 |
 | `collector::regression` | 2 | 単体（回帰） 2 |
 | `collector::system` | 7 | 単体（その他） 7 |
-| `contract` | 7 | 契約 7 |
+| `contract` | 8 | 契約 8 |
 | `icons::base64::boundary` | 3 | 単体（境界値） 3 |
 | `icons::base64::equivalence` | 3 | 単体（同値分割） 3 |
 | `icons::boundary` | 5 | 単体（境界値） 5 |
@@ -68,14 +71,18 @@
 | `icons::windows_load` | 1 | 単体（その他） 1 |
 | `machine::boundary` | 8 | 単体（境界値） 8 |
 | `machine::equivalence` | 10 | 単体（同値分割） 10 |
-| `machine::formal` | 5 | 形式検証 5 |
+| `machine::formal` | 6 | 形式検証 6 |
 | `machine::regression` | 9 | 単体（回帰） 9 |
 | `metrics::boundary` | 10 | 単体（境界値） 10 |
 | `metrics::equivalence` | 5 | 単体（同値分割） 5 |
 | `model::boundary` | 2 | 単体（境界値） 2 |
 | `model::equivalence` | 2 | 単体（同値分割） 2 |
-| `reveal::boundary` | 3 | 単体（境界値） 3 |
-| `reveal::equivalence` | 4 | 単体（同値分割） 4 |
+| `open::boundary` | 5 | 単体（境界値） 5 |
+| `open::equivalence` | 6 | 単体（同値分割） 6 |
+| `powershell::boundary` | 1 | 単体（境界値） 1 |
+| `powershell::equivalence` | 1 | 単体（同値分割） 1 |
+| `process_control::boundary` | 6 | 単体（境界値） 6 |
+| `process_control::equivalence` | 8 | 単体（同値分割） 8 |
 | `startup::approval::boundary` | 3 | 単体（境界値） 3 |
 | `startup::approval::equivalence` | 3 | 単体（同値分割） 3 |
 | `startup::boundary` | 2 | 単体（境界値） 2 |

@@ -111,6 +111,16 @@ export interface StartupEntry {
   canToggle: boolean;
 }
 
+/** プロセスの優先度（Windows の優先度クラスに合わせた 6 段階。高い順）。 */
+export const PRIORITIES = ['realtime', 'high', 'aboveNormal', 'normal', 'belowNormal', 'low'] as const;
+export type Priority = (typeof PRIORITIES)[number];
+
+/** プロセスの今の優先度と、動かしてよい CPU の番号（読めなければ null）。 */
+export interface ProcessControls {
+  priority: Priority | null;
+  affinity: number[] | null;
+}
+
 /** プロセスのアイコン。icon は画像の data URL（見つからなければ null）。 */
 export interface ProcessIcon {
   exe: string;

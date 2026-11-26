@@ -9,6 +9,8 @@ import {
   type KillTarget,
   type MemoryStats,
   type NetworkStats,
+  PRIORITIES,
+  type ProcessControls,
   type ProcessIcon,
   type ProcessInfo,
   type ReplacementStatus,
@@ -149,6 +151,11 @@ const isImageDataUrl = (v: unknown): v is string =>
 
 export const isProcessIcon = shape<ProcessIcon>({ exe: isStr, icon: nullable(isImageDataUrl) });
 export const isProcessIcons = arrayOf(isProcessIcon);
+
+export const isProcessControls = shape<ProcessControls>({
+  priority: nullable(oneOf(PRIORITIES)),
+  affinity: nullable(arrayOf(isCount)),
+});
 
 /** `null` を返すコマンド用。 */
 export const isNull = (v: unknown): v is null => v === null;

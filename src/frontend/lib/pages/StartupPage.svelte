@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import type { Api } from '../api/ipc';
   import Icon from '../components/Icon.svelte';
   import PageHeader from '../components/PageHeader.svelte';
@@ -10,8 +10,10 @@
   import type { StartupEntry } from '../model/types';
   import { nextSort, sortBy, type SortState } from '../process/process';
   import { filterStartup, startupValue, type StartupColumn } from '../startup/startup';
+  import { ColumnSizer } from '../state/columnSizer.svelte';
   import type { IconStore } from '../state/icons.svelte';
   import type { ContextMenus } from '../state/menus.svelte';
+  import type { SettingsStore } from '../state/settings.svelte';
   import type { Toasts } from '../state/toast.svelte';
 
   interface Props {
@@ -19,10 +21,17 @@
     toasts: Toasts;
     icons: IconStore;
     menus: ContextMenus;
+    settings: SettingsStore;
     query: string;
   }
 
-  const { api, toasts, icons, menus, query }: Props = $props();
+  const { api, toasts, icons, menus, settings, query }: Props = $props();
+
+  const COLUMNS = ['name', 'program', 'location', 'enabled'] as const;
+  const sizer = untrack(() => new ColumnSizer(settings, 'startup'));
+  const resizer = (column: string) => (width: number | null, done: boolean) => {
+    sizer.resize(column, width, done);
+  };
 
   let entries = $state<StartupEntry[] | null>(null);
   let selectedId = $state<string | null>(null);
@@ -67,19 +76,30 @@
     }
   }
 
+  async function search(name: string) {
+    try {
+      await api.searchOnline(name);
+    } catch (cause) {
+      toasts.show(cause instanceof Error ? cause.message : String(cause), 'error');
+    }
+  }
+
   function openMenu(event: MouseEvent, entry: StartupEntry) {
     selectedId = entry.id;
     const items = [
       {
         id: 'toggle',
         label: entry.enabled ? '無効にする' : '有効にする',
+        key: entry.enabled ? 'A' : 'E',
         disabled: !entry.canToggle || busy,
       },
       SEPARATOR,
-      { id: 'reveal', label: 'ファイルの場所を開く', disabled: entry.program === '' },
+      { id: 'reveal', label: 'ファイルの場所を開く', key: 'O', disabled: entry.program === '' },
+      { id: 'search', label: 'オンライン検索', key: 'S' },
     ];
     menus.open(event, 'スタートアップ アプリの操作', items, (id) => {
       if (id === 'toggle') void toggle(entry);
+      else if (id === 'search') void search(entry.name);
       else void reveal(entry.program);
     });
   }
@@ -109,13 +129,23 @@
 </PageHeader>
 
 <div class="table-wrap">
-  <table class="table" aria-label="スタートアップ アプリ">
+  <table
+    class="table resizable"
+    aria-label="スタートアップ アプリ"
+    style:min-width="{sizer.total(COLUMNS)}px"
+  >
+    <colgroup>
+      {#each COLUMNS as column (column)}
+        <col style:width="{sizer.width(column)}px" />
+      {/each}
+      <col />
+    </colgroup>
     <thead>
       <tr>
-        <SortHeader key="name" label="名前" {sort} {onsort} />
-        <SortHeader key="program" label="プログラム" {sort} {onsort} />
-        <SortHeader key="location" label="場所" {sort} {onsort} />
-        <SortHeader key="enabled" label="状態" {sort} {onsort} />
+        {#each [['name', '名前'], ['program', 'プログラム'], ['location', '場所'], ['enabled', '状態']] as const as [key, label] (key)}
+          <SortHeader {key} {label} {sort} {onsort} width={sizer.width(key)} onresize={resizer(key)} />
+        {/each}
+        <th class="filler"></th>
       </tr>
     </thead>
     <tbody>
@@ -132,14 +162,19 @@
           }}
           data-testid="startup-row"
         >
-          <td class="name"><ProcessIcon src={icons.get(e.program)} /><span>{e.name}</span></td>
+          <td>
+            <span class="name">
+              <ProcessIcon src={icons.get(e.program)} /><span class="text">{e.name}</span>
+            </span>
+          </td>
           <td class="program" title={e.command}>{e.program}</td>
           <td>{startupLocationLabel(e.location)}</td>
           <td class:disabled-text={!e.enabled}>{e.enabled ? '有効' : '無効'}</td>
+          <td class="filler"></td>
         </tr>
       {:else}
         <tr>
-          <td colspan="4" class="empty">{entries ? 'スタートアップ アプリはありません' : '読み込み中…'}</td>
+          <td colspan="5" class="empty">{entries ? 'スタートアップ アプリはありません' : '読み込み中…'}</td>
         </tr>
       {/each}
     </tbody>
@@ -151,11 +186,13 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
   }
-  .program {
-    max-width: 380px;
+  .text {
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .program {
     color: var(--text-muted);
   }
   .disabled-text {
