@@ -53,8 +53,10 @@ describe('実アプリ', () => {
   it('プロセス一覧に実際のプロセスが並ぶ', async () => {
     const rows = await driver.wait(until.elementsLocated(By.css('[data-testid="process-group"]')), TIMEOUT);
     assert.ok(rows.length > 1, 'プロセスが 2 つ以上あるはず');
-    const table = await driver.findElement(By.css('table')).getText();
-    assert.match(table, /tmil/i, 'TMiL 自身が一覧にあるはず');
+    // getText は「見えている文字」だけを返し、列の幅に収めるため overflow: hidden にしたセルを
+    // WebKitGTK では含めない（画面には出ている）。一覧の中身は textContent で確かめる
+    const body = await driver.findElement(By.css('tbody')).getAttribute('textContent');
+    assert.match(body, /tmil/i, 'TMiL 自身が一覧にあるはず');
   });
 
   it('詳細タブで自分の PID を検索できる', async () => {
@@ -78,7 +80,7 @@ describe('実アプリ', () => {
   it('スタートアップ一覧を読み込める', async () => {
     await navigate('スタートアップ アプリ');
     await driver.wait(async () => {
-      const text = await driver.findElement(By.css('table')).getText();
+      const text = await driver.findElement(By.css('tbody')).getAttribute('textContent');
       return !text.includes('読み込み中');
     }, TIMEOUT);
   });
