@@ -124,9 +124,22 @@ pub fn elevate_script(args: &[String]) -> String {
         .collect::<Vec<_>>()
         .join(" ");
     let quoted = line.replace('\'', "''");
+    // UAC で取り消されると Start-Process が失敗する。Stop にして終了コード 1 で抜けさせる
     format!(
-        "$p = Start-Process -FilePath 'reg.exe' -ArgumentList '{quoted}' -Verb RunAs -Wait -WindowStyle Hidden -PassThru; exit $p.ExitCode"
+        "$ErrorActionPreference = 'Stop'; $p = Start-Process -FilePath 'reg.exe' -ArgumentList '{quoted}' -Verb RunAs -Wait -WindowStyle Hidden -PassThru; exit $p.ExitCode"
     )
+}
+
+/// 書き込み後の状態が頼んだ状態になっているかを確かめる。
+pub fn confirm_state(
+    requested: bool,
+    status: ReplacementStatus,
+) -> Result<ReplacementStatus, String> {
+    if status.replaced == requested {
+        Ok(status)
+    } else {
+        Err("設定が反映されませんでした。管理者の確認が取り消された可能性があります。".to_owned())
+    }
 }
 
 /// 現在の状態を返す。
@@ -149,7 +162,7 @@ pub fn set(exe: &Path, enable: bool) -> Result<ReplacementStatus, String> {
             "設定を変更できませんでした（管理者の確認が取り消された可能性があります）。".to_owned(),
         );
     }
-    Ok(status(exe))
+    confirm_state(enable, status(exe))
 }
 
 /// Windows 以外では使えない。
@@ -235,6 +248,31 @@ mod tests {
                 assert!(!status(&exe()).supported);
                 assert!(set(&exe(), true).is_err());
             }
+        }
+    }
+
+    mod regression {
+        use super::*;
+
+        /// UAC で「いいえ」を押すと Start-Process が失敗するが、終了コード 0 で抜けて成功扱いになっていた。
+        #[test]
+        fn elevate_script_fails_when_start_process_fails() {
+            let script = elevate_script(&["add".to_owned()]);
+            assert!(
+                script.starts_with("$ErrorActionPreference = 'Stop';"),
+                "{script}"
+            );
+        }
+
+        /// 書き込み後の状態が頼んだ状態と違うときは、成功として返さない。
+        #[test]
+        fn confirm_state_rejects_unchanged_state() {
+            let not_replaced = evaluate(None, &exe());
+            assert!(confirm_state(true, not_replaced.clone()).is_err());
+            assert_eq!(confirm_state(false, not_replaced.clone()), Ok(not_replaced));
+            let replaced = evaluate(Some(&debugger_value(&exe())), &exe());
+            assert_eq!(confirm_state(true, replaced.clone()), Ok(replaced.clone()));
+            assert!(confirm_state(false, replaced).is_err());
         }
     }
 
