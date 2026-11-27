@@ -77,7 +77,7 @@
   .actions :global(button.primary) {
     border-color: var(--accent);
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
   }
   .actions :global(button:disabled) {
     opacity: 0.5;
