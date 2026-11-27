@@ -41,3 +41,4 @@ tests/vrt/**/*-darwin.png
 tests/formal/*_TTrace_*
 tests/formal/states/
 stryker-setup-*.js
+.claude/worktrees/
