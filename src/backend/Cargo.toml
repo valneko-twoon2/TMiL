@@ -6,7 +6,7 @@ members = ["core", "app"]
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.95"
-repository = "https://github.com/valneko-twoon2/TMiL"
+repository = "https://github.com/valneko-twoon2/TaskManagerLite"
 publish = false
 
 [workspace.dependencies]

@@ -1,7 +1,7 @@
 #!/bin/sh
 # TaskManagerLite をインストールする（Linux・x86_64）。管理者権限は要らない。
 #
-#   curl -fsSL https://github.com/valneko-twoon2/TMiL/releases/latest/download/install.sh | sh
+#   curl -fsSL https://github.com/valneko-twoon2/TaskManagerLite/releases/latest/download/install.sh | sh
 #
 # AppImage を ~/.local/bin/taskmanagerlite に置き、アプリのメニューに登録する。
 # 入れる前に、リリースの SHA256SUMS とハッシュが一致するかを確かめる。
@@ -12,7 +12,7 @@
 #   確かめるだけ:         TASKMANAGERLITE_DRY_RUN=1（ダウンロードとハッシュの確認だけ行う）
 set -eu
 
-REPO="valneko-twoon2/TMiL"
+REPO="valneko-twoon2/TaskManagerLite"
 BIN_DIR="${TASKMANAGERLITE_BIN_DIR:-$HOME/.local/bin}"
 APP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
 TARGET="$BIN_DIR/taskmanagerlite"

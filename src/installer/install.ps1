@@ -1,6 +1,6 @@
 # TaskManagerLite をインストールする（Windows・x64）。管理者権限は要らない（ユーザーごとのインストール）。
 #
-#   irm https://github.com/valneko-twoon2/TMiL/releases/latest/download/install.ps1 | iex
+#   irm https://github.com/valneko-twoon2/TaskManagerLite/releases/latest/download/install.ps1 | iex
 #
 # リリースのインストーラー（*_x64-setup.exe）を、SHA256SUMS とハッシュが一致するか確かめてから静かに実行する。
 #
@@ -12,7 +12,7 @@
 & {
   $ErrorActionPreference = 'Stop'
   $ProgressPreference = 'SilentlyContinue'
-  $repo = 'valneko-twoon2/TMiL'
+  $repo = 'valneko-twoon2/TaskManagerLite'
 
   # Windows PowerShell の irm は、文字コードの書かれていない応答（GitHub のリリース）を Latin-1 として読むので、
   # このファイルの日本語が化ける。化けている文は UTF-8 として読み直してから出す（PowerShell 7 ではそのまま）

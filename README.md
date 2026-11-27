@@ -6,9 +6,9 @@
 
 **Rust + Tauri + Svelte 5 で作った、軽いタスクマネージャー**
 
-[![CI](https://github.com/valneko-twoon2/TMiL/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/valneko-twoon2/TMiL/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/valneko-twoon2/TMiL/actions/workflows/codeql.yml/badge.svg?branch=develop)](https://github.com/valneko-twoon2/TMiL/actions/workflows/codeql.yml)
-[![Release](https://img.shields.io/github/v/release/valneko-twoon2/TMiL?label=release)](https://github.com/valneko-twoon2/TMiL/releases)
+[![CI](https://github.com/valneko-twoon2/TaskManagerLite/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/valneko-twoon2/TaskManagerLite/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/valneko-twoon2/TaskManagerLite/actions/workflows/codeql.yml/badge.svg?branch=develop)](https://github.com/valneko-twoon2/TaskManagerLite/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/valneko-twoon2/TaskManagerLite?label=release)](https://github.com/valneko-twoon2/TaskManagerLite/releases)
 <br>
 ![Rust](https://img.shields.io/badge/Rust-2024-dea584?logo=rust&logoColor=white)
 ![Tauri](https://img.shields.io/badge/Tauri-2-24c8db?logo=tauri&logoColor=white)
@@ -58,18 +58,18 @@
 Windows（PowerShell）:
 
 ```powershell
-irm https://github.com/valneko-twoon2/TMiL/releases/latest/download/install.ps1 | iex
+irm https://github.com/valneko-twoon2/TaskManagerLite/releases/latest/download/install.ps1 | iex
 ```
 
 Linux（x86_64）:
 
 ```sh
-curl -fsSL https://github.com/valneko-twoon2/TMiL/releases/latest/download/install.sh | sh
+curl -fsSL https://github.com/valneko-twoon2/TaskManagerLite/releases/latest/download/install.sh | sh
 ```
 
 Linux ではアプリを `~/.local/bin/taskmanagerlite` に置き、アプリのメニューに登録します。消すときは `... | sh -s -- --uninstall` です。
 
-[Releases](https://github.com/valneko-twoon2/TMiL/releases) からファイルを直接ダウンロードすることもできます。
+[Releases](https://github.com/valneko-twoon2/TaskManagerLite/releases) からファイルを直接ダウンロードすることもできます。
 
 | OS      | ファイル                              |
 | ------- | ------------------------------------- |
