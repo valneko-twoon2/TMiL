@@ -153,13 +153,18 @@ impl Backend {
             .map(|(pid, outcome)| kill_result(pid, outcome))
             .collect();
         let killed: Vec<u32> = results.iter().filter(|r| r.ok).map(|r| r.pid).collect();
-        if !killed.is_empty()
+        self.remove_from_cached_snapshot(&killed)?;
+        Ok(results)
+    }
+
+    fn remove_from_cached_snapshot(&self, pids: &[u32]) -> Result<(), String> {
+        if !pids.is_empty()
             && let Some((_, snap)) = lock(&self.cache)?.as_mut()
         {
-            snap.processes.retain(|p| !killed.contains(&p.pid));
+            snap.processes.retain(|p| !pids.contains(&p.pid));
             snap.cpu.process_count = snap.processes.len();
         }
-        Ok(results)
+        Ok(())
     }
 
     pub fn set_priority(
