@@ -4,7 +4,8 @@
 
 | コマンド                  | 引数                  | 戻り値              | 内容                                     |
 | ------------------------- | --------------------- | ------------------- | ---------------------------------------- |
-| `snapshot`                | なし                  | `Snapshot`          | 最新の計測結果                           |
+| `snapshot`                | なし                  | `SnapshotWire`      | 最新の計測結果（転送量を減らした形）     |
+| `process_details`         | `pids`                | `ProcessDetails[]`  | プロセスの場所・コマンドライン・ユーザー |
 | `system_info`             | なし                  | `SystemInfo`        | OS・CPU 名など変わらない情報             |
 | `kill_processes`          | `targets`             | `KillResult[]`      | プロセスを終了（PID と起動時刻）         |
 | `startup_entries`         | なし                  | `StartupEntry[]`    | スタートアップ項目                       |
@@ -43,6 +44,16 @@
 
 `kill_processes` は PID と起動時刻（`startTime`）の組を受け取ります。一覧を取ってから PID が別のプロセスに再利用されていたら終了しません。TaskManagerLite 自身とその子孫（WebView）も終了しません。
 
+## 計測結果の送り方
+
+計測結果は毎秒送るので、転送量を減らしています（Windows はこの受け渡しもプロセスの I/O として数えるため、減らさないとディスクの列に約 200 KB/秒 と出ていました）。
+
+- プロセスは項目名の無い配列で送る。並びは Rust の `ProcessRow` とフロントの `PROCESS_ROW_FIELDS` で同じにする
+- 場所・コマンドライン・ユーザーは送らない。`lib/api/ipc.ts` が新しく出てきたプロセス（PID と起動時刻で見分ける）の分だけ `process_details` で取り、覚えておいて合わせる。場所かユーザーが空のものは 10 秒ごとに聞き直す（バックが後から補うため）
+- 画面の残りの部分は、合わせたあとの `Snapshot` を使う
+
+約 360 プロセスで、1 回あたり約 240 KB から約 50 KB になりました。
+
 ## 契約テスト
 
 型は Rust（`src/backend/core/src/model.rs`）と TypeScript（`src/frontend/lib/model/types.ts`）の両方にあります。ずれを防ぐため、JSON の見本を間に置いています。
@@ -50,6 +61,7 @@
 - `tests/contract/fixtures/*.json` が見本
 - Rust 側（`src/backend/core/tests/contract.rs`）: 型を JSON にした結果が見本と一致するか
 - フロント側（`src/frontend/lib/model/contract.test.ts`）: 見本を検証関数が受け取れるか、列挙値の種類が一致するか
+- `snapshot-wire.json` と `process-details.json` を合わせると `snapshot.json` に戻ること（`lib/api/ipc.test.ts`）
 
 型を変えたら次の順で直します。
 
