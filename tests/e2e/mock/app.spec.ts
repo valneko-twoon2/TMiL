@@ -173,6 +173,16 @@ test.describe('詳細', () => {
     await page.keyboard.press('ArrowLeft');
     await expect(sub).toHaveCount(0);
     await expect(page.getByRole('menuitem', { name: '優先度の設定(P)' })).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.getByRole('menu', { name: 'プロセスの操作' })).toHaveCount(1);
+
+    await page.keyboard.press('ArrowRight');
+    await expect(sub.getByRole('menuitemcheckbox', { name: 'リアルタイム' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(sub).toHaveCount(0);
+    await expect(page.getByRole('menuitem', { name: '優先度の設定(P)' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('menu', { name: 'プロセスの操作' })).toHaveCount(0);
   });
 
   test('関係の設定で CPU を外すと、次に開いたときも外れている', async ({ page }) => {
