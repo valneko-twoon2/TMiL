@@ -257,18 +257,23 @@ test.describe('パフォーマンス', () => {
     await expect(page.getByLabel('論理プロセッサごとのグラフ')).toBeVisible();
   });
 
-  test('概要表示では、グラフでなく色付きの丸で並び、詳細は出ない。もう一度で戻る', async ({ page }) => {
+  test('要約ビューでは、ナビ・検索・詳細が消えて色付きの丸の一覧だけになり、もう一度で戻る', async ({
+    page,
+  }) => {
     await open(page, 'パフォーマンス');
     const list = page.getByRole('list', { name: 'リソース' });
     await expect(list.getByRole('img').first()).toBeVisible();
     await list.click({ button: 'right' });
-    await page.getByRole('menuitemcheckbox', { name: '概要表示(S)' }).click();
+    await page.getByRole('menuitemcheckbox', { name: '要約ビュー(W)' }).click();
     await expect(list.getByRole('img')).toHaveCount(0);
     await expect(list.locator('i.dot').first()).toBeVisible();
     await expect(page.getByRole('region', { name: 'CPU の詳細' })).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: 'ページ' })).toHaveCount(0);
+    await expect(page.getByRole('searchbox', { name: '検索' })).toHaveCount(0);
     await list.click({ button: 'right' });
-    await page.getByRole('menuitemcheckbox', { name: '概要表示(S)' }).click();
+    await page.getByRole('menuitemcheckbox', { name: '要約ビュー(W)' }).click();
     await expect(page.getByRole('region', { name: 'CPU の詳細' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'ページ' })).toBeVisible();
   });
 
   test('リソース モニターを開ける', async ({ page }) => {

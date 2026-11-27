@@ -80,6 +80,7 @@ export interface Api {
   processModules(pid: number): Promise<ModuleInfo[]>;
   findHandles(query: string): Promise<HandleInfo[]>;
   setAlwaysOnTop(enabled: boolean): Promise<void>;
+  setSummaryView(enabled: boolean): Promise<void>;
 }
 
 export function createApi(call: Invoke): Api {
@@ -163,6 +164,9 @@ export function createApi(call: Invoke): Api {
     findHandles: (query) => request('find_handles', isHandles, { query }),
     setAlwaysOnTop: async (enabled) => {
       await request('set_always_on_top', isNull, { enabled });
+    },
+    setSummaryView: async (enabled) => {
+      await request('set_summary_view', isNull, { enabled });
     },
   };
 }

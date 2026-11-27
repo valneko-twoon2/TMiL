@@ -1,3 +1,4 @@
+use std::sync::Mutex;
 use taskmanagerlite_core::backend::{Backend, set_replacement_for_exe};
 use taskmanagerlite_core::icons::{self, IconCache};
 use taskmanagerlite_core::model::{
@@ -8,7 +9,7 @@ use taskmanagerlite_core::model::{
 use taskmanagerlite_core::{
     connections, handles, launch, modules, open, services, startup, taskmgr, windows_list,
 };
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, LogicalSize, Manager, PhysicalPosition, PhysicalSize, State};
 
 fn current_exe() -> Result<std::path::PathBuf, String> {
     std::env::current_exe().map_err(|e| format!("実行ファイルの場所が分かりません: {e}"))
@@ -208,6 +209,74 @@ pub(crate) fn set_always_on_top(window: tauri::WebviewWindow, enabled: bool) -> 
     window
         .set_always_on_top(enabled)
         .map_err(|e| format!("ウィンドウの設定を変えられません: {e}"))
+}
+
+/// 契約: 要約ビューにする前のウィンドウの内側の大きさ・位置・最大化。内側で覚えるのは、`set_size` が内側の大きさを取るため。
+pub(crate) struct SavedWindow {
+    size: PhysicalSize<u32>,
+    position: PhysicalPosition<i32>,
+    maximized: bool,
+}
+
+/// 契約: 要約ビューの間だけ中身がある。
+#[derive(Default)]
+pub(crate) struct SummaryView(Mutex<Option<SavedWindow>>);
+
+const SUMMARY_SIZE: (f64, f64) = (380.0, 600.0);
+const SUMMARY_MIN_SIZE: (f64, f64) = (280.0, 200.0);
+const NORMAL_MIN_SIZE: (f64, f64) = (720.0, 480.0);
+
+/// なぜ: 要約ビューは本家と同じく、ウィンドウごと一覧だけの小さな窓になる。戻すときのために元の大きさ・位置を覚える。
+#[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri のコマンドはウィンドウと状態を値で受け取る"
+)]
+pub(crate) fn set_summary_view(
+    window: tauri::WebviewWindow,
+    saved: State<'_, SummaryView>,
+    enabled: bool,
+) -> Result<(), String> {
+    let fail = |e: tauri::Error| format!("ウィンドウの大きさを変えられません: {e}");
+    let mut saved = saved
+        .0
+        .lock()
+        .map_err(|_| "ウィンドウの状態を読めません".to_owned())?;
+    if enabled {
+        if saved.is_some() {
+            return Ok(());
+        }
+        let maximized = window.is_maximized().map_err(fail)?;
+        *saved = Some(SavedWindow {
+            size: window.inner_size().map_err(fail)?,
+            position: window.outer_position().map_err(fail)?,
+            maximized,
+        });
+        if maximized {
+            window.unmaximize().map_err(fail)?;
+        }
+        window
+            .set_min_size(Some(LogicalSize::new(
+                SUMMARY_MIN_SIZE.0,
+                SUMMARY_MIN_SIZE.1,
+            )))
+            .map_err(fail)?;
+        window
+            .set_size(LogicalSize::new(SUMMARY_SIZE.0, SUMMARY_SIZE.1))
+            .map_err(fail)
+    } else if let Some(before) = saved.take() {
+        window
+            .set_min_size(Some(LogicalSize::new(NORMAL_MIN_SIZE.0, NORMAL_MIN_SIZE.1)))
+            .map_err(fail)?;
+        window.set_size(before.size).map_err(fail)?;
+        window.set_position(before.position).map_err(fail)?;
+        if before.maximized {
+            window.maximize().map_err(fail)?;
+        }
+        Ok(())
+    } else {
+        Ok(())
+    }
 }
 
 async fn detached<T: Send + 'static>(

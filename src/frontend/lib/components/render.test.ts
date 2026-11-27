@@ -33,6 +33,7 @@ import DataTable from './DataTable.svelte';
 import Icon from './Icon.svelte';
 import LineChart from './LineChart.svelte';
 import NavRail from './NavRail.svelte';
+import { SummaryView } from '../state/summaryView.svelte';
 import PageHeader from './PageHeader.svelte';
 import ProcessIcon from './ProcessIcon.svelte';
 import SortHeader from './SortHeader.svelte';
@@ -195,9 +196,26 @@ describe('画面部品', () => {
     });
 
     it('パフォーマンス', () => {
+      const summaryView = new SummaryView(
+        { setSummaryView: () => Promise.resolve() },
+        { show: () => undefined },
+      );
       expect(
-        render(PerformancePage, { props: { monitor: filledMonitor(), intervalMs: 1000 } }).body,
+        render(PerformancePage, { props: { monitor: filledMonitor(), intervalMs: 1000, summaryView } }).body,
       ).toMatchSnapshot();
+    });
+
+    it('パフォーマンス（要約ビュー）', () => {
+      const summaryView = new SummaryView(
+        { setSummaryView: () => Promise.resolve() },
+        { show: () => undefined },
+      );
+      summaryView.on = true;
+      const { body } = render(PerformancePage, {
+        props: { monitor: filledMonitor(), intervalMs: 1000, summaryView },
+      });
+      expect(body).toMatchSnapshot();
+      expect(body).not.toContain('<h1');
     });
 
     it('スタートアップ（読み込み前）', async () => {

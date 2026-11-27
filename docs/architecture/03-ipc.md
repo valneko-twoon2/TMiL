@@ -2,35 +2,36 @@
 
 ## コマンド
 
-| コマンド                  | 引数                  | 戻り値              | 内容                                     |
-| ------------------------- | --------------------- | ------------------- | ---------------------------------------- |
-| `snapshot`                | なし                  | `SnapshotWire`      | 最新の計測結果（転送量を減らした形）     |
-| `process_details`         | `pids`                | `ProcessDetails[]`  | プロセスの場所・コマンドライン・ユーザー |
-| `system_info`             | なし                  | `SystemInfo`        | OS・CPU 名など変わらない情報             |
-| `kill_processes`          | `targets`             | `KillResult[]`      | プロセスを終了（PID と起動時刻）         |
-| `startup_entries`         | なし                  | `StartupEntry[]`    | スタートアップ項目                       |
-| `set_startup_enabled`     | `id`, `enabled`       | `null`              | スタートアップの有効・無効               |
-| `taskmgr_replacement`     | なし                  | `ReplacementStatus` | タスク マネージャー置き換えの状態        |
-| `set_taskmgr_replacement` | `enabled`             | `ReplacementStatus` | 置き換えの切り替え（Windows のみ）       |
-| `process_icons`           | `exes`                | `ProcessIcon[]`     | 実行ファイルのアイコン（data URL）       |
-| `reveal_file`             | `path`                | `null`              | ファイルの場所を開く                     |
-| `set_process_priority`    | `targets`, `priority` | `KillResult[]`      | 優先度を変える                           |
-| `set_process_affinity`    | `targets`, `cpus`     | `KillResult[]`      | 関係（動かしてよい CPU）を変える         |
-| `process_controls`        | `pid`                 | `ProcessControls`   | 今の優先度と関係                         |
-| `search_online`           | `query`               | `null`              | 名前を Bing で検索する                   |
-| `suspend_processes`       | `targets`             | `KillResult[]`      | プロセスを中断する                       |
-| `resume_processes`        | `targets`             | `KillResult[]`      | 中断したプロセスを再開する               |
-| `set_process_efficiency`  | `targets`, `enabled`  | `KillResult[]`      | 効率モードを入れる・外す                 |
-| `run_task`                | `command`, `admin`    | `null`              | 新しいタスクを実行する                   |
-| `app_windows`             | なし                  | `AppWindow[]`       | ウィンドウを出しているプロセス           |
-| `switch_to_window`        | `pid`                 | `null`              | そのプロセスのウィンドウに切り替える     |
-| `services`                | なし                  | `ServiceInfo[]`     | サービスの一覧                           |
-| `control_service`         | `name`, `action`      | `null`              | サービスの開始・停止・再起動             |
-| `open_services_tool`      | なし                  | `null`              | サービス管理ツールを開く（Windows のみ） |
-| `network_connections`     | なし                  | `Connection[]`      | TCP の接続と、TCP・UDP の待ち受け        |
-| `process_modules`         | `pid`                 | `ModuleInfo[]`      | プロセスが読み込んでいるモジュール       |
-| `find_handles`            | `query`               | `HandleInfo[]`      | ファイルやフォルダーを開いているプロセス |
-| `set_always_on_top`       | `enabled`             | `null`              | ウィンドウを常に手前に出す               |
+| コマンド                  | 引数                  | 戻り値              | 内容                                         |
+| ------------------------- | --------------------- | ------------------- | -------------------------------------------- |
+| `snapshot`                | なし                  | `SnapshotWire`      | 最新の計測結果（転送量を減らした形）         |
+| `process_details`         | `pids`                | `ProcessDetails[]`  | プロセスの場所・コマンドライン・ユーザー     |
+| `system_info`             | なし                  | `SystemInfo`        | OS・CPU 名など変わらない情報                 |
+| `kill_processes`          | `targets`             | `KillResult[]`      | プロセスを終了（PID と起動時刻）             |
+| `startup_entries`         | なし                  | `StartupEntry[]`    | スタートアップ項目                           |
+| `set_startup_enabled`     | `id`, `enabled`       | `null`              | スタートアップの有効・無効                   |
+| `taskmgr_replacement`     | なし                  | `ReplacementStatus` | タスク マネージャー置き換えの状態            |
+| `set_taskmgr_replacement` | `enabled`             | `ReplacementStatus` | 置き換えの切り替え（Windows のみ）           |
+| `process_icons`           | `exes`                | `ProcessIcon[]`     | 実行ファイルのアイコン（data URL）           |
+| `reveal_file`             | `path`                | `null`              | ファイルの場所を開く                         |
+| `set_process_priority`    | `targets`, `priority` | `KillResult[]`      | 優先度を変える                               |
+| `set_process_affinity`    | `targets`, `cpus`     | `KillResult[]`      | 関係（動かしてよい CPU）を変える             |
+| `process_controls`        | `pid`                 | `ProcessControls`   | 今の優先度と関係                             |
+| `search_online`           | `query`               | `null`              | 名前を Bing で検索する                       |
+| `suspend_processes`       | `targets`             | `KillResult[]`      | プロセスを中断する                           |
+| `resume_processes`        | `targets`             | `KillResult[]`      | 中断したプロセスを再開する                   |
+| `set_process_efficiency`  | `targets`, `enabled`  | `KillResult[]`      | 効率モードを入れる・外す                     |
+| `run_task`                | `command`, `admin`    | `null`              | 新しいタスクを実行する                       |
+| `app_windows`             | なし                  | `AppWindow[]`       | ウィンドウを出しているプロセス               |
+| `switch_to_window`        | `pid`                 | `null`              | そのプロセスのウィンドウに切り替える         |
+| `services`                | なし                  | `ServiceInfo[]`     | サービスの一覧                               |
+| `control_service`         | `name`, `action`      | `null`              | サービスの開始・停止・再起動                 |
+| `open_services_tool`      | なし                  | `null`              | サービス管理ツールを開く（Windows のみ）     |
+| `network_connections`     | なし                  | `Connection[]`      | TCP の接続と、TCP・UDP の待ち受け            |
+| `process_modules`         | `pid`                 | `ModuleInfo[]`      | プロセスが読み込んでいるモジュール           |
+| `find_handles`            | `query`               | `HandleInfo[]`      | ファイルやフォルダーを開いているプロセス     |
+| `set_always_on_top`       | `enabled`             | `null`              | ウィンドウを常に手前に出す                   |
+| `set_summary_view`        | `enabled`             | `null`              | 要約ビュー（一覧だけの小さな窓）にする・戻す |
 
 エラーは日本語の文字列で返します。
 

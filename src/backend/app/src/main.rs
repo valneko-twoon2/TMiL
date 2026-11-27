@@ -25,6 +25,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }))
         .manage(backend)
         .manage(IconCache::new())
+        .manage(commands::SummaryView::default())
         .invoke_handler(tauri::generate_handler![
             commands::snapshot,
             commands::process_details,
@@ -53,6 +54,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             commands::process_modules,
             commands::find_handles,
             commands::set_always_on_top,
+            commands::set_summary_view,
         ])
         .setup(|app| {
             tray::create(app.handle())?;

@@ -27,6 +27,7 @@
   import type { Monitor } from './lib/state/monitor.svelte';
   import type { ProcessActions } from './lib/state/processActions.svelte';
   import type { ResourceMonitorState } from './lib/state/resmon.svelte';
+  import { SummaryView } from './lib/state/summaryView.svelte';
   import { provideRunTask, type RunTask } from './lib/state/runTask.svelte';
   import type { ServiceList } from './lib/state/services.svelte';
   import type { SettingsStore } from './lib/state/settings.svelte';
@@ -63,6 +64,7 @@
   }: Props = $props();
 
   provideRunTask(untrack(() => runTask));
+  const summaryView = untrack(() => new SummaryView(api, toasts));
 
   let page = $state<Page>(untrack(() => settings.value.startPage));
   let navExpanded = $state(false);
@@ -165,24 +167,28 @@
 <svelte:window {onkeydown} />
 
 <div class="app">
-  <header class="titlebar">
-    <div class="spacer"></div>
-    <label class="search" class:disabled={!searchable}>
-      <Icon name="search" size={14} />
-      <input
-        bind:this={search}
-        type="search"
-        placeholder="名前、PID、ユーザーで検索"
-        aria-label="検索"
-        bind:value={query}
-        disabled={!searchable}
-      />
-    </label>
-    <div class="spacer"></div>
-  </header>
+  {#if !summaryView.on}
+    <header class="titlebar">
+      <div class="spacer"></div>
+      <label class="search" class:disabled={!searchable}>
+        <Icon name="search" size={14} />
+        <input
+          bind:this={search}
+          type="search"
+          placeholder="名前、PID、ユーザーで検索"
+          aria-label="検索"
+          bind:value={query}
+          disabled={!searchable}
+        />
+      </label>
+      <div class="spacer"></div>
+    </header>
+  {/if}
 
   <div class="body">
-    <NavRail {page} expanded={navExpanded} {onnavigate} ontoggle={() => (navExpanded = !navExpanded)} />
+    {#if !summaryView.on}
+      <NavRail {page} expanded={navExpanded} {onnavigate} ontoggle={() => (navExpanded = !navExpanded)} />
+    {/if}
     <main class="content">
       {#if monitor.error}
         <div class="banner" role="alert">情報を取得できません: {monitor.error}</div>
@@ -203,6 +209,7 @@
           {monitor}
           {menus}
           {toasts}
+          {summaryView}
           intervalMs={interval}
           onopenresmon={() => (page = 'resmon')}
         />

@@ -14,6 +14,7 @@
   } from '../performance/resources';
   import type { ContextMenus } from '../state/menus.svelte';
   import type { Monitor } from '../state/monitor.svelte';
+  import type { SummaryView } from '../state/summaryView.svelte';
   import type { Toasts } from '../state/toast.svelte';
 
   interface Props {
@@ -21,13 +22,14 @@
     intervalMs: number;
     menus?: ContextMenus;
     toasts?: Toasts;
+    summaryView: SummaryView;
     onopenresmon?: () => void;
   }
 
-  const { monitor, intervalMs, menus, toasts, onopenresmon }: Props = $props();
+  const { monitor, intervalMs, menus, toasts, summaryView, onopenresmon }: Props = $props();
   let selectedId = $state('cpu');
   let perCore = $state(false);
-  let summary = $state(false);
+  const summary = $derived(summaryView.on);
 
   const resources = $derived(
     monitor.snapshot ? buildResources(monitor.snapshot, monitor.history, monitor.systemInfo) : [],
@@ -65,22 +67,30 @@
             },
           ]
         : []),
-      { id: 'summary', label: '概要表示', key: 'S', checked: summary },
+      { id: 'summary', label: '要約ビュー', key: 'W', checked: summary },
       SEPARATOR,
       { id: 'copy', label: 'コピー', key: 'C' },
     ];
     menus.open(event, 'パフォーマンス', entries, (id) => {
       if (id === 'graph:total') perCore = false;
       else if (id === 'graph:cores') perCore = true;
-      else if (id === 'summary') summary = !summary;
+      else if (id === 'summary') void summaryView.toggle();
       else if (id === 'copy') void copy();
     });
   }
 </script>
 
-<PageHeader title="パフォーマンス" />
+{#if !summary}
+  <PageHeader title="パフォーマンス" />
+{/if}
 
-<div class="layout" class:summary oncontextmenu={openMenu} role="presentation">
+<div
+  class="layout"
+  class:summary
+  oncontextmenu={openMenu}
+  ondblclick={() => void summaryView.toggle()}
+  role="presentation"
+>
   <ul class="list" aria-label="リソース">
     {#each resources as r (r.id)}
       <li>
@@ -184,7 +194,8 @@
 
 <style>
   .layout.summary {
-    grid-template-columns: minmax(0, 360px);
+    grid-template-columns: minmax(0, 1fr);
+    padding: 8px;
   }
   .dot {
     width: 14px;

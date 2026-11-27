@@ -3,17 +3,17 @@
 > 自動生成です。手で編集せず `npm run docs:tests` で更新してください。
 > 種類の決め方は [02-tags.md](02-tags.md) を参照。
 
-合計 **1092** 件
+合計 **1095** 件
 
 ## 種類 × 対象
 
 | 種類 | フロント | バック | ツール | アプリ全体 | 合計 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| 単体（同値分割） | 193 | 155 | 78 | 0 | 426 |
-| 単体（境界値） | 195 | 132 | 40 | 0 | 367 |
+| 単体（同値分割） | 194 | 155 | 78 | 0 | 427 |
+| 単体（境界値） | 196 | 132 | 40 | 0 | 368 |
 | 単体（回帰） | 12 | 24 | 12 | 0 | 48 |
 | 単体（その他） | 0 | 24 | 2 | 0 | 26 |
-| スナップショット | 24 | 1 | 0 | 0 | 25 |
+| スナップショット | 25 | 1 | 0 | 0 | 26 |
 | 契約 | 32 | 14 | 0 | 0 | 46 |
 | プロパティベース | 30 | 12 | 0 | 0 | 42 |
 | ファジング | 10 | 6 | 0 | 0 | 16 |
@@ -21,7 +21,7 @@
 | VRT | 18 | 0 | 0 | 0 | 18 |
 | E2E（モック） | 50 | 0 | 0 | 0 | 50 |
 | E2E（実アプリ） | 0 | 0 | 0 | 7 | 7 |
-| **合計** | **564** | **389** | **132** | **7** | **1092** |
+| **合計** | **567** | **389** | **132** | **7** | **1095** |
 
 ## フロントの内訳
 
@@ -29,7 +29,7 @@
 | --- | ---: | --- |
 | `src/frontend/lib/api/ipc.test.ts` | 8 | 単体（同値分割） 6 / 単体（境界値） 2 |
 | `src/frontend/lib/chart/chart.test.ts` | 13 | 単体（同値分割） 7 / 単体（境界値） 6 |
-| `src/frontend/lib/components/render.test.ts` | 23 | 単体（回帰） 1 / スナップショット 22 |
+| `src/frontend/lib/components/render.test.ts` | 24 | 単体（回帰） 1 / スナップショット 23 |
 | `src/frontend/lib/format/format.test.ts` | 70 | 単体（同値分割） 23 / 単体（境界値） 45 / 単体（回帰） 1 / スナップショット 1 |
 | `src/frontend/lib/fuzz.test.ts` | 10 | ファジング 10 |
 | `src/frontend/lib/history/appHistory.test.ts` | 16 | 単体（同値分割） 6 / 単体（境界値） 9 / プロパティベース 1 |
@@ -56,6 +56,7 @@
 | `src/frontend/lib/state/monitor.test.ts` | 6 | 単体（同値分割） 2 / 単体（境界値） 1 / 単体（回帰） 3 |
 | `src/frontend/lib/state/newStates.test.ts` | 13 | 単体（同値分割） 8 / 単体（境界値） 5 |
 | `src/frontend/lib/state/processActions.test.ts` | 21 | 単体（同値分割） 12 / 単体（境界値） 8 / 単体（回帰） 1 |
+| `src/frontend/lib/state/summaryView.test.ts` | 2 | 単体（同値分割） 1 / 単体（境界値） 1 |
 | `src/frontend/lib/table/progressive.test.ts` | 7 | 単体（同値分割） 3 / 単体（境界値） 2 / プロパティベース 2 |
 | `src/frontend/lib/table/table.test.ts` | 8 | 単体（同値分割） 5 / 単体（境界値） 2 / プロパティベース 1 |
 | `src/frontend/lib/table/widths.property.test.ts` | 6 | プロパティベース 6 |

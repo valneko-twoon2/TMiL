@@ -50,6 +50,11 @@ describe('unmarkedComments', () => {
   });
 
   describe('regression', () => {
+    // 参照を外す式（*saved = ...）をブロックコメントの続きと取り違えた
+    it('* で始まるコードはコメントでない', () => {
+      assert.deepEqual(unmarkedComments(diff('src/backend/app/src/a.rs', '*saved = Some(1);')), []);
+    });
+
     // 作業のたびに「何をするか」の説明が積み上がり、まとめて 851 行を消した
     it('処理を言い直しただけのコメントは止める', () => {
       const found = unmarkedComments(

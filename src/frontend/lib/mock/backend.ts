@@ -413,6 +413,10 @@ const HANDLERS: Record<string, Handler> = {
     state.alwaysOnTop = args.enabled === true;
     return null;
   },
+  set_summary_view: (state, args) => {
+    state.summaryView = args.enabled === true;
+    return null;
+  },
   snapshot: (state) => {
     const snap = mockSnapshot(state);
     state.tick += 1;

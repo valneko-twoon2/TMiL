@@ -16,6 +16,7 @@ export interface SystemMockState {
   switched: number[];
   servicesToolOpened: number;
   alwaysOnTop: boolean;
+  summaryView: boolean;
 }
 
 function service(
@@ -48,6 +49,7 @@ export function createSystemMock(): SystemMockState {
     switched: [],
     servicesToolOpened: 0,
     alwaysOnTop: false,
+    summaryView: false,
   };
 }
 

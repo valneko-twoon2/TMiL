@@ -6,7 +6,7 @@ export const MARKERS = ['なぜ:', '契約:'];
 
 const SOURCE = /^src\/.*\.(rs|ts|svelte|css|mjs)$/;
 const TEST = /(\.test\.|\.spec\.|\/tests?\/|\/tests?\.rs$|test_support|\/__snapshots__\/|\/test\/|\.d\.ts$)/;
-const LEADER = /^(\/\/[/!]?|\/\*+!?|\*(?!\/)|<!--)\s?/;
+const LEADER = /^(\/\/[/!]?|\/\*+!?|\*(?=\s|$)|<!--)\s?/;
 // コメントではなく指示として働くもの
 const DIRECTIVE = /^(\/\/\/?\s*<|\/\/\s*(eslint|@ts-|#|prettier|svelte-)|<!--\s*svelte-ignore|\/\*\s*eslint)/;
 

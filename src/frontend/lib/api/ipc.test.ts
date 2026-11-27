@@ -146,6 +146,7 @@ describe('createApi（新しいコマンド）', () => {
         [fixture('connections'), (api) => api.networkConnections(), 'network_connections', undefined],
         [fixture('modules'), (api) => api.processModules(9), 'process_modules', { pid: 9 }],
         [null, (api) => api.setAlwaysOnTop(true), 'set_always_on_top', { enabled: true }],
+        [null, (api) => api.setSummaryView(true), 'set_summary_view', { enabled: true }],
       ];
       for (const [value, run, name, args] of cases) {
         const { api, call } = apiReturning(value);
