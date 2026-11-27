@@ -8,7 +8,7 @@ import { after, afterEach, before, describe, it } from 'node:test';
 // selenium-webdriver は src/frontend の依存なので、そこを起点に読み込む（tests/ からは node_modules が見えない）
 const require = createRequire(new URL('../../../src/frontend/package.json', import.meta.url));
 /** @type {typeof import('selenium-webdriver')} */
-const { Builder, By, Capabilities, until } = require('selenium-webdriver');
+const { Builder, By, Capabilities, Key, until } = require('selenium-webdriver');
 
 const application = process.env.TASKMANAGERLITE_APP;
 const server = process.env.TAURI_DRIVER_URL ?? 'http://127.0.0.1:4444/';
@@ -66,7 +66,10 @@ describe('実アプリ', () => {
     await search.sendKeys('taskmanagerlite');
     const rows = await driver.wait(until.elementsLocated(By.css('[data-testid="detail-row"]')), TIMEOUT);
     assert.ok(rows.length >= 1);
-    await search.clear();
+    // clear() は入力のイベントを出さず、画面の検索語が残る（ほかのページの一覧まで絞り込まれる）。
+    // 文字を消すキーを送って、画面にも空になったことを伝える
+    await search.sendKeys(Key.chord(Key.CONTROL, 'a'), Key.BACK_SPACE);
+    await driver.wait(async () => (await search.getAttribute('value')) === '', TIMEOUT);
   });
 
   it('パフォーマンスに CPU とメモリが出る', async () => {
