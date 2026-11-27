@@ -168,8 +168,8 @@
 
 <div class="app">
   {#if !summaryView.on}
-    <header class="titlebar">
-      <div class="spacer"></div>
+    <header class="titlebar" data-tauri-drag-region>
+      <div class="spacer" data-tauri-drag-region></div>
       <label class="search" class:disabled={!searchable}>
         <Icon name="search" size={14} />
         <input
@@ -181,7 +181,7 @@
           disabled={!searchable}
         />
       </label>
-      <div class="spacer"></div>
+      <div class="spacer" data-tauri-drag-region></div>
     </header>
   {/if}
 
