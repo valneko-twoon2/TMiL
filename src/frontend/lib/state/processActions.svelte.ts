@@ -7,7 +7,9 @@ import { SEPARATOR, type MenuEntry, type MenuItem } from '../menu/menu';
 import { PRIORITIES, type KillResult, type Priority, type ProcessInfo } from '../model/types';
 import { toKillTarget } from '../process/columns';
 import { processTree } from '../process/tree';
+import { processKey } from '../process/usage';
 import type { ContextMenus } from './menus.svelte';
+import { ProcessUsage } from './processUsage.svelte';
 import type { Monitor } from './monitor.svelte';
 import type { Toasts } from './toast.svelte';
 
@@ -16,22 +18,24 @@ export type ProcessDialog =
   | { kind: 'affinity'; process: ProcessInfo; cpus: number[] | null; cores: number }
   | { kind: 'properties'; process: ProcessInfo }
   | { kind: 'efficiency'; processes: ProcessInfo[] }
+  | { kind: 'usage'; process: ProcessInfo }
   | null;
 
-/** プロセスを見分ける鍵（PID は使い回されるので起動時刻も使う）。 */
-export function processKey(p: Pick<ProcessInfo, 'pid' | 'startTime'>): string {
-  return `${String(p.pid)}:${String(p.startTime)}`;
-}
+export { processKey };
 
 /** この画面で入れた効率モードと中断（OS から読めないので、ここで覚えておく）。 */
 export interface ProcessMarks {
   efficient: boolean;
   suspended: boolean;
+  /** メモリが増え続けている（使用状況の推移から判断） */
+  growing: boolean;
 }
 
 export interface ProcessActionOptions {
   /** 効率モードを入れる前に確かめるか（設定で変えられる） */
   confirmEfficiency?: () => boolean;
+  /** プロセスごとの使用状況の推移（グラフとメモリ増加中の印に使う） */
+  usage?: ProcessUsage;
 }
 
 /** ページごとに足す項目（展開する・詳細の表示に移動 など）。 */
@@ -75,6 +79,7 @@ export function processMenuEntries(
     SEPARATOR,
     { id: 'priority', label: '優先度の設定', key: 'P', children: priorityEntries(current) },
     { id: 'affinity', label: '関係の設定', key: 'F' },
+    { id: 'usage', label: '使用状況のグラフ', key: 'G' },
     SEPARATOR,
     ...(extras.middle ?? []),
     { id: 'reveal', label: 'ファイルの場所を開く', key: 'O', disabled: p.exe === '' },
@@ -105,6 +110,8 @@ export class ProcessActions {
   readonly #toasts: Toasts;
   readonly #menus: ContextMenus;
   readonly #confirmEfficiency: () => boolean;
+  /** プロセスごとの使用状況の推移 */
+  readonly usage: ProcessUsage;
 
   constructor(
     api: Api,
@@ -118,11 +125,16 @@ export class ProcessActions {
     this.#toasts = toasts;
     this.#menus = menus;
     this.#confirmEfficiency = options.confirmEfficiency ?? (() => true);
+    this.usage = options.usage ?? new ProcessUsage();
   }
 
   marks(p: ProcessInfo): ProcessMarks {
     const key = processKey(p);
-    return { efficient: this.efficient.has(key), suspended: this.suspended.has(key) };
+    return {
+      efficient: this.efficient.has(key),
+      suspended: this.suspended.has(key),
+      growing: this.usage.growth(p) !== null,
+    };
   }
 
   /** 右クリックメニューを開く。今の優先度は後から読み、届いたらチェックを付け直す。 */
@@ -176,12 +188,20 @@ export class ProcessActions {
       case 'search':
         void this.search(p.name);
         break;
+      case 'usage':
+        this.showUsage(p);
+        break;
       case 'properties':
         this.dialog = { kind: 'properties', process: p };
         break;
       default:
         extras.onextra?.(id);
     }
+  }
+
+  /** 使用状況のグラフを開く。 */
+  showUsage(p: ProcessInfo): void {
+    this.dialog = { kind: 'usage', process: p };
   }
 
   /** 成功したものだけ、覚えている印を付け直す。 */

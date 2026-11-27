@@ -17,11 +17,12 @@ export function processStateLabel(state: ProcessState): string {
 /** プロセス タブの「状態」列。本家と同じく通常時は空欄にする。 */
 export function processStatusBadge(
   state: ProcessState,
-  marks: { efficient?: boolean; suspended?: boolean } = {},
+  marks: { efficient?: boolean; suspended?: boolean; growing?: boolean } = {},
 ): string {
   if (marks.suspended === true) return PROCESS_STATE_LABEL.stopped;
   if (state === 'stopped' || state === 'zombie') return PROCESS_STATE_LABEL[state];
-  return marks.efficient === true ? '効率モード' : '';
+  if (marks.efficient === true) return '効率モード';
+  return marks.growing === true ? 'メモリ増加中' : '';
 }
 
 const STARTUP_LOCATION_LABEL: Record<StartupLocation, string> = {

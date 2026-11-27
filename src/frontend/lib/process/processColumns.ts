@@ -98,7 +98,7 @@ export interface ProcessCellContext {
   windows: boolean;
   description: (exe: string) => string;
   company: (exe: string) => string;
-  marks: (p: ProcessInfo) => { efficient: boolean; suspended: boolean };
+  marks: (p: ProcessInfo) => { efficient: boolean; suspended: boolean; growing?: boolean };
   memoryTotal: number;
 }
 
@@ -118,7 +118,7 @@ export function groupName(g: ProcessGroup, ctx: Pick<ProcessCellContext, 'descri
   return text === '' ? g.name : text;
 }
 
-/** まとめた行の状態（全部が中断・効率モードならそれを出す）。 */
+/** まとめた行の状態（全部が中断・効率モードならそれを出す。メモリ増加中は 1 つでもあれば出す）。 */
 export function groupStatus(g: ProcessGroup, ctx: Pick<ProcessCellContext, 'marks'>): string {
   const first = g.children[0];
   if (!first) return '';
@@ -127,6 +127,7 @@ export function groupStatus(g: ProcessGroup, ctx: Pick<ProcessCellContext, 'mark
   return processStatusBadge('running', {
     efficient: marks.every((m) => m.efficient),
     suspended: marks.every((m) => m.suspended),
+    growing: marks.some((m) => m.growing === true),
   });
 }
 

@@ -28,6 +28,7 @@ import { ProcessActions } from '../state/processActions.svelte';
 import { SettingsStore } from '../state/settings.svelte';
 import { Toasts } from '../state/toast.svelte';
 import ContextMenuHost from './ContextMenuHost.svelte';
+import ProcessDialogs from './ProcessDialogs.svelte';
 import DataTable from './DataTable.svelte';
 import Icon from './Icon.svelte';
 import LineChart from './LineChart.svelte';
@@ -288,6 +289,35 @@ describe('画面部品', () => {
         resmon,
       };
       expect(render(ResourceMonitorPage, { props }).body).toMatchSnapshot();
+    });
+
+    it('使用状況のグラフ（メモリ増加中）', () => {
+      const monitor = filledMonitor();
+      const actions = actionsFor(monitor);
+      const first = snapshotFixture().processes[0];
+      if (!first) throw new Error('fixture');
+      for (let i = 0; i < 120; i += 1) {
+        actions.usage.record({
+          processes: [{ ...first, cpu: i % 10, memory: 100 * 1024 ** 2 + i * 2 * 1024 ** 2 }],
+        });
+      }
+      expect(actions.marks(first).growing).toBe(true);
+      actions.showUsage(first);
+      const body = render(ProcessDialogs, { props: { actions, intervalMs: 1000 } }).body;
+      expect(body).toContain('直近 2 分の推移');
+      expect(body).toContain('メモリ リークの可能性があります');
+      expect(body).toMatchSnapshot();
+    });
+
+    it('使用状況のグラフ（記録なし）', () => {
+      const monitor = filledMonitor();
+      const actions = actionsFor(monitor);
+      const first = snapshotFixture().processes[0];
+      if (!first) throw new Error('fixture');
+      actions.showUsage(first);
+      const body = render(ProcessDialogs, { props: { actions } }).body;
+      expect(body).toContain('まだ記録がないか');
+      expect(body).not.toContain('メモリ リーク');
     });
 
     it('新しいタスクの実行', () => {

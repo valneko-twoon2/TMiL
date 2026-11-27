@@ -59,13 +59,14 @@ const labels = (entries: ReturnType<typeof processMenuEntries>) => entries.filte
 
 describe('プロセスへの操作', () => {
   describe('equivalence', () => {
-    it('メニューは本家の詳細タブと同じ並び', () => {
+    it('メニューは本家の詳細タブと同じ並びに、使用状況のグラフを足したもの', () => {
       expect(labels(processMenuEntries(proc(1, null), 'normal', false))).toEqual([
         'タスクの終了',
         'プロセス ツリーの終了',
         '効率モード',
         '優先度の設定',
         '関係の設定',
+        '使用状況のグラフ',
         'ファイルの場所を開く',
         'オンライン検索',
         'プロパティ',

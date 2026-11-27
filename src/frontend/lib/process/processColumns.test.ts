@@ -157,6 +157,12 @@ describe('プロセス タブの列', () => {
       );
     });
 
+    it('まとめた行は、1 つでもメモリ増加中ならそれを出す', () => {
+      const g = group(proc(1, 'a.exe'), proc(2, 'a.exe'));
+      const one = ctx({ marks: (p) => ({ efficient: false, suspended: false, growing: p.pid === 2 }) });
+      expect(groupStatus(g, one)).toBe('メモリ増加中');
+    });
+
     it('使用量の色は数値の列だけ', () => {
       const usage = { cpu: 50, memory: 500, disk: 1024 * 1024 * 5, gpu: 80 };
       expect(heatOf('cpu', usage, 1000)).toBeGreaterThan(0);

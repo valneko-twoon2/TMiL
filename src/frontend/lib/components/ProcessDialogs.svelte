@@ -6,15 +6,22 @@
   import { untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { formatBytes, formatDateTime, formatPercent, formatUptime } from '../format/format';
+  import { niceMax } from '../chart/chart';
   import { processStateLabel } from '../format/labels';
+  import { RESOURCE_COLORS } from '../performance/resources';
+  import { spanLabel, spanSeconds } from '../process/usage';
   import type { ProcessActions } from '../state/processActions.svelte';
   import Dialog from './Dialog.svelte';
+  import LineChart from './LineChart.svelte';
 
   interface Props {
     actions: ProcessActions;
+    /** 計測の間隔（使用状況のグラフの長さの表示に使う） */
+    intervalMs?: number;
   }
 
-  const { actions }: Props = $props();
+  const { actions, intervalMs = 1000 }: Props = $props();
+  const MB = 1024 ** 2;
 
   const dialog = $derived(actions.dialog);
   /** 関係の設定で選んでいる CPU */
@@ -140,6 +147,47 @@
       <button type="button" onclick={close}>キャンセル</button>
     {/snippet}
   </Dialog>
+{:else if dialog?.kind === 'usage'}
+  {@const p = dialog.process}
+  {@const series = actions.usage.series(p)}
+  {@const growth = actions.usage.growth(p)}
+  <Dialog title="{p.name}（{p.pid}）の使用状況" onclose={close}>
+    {#if series.cpu.length === 0}
+      <p class="muted">まだ記録がないか、プロセスが終了しています。</p>
+    {:else}
+      <p class="muted">直近 {spanLabel(spanSeconds(series.cpu.length, intervalMs))}の推移</p>
+    {/if}
+    {#if growth !== null}
+      <p class="warning" role="status" data-testid="usage-growing">
+        メモリが増え続けています（{formatBytes(growth)} 増加）。メモリ リークの可能性があります。
+      </p>
+    {/if}
+    <div class="usage" data-testid="usage-charts">
+      <div class="usage-head"><span>CPU</span><span>{formatPercent(series.cpu.at(-1) ?? p.cpu)}</span></div>
+      <div class="usage-chart">
+        <LineChart
+          series={[{ label: 'CPU', values: series.cpu, color: RESOURCE_COLORS.cpu }]}
+          max={100}
+          grid={false}
+          label="CPU のグラフ"
+        />
+      </div>
+      <div class="usage-head">
+        <span>メモリ</span><span>{formatBytes(series.memory.at(-1) ?? p.memory)}</span>
+      </div>
+      <div class="usage-chart">
+        <LineChart
+          series={[{ label: 'メモリ', values: series.memory, color: RESOURCE_COLORS.memory }]}
+          max={niceMax(series.memory, MB)}
+          grid={false}
+          label="メモリのグラフ"
+        />
+      </div>
+    </div>
+    {#snippet buttons()}
+      <button type="button" class="primary" onclick={close}>閉じる</button>
+    {/snippet}
+  </Dialog>
 {:else if dialog?.kind === 'properties'}
   {@const p = dialog.process}
   <Dialog title="{p.name} のプロパティ" onclose={close}>
@@ -188,6 +236,27 @@
   }
   .muted {
     color: var(--text-muted);
+  }
+  .warning {
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+  .usage {
+    width: 480px;
+    max-width: 100%;
+  }
+  .usage-head {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 0.85em;
+  }
+  .usage-chart {
+    height: 90px;
+    margin-top: 4px;
   }
   .members {
     max-height: 160px;

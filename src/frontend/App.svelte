@@ -102,13 +102,14 @@
     if (processes) void icons.request(processes.map((p) => p.exe));
   });
 
-  // 計測結果が届くたびに、アプリの履歴とリソース モニターの平均を進める
+  // 計測結果が届くたびに、アプリの履歴・リソース モニターの平均・プロセスごとの推移を進める
   $effect(() => {
     const snapshot = monitor.snapshot;
     if (!snapshot) return;
     untrack(() => {
       appHistory.record(snapshot);
       resmon.record(snapshot);
+      processActions.usage.record(snapshot);
     });
   });
 
@@ -253,7 +254,7 @@
   </div>
   <ToastHost {toasts} />
   <ContextMenuHost {menus} />
-  <ProcessDialogs actions={processActions} />
+  <ProcessDialogs actions={processActions} intervalMs={interval} />
   <RunTaskDialog {runTask} />
 </div>
 
