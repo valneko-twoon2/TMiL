@@ -131,7 +131,8 @@ export class ProcessActions {
   marks(p: ProcessInfo): ProcessMarks {
     const key = processKey(p);
     return {
-      efficient: this.efficient.has(key),
+      // ほかのアプリ（Chrome や Edge など）が自分で入れた効率モードも、OS から読んだ値で出す
+      efficient: this.efficient.has(key) || p.efficient,
       suspended: this.suspended.has(key),
       growing: this.usage.growth(p) !== null,
     };

@@ -98,6 +98,12 @@ export interface ProcessInfo {
   /** GPU 使用率（0〜100）と GPU メモリ（バイト） */
   gpu: number | null;
   gpuMemory: number | null;
+  /** いちばん使っている GPU エンジン（`GPU 0 - 3D` など。Windows のみ） */
+  gpuEngine: string | null;
+  /** 効率モード（EcoQoS）に入っている（ほかのアプリが入れたものも含む。Windows のみ） */
+  efficient: boolean;
+  /** AppContainer の中で動いている（本家の「分離」の列。Windows のみ） */
+  appContainer: boolean;
 }
 
 /** 終了するプロセスの指定。 */

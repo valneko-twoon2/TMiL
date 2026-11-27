@@ -16,6 +16,7 @@ use crate::model::{
     CpuStats, DiskKind, DiskStats, MemoryStats, NetworkStats, ProcessInfo, ProcessState, Snapshot,
     SystemInfo,
 };
+use crate::process_flags::FlagsSampler;
 use crate::procfs;
 
 /// コマンドラインを画面に送るときの最大文字数。
@@ -56,6 +57,8 @@ pub struct Collector {
     protected_root: Option<u32>,
     /// 開けないプロセスの場所とアカウント（裏で聞いて補う）
     identity: IdentityLookup,
+    /// 効率モード・分離・GPU エンジン（裏で聞き続ける）
+    flags: FlagsSampler,
 }
 
 impl Collector {
@@ -81,6 +84,7 @@ impl Collector {
             last_process_gpu: None,
             protected_root: Some(std::process::id()),
             identity: IdentityLookup::default(),
+            flags: FlagsSampler::start(),
         })
     }
 
@@ -212,6 +216,7 @@ impl Collector {
             .filter(|p| p.thread_kind().is_none())
             .map(|p| {
                 let usage = p.disk_usage();
+                let flags = self.flags.get(p.pid().as_u32());
                 let name = p.name().to_string_lossy().into_owned();
                 // 開けないプロセスは、裏で聞いた値で補う（PID が使い回されていれば使わない）
                 let identity = self
@@ -249,6 +254,9 @@ impl Collector {
                     session_id: p.session_id().map(Pid::as_u32),
                     gpu: p.gpu_usage().map(clamp_percent),
                     gpu_memory: p.gpu_memory(),
+                    gpu_engine: flags.gpu_engine,
+                    efficient: flags.efficient,
+                    app_container: flags.app_container,
                 }
             })
             .collect()

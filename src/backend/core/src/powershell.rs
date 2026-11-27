@@ -39,6 +39,20 @@ pub fn run_encoded(script: &str, stdin: &str) -> Result<String, String> {
     spawn(&["-EncodedCommand", &encode_command(script)], stdin)
 }
 
+/// 動かし続けるスクリプトを起動する（標準入力と標準出力でやり取りする）。標準エラーは捨てる。
+#[cfg(windows)]
+pub fn spawn_persistent(script: &str) -> Result<std::process::Child, String> {
+    Command::new("powershell.exe")
+        .args(["-NoProfile", "-NonInteractive"])
+        .args(["-EncodedCommand", &encode_command(script)])
+        .creation_flags(CREATE_NO_WINDOW)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| format!("PowerShell を起動できません: {e}"))
+}
+
 #[cfg(windows)]
 fn spawn(args: &[&str], stdin: &str) -> Result<String, String> {
     let mut child = Command::new("powershell.exe")

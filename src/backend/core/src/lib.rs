@@ -16,6 +16,7 @@ pub mod modules;
 pub mod open;
 pub mod powershell;
 pub mod process_control;
+pub mod process_flags;
 pub mod procfs;
 pub mod services;
 pub mod startup;

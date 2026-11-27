@@ -255,6 +255,22 @@ describe('プロセスへの操作', () => {
       expect(toasts.items[0]).toMatchObject({ kind: 'error', text: '権限が足りません' });
     });
   });
+
+  describe('regression', () => {
+    it('ほかのアプリが自分で入れた効率モード（OS から読んだ値）も印を出し、選ぶと外す', async () => {
+      // 以前は、このアプリで入れたものしか効率モードと出なかった
+      const { actions, calls } = setup({ set_process_efficiency: ok });
+      const p = { ...proc(6, null), efficient: true };
+      expect(actions.marks(p).efficient).toBe(true);
+      expect(actions.marks(proc(6, null)).efficient).toBe(false);
+      actions.toggleEfficiency([p]);
+      await vi.waitFor(() => {
+        expect(calls.filter((c) => c.cmd === 'set_process_efficiency').map((c) => c.args.enabled)).toEqual([
+          false,
+        ]);
+      });
+    });
+  });
 });
 
 describe('列の幅の保持', () => {

@@ -77,6 +77,9 @@ mod contract {
             session_id: (pid != 1).then_some(1),
             gpu: (pid == 100).then_some(3.5),
             gpu_memory: (pid == 100).then_some(67_108_864),
+            gpu_engine: (pid == 100).then(|| "GPU 0 - 3D".to_owned()),
+            efficient: pid == 101,
+            app_container: pid == 101,
         }
     }
 

@@ -127,6 +127,9 @@ export const isProcessInfo = shape<ProcessInfo>({
   sessionId: nullable(isCount),
   gpu: nullable(isPercent),
   gpuMemory: nullable(isCount),
+  gpuEngine: nullable(isStr),
+  efficient: isBool,
+  appContainer: isBool,
 });
 
 export const isSnapshot = shape<Snapshot>({

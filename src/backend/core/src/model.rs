@@ -147,6 +147,12 @@ pub struct ProcessInfo {
     /// GPU 使用率（0〜100）と GPU メモリ（バイト）
     pub gpu: Option<f32>,
     pub gpu_memory: Option<u64>,
+    /// いちばん使っている GPU エンジン（`GPU 0 - 3D` など。Windows のみ）
+    pub gpu_engine: Option<String>,
+    /// 効率モード（EcoQoS）に入っている（Windows のみ。開けないプロセスは false）
+    pub efficient: bool,
+    /// `AppContainer` の中で動いている（本家の「分離」の列。Windows のみ）
+    pub app_container: bool,
 }
 
 /// 終了するプロセスの指定。PID が別のプロセスに再利用されていないかを起動時刻で確かめる。

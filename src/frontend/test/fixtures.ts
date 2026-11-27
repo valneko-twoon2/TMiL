@@ -23,6 +23,9 @@ type ProcessExtras = Pick<
   | 'sessionId'
   | 'gpu'
   | 'gpuMemory'
+  | 'gpuEngine'
+  | 'efficient'
+  | 'appContainer'
 >;
 
 /** テストで作るプロセスの、ふだんは気にしない項目。 */
@@ -36,6 +39,9 @@ export const PROCESS_EXTRAS: ProcessExtras = {
   sessionId: null,
   gpu: null,
   gpuMemory: null,
+  gpuEngine: null,
+  efficient: false,
+  appContainer: false,
 };
 
 /** fast-check 用: 上の項目をばらばらに作る。 */
@@ -49,4 +55,7 @@ export const processExtrasArb = {
   sessionId: fc.option(fc.nat(), { nil: null }),
   gpu: fc.option(fc.double({ min: 0, max: 100, noNaN: true }), { nil: null }),
   gpuMemory: fc.option(fc.nat(), { nil: null }),
+  gpuEngine: fc.option(fc.constantFrom('GPU 0 - 3D', 'GPU 0 - Copy'), { nil: null }),
+  efficient: fc.boolean(),
+  appContainer: fc.boolean(),
 };

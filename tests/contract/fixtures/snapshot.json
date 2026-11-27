@@ -106,7 +106,10 @@
       "threads": null,
       "sessionId": null,
       "gpu": null,
-      "gpuMemory": null
+      "gpuMemory": null,
+      "gpuEngine": null,
+      "efficient": false,
+      "appContainer": false
     },
     {
       "pid": 100,
@@ -130,7 +133,10 @@
       "threads": 8,
       "sessionId": 1,
       "gpu": 3.5,
-      "gpuMemory": 67108864
+      "gpuMemory": 67108864,
+      "gpuEngine": "GPU 0 - 3D",
+      "efficient": false,
+      "appContainer": false
     },
     {
       "pid": 101,
@@ -154,7 +160,10 @@
       "threads": null,
       "sessionId": 1,
       "gpu": null,
-      "gpuMemory": null
+      "gpuMemory": null,
+      "gpuEngine": null,
+      "efficient": true,
+      "appContainer": true
     },
     {
       "pid": 102,
@@ -178,7 +187,10 @@
       "threads": null,
       "sessionId": 1,
       "gpu": null,
-      "gpuMemory": null
+      "gpuMemory": null,
+      "gpuEngine": null,
+      "efficient": false,
+      "appContainer": false
     },
     {
       "pid": 103,
@@ -202,7 +214,10 @@
       "threads": null,
       "sessionId": 1,
       "gpu": null,
-      "gpuMemory": null
+      "gpuMemory": null,
+      "gpuEngine": null,
+      "efficient": false,
+      "appContainer": false
     }
   ]
 }

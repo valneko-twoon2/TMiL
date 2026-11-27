@@ -159,6 +159,10 @@ function processExtras(seed: ProcessSeed, s: number, i: number, tick: number) {
           : 0
         : Math.round(gpu * (0.5 + wave(tick, i, 3)) * 10) / 10,
     gpuMemory: gpu === undefined ? null : Math.round(gpu * 40 * MB),
+    gpuEngine: gpu === undefined ? null : 'GPU 0 - 3D',
+    // 本家と同じく、Edge や Chrome の裏のプロセスは自分で効率モードに入る
+    efficient: (seed.name === 'chrome.exe' && i >= 3) || seed.name === 'msedge.exe',
+    appContainer: seed.name === 'RuntimeBroker.exe',
   };
 }
 
