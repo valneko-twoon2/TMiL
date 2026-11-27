@@ -301,17 +301,16 @@ export class ProcessActions {
   async openAffinity(p: ProcessInfo): Promise<void> {
     const cores = this.#monitor.systemInfo?.logicalCores ?? 1;
     this.dialog = { kind: 'affinity', process: p, cpus: null, cores };
+    const opened = this.dialog;
     let cpus: number[];
     try {
       cpus = (await this.#api.processControls(p.pid)).affinity ?? [];
     } catch {
       cpus = [];
     }
+    if (this.dialog !== opened) return;
     const all = Array.from({ length: cores }, (_, i) => i);
-    const current = this.#currentDialog();
-    if (current?.kind === 'affinity' && current.process.pid === p.pid) {
-      this.dialog = { ...current, cpus: cpus.length > 0 ? cpus.filter((c) => c < cores) : all };
-    }
+    this.dialog = { ...opened, cpus: cpus.length > 0 ? cpus.filter((c) => c < cores) : all };
   }
 
   async applyAffinity(cpus: number[]): Promise<void> {
@@ -322,10 +321,6 @@ export class ProcessActions {
       const results = await this.#api.setProcessAffinity([toKillTarget(dialog.process)], cpus);
       this.#report(results, '関係を変えられませんでした。');
     });
-  }
-
-  #currentDialog(): ProcessDialog {
-    return this.dialog;
   }
 
   close(): void {
