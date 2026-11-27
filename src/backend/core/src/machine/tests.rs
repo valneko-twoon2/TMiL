@@ -476,8 +476,7 @@ mod formal {
     #[test]
     fn transition_table_matches_committed_tla_module() {
         let text = tla::render_table();
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../../tests/formal/MachineTable.tla");
+        let path = crate::test_support::repo_root().join("tests/formal/MachineTable.tla");
         if std::env::var_os("UPDATE_FORMAL").is_some() {
             std::fs::write(&path, &text).unwrap();
             return;

@@ -1,5 +1,5 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   root: import.meta.dirname,
@@ -7,6 +7,8 @@ export default defineConfig({
   define: { 'import.meta.env.VITE_APP_VERSION': JSON.stringify('0.0.0-test') },
   test: {
     include: ['**/*.test.ts'],
+    // Stryker はその場で書き換える前の写しを .stryker-tmp に置くので、そこのテストは拾わない
+    exclude: [...configDefaults.exclude, '.stryker-tmp/**'],
     environment: 'node',
     reporters: ['default'],
     coverage: {

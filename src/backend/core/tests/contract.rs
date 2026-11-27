@@ -19,7 +19,14 @@ mod contract {
     };
 
     fn fixtures_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../tests/contract/fixtures")
+        // ミューテーションテストでは src/backend だけが写されるので、TMIL_REPO_ROOT で本来の場所を教わる
+        std::env::var_os("TMIL_REPO_ROOT")
+            .filter(|v| !v.is_empty())
+            .map_or_else(
+                || PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.."),
+                PathBuf::from,
+            )
+            .join("tests/contract/fixtures")
     }
 
     fn check(name: &str, value: &impl Serialize) {

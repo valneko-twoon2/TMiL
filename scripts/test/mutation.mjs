@@ -21,9 +21,12 @@ if (!backend && !frontend) {
 const statuses = [];
 if (backend) {
   const output = join(ROOT, 'reports', 'mutation', 'backend');
-  // 変異ごとのビルドを速くするため、ここだけ増分ビルドを使う（target は変異ごとの作業用の写しにできる）
+  // 変異ごとのビルドを速くするため、ここだけ増分ビルドを使う（target は変異ごとの作業用の写しにできる）。
+  // cargo-mutants は src/backend だけを写すので、テストが読む tests/ の場所を TMIL_REPO_ROOT で教える
   const cargoArgs = cargoMutantsArgs(output, availableParallelism());
-  statuses.push(run('cargo', cargoArgs, { cwd: BACKEND, env: { CARGO_INCREMENTAL: '1' } }).status);
+  statuses.push(
+    run('cargo', cargoArgs, { cwd: BACKEND, env: { CARGO_INCREMENTAL: '1', TMIL_REPO_ROOT: ROOT } }).status,
+  );
 }
 if (frontend) {
   // npx は Windows だと .cmd になり直接起動できないので、npm 本体を node で動かす

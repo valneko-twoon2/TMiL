@@ -40,3 +40,4 @@ tests/vrt/**/*-darwin.png
 # TLC が書き出すもの
 tests/formal/*_TTrace_*
 tests/formal/states/
+stryker-setup-*.js
