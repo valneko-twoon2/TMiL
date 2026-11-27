@@ -13,9 +13,9 @@
   import {
     filterProcesses,
     groupProcesses,
-    keepOrder,
     nextSort,
     sortBy,
+    StableOrder,
     type ProcessGroup,
     type SortState,
   } from '../process/process';
@@ -86,18 +86,13 @@
   const activeSort = $derived<SortState<ProcessColumn>>(
     columns.includes(sort.key) ? sort : { key: 'cpu', direction: 'desc' },
   );
-  let lastOrder: readonly string[] = [];
-  let lastSort = '';
-  const order = $derived.by(() => {
-    const sorted = sortBy(groupProcesses(snapshot?.processes ?? []), activeSort, (g, key) =>
-      groupValue(g, key, ctx),
-    );
-    const by = `${activeSort.key}:${activeSort.direction}`;
-    const rows = by === lastSort ? keepOrder(sorted, lastOrder, (g) => g.key) : sorted;
-    lastOrder = rows.map((g) => g.key);
-    lastSort = by;
-    return new Map(lastOrder.map((key, index) => [key, index]));
-  });
+  const stableOrder = new StableOrder<ProcessGroup>((g) => g.key);
+  const order = $derived(
+    stableOrder.next(
+      sortBy(groupProcesses(snapshot?.processes ?? []), activeSort, (g, key) => groupValue(g, key, ctx)),
+      activeSort,
+    ),
+  );
   const groups = $derived(
     groupProcesses(filterProcesses(snapshot?.processes ?? [], query)).sort(
       (a, b) => (order.get(a.key) ?? 0) - (order.get(b.key) ?? 0),

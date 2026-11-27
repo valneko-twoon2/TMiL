@@ -15,7 +15,15 @@ import {
   selectedTargets,
   toKillTarget,
 } from './columns';
-import { displayName, filterProcesses, groupProcesses, keepOrder, nextSort, sortBy } from './process';
+import {
+  displayName,
+  filterProcesses,
+  groupProcesses,
+  keepOrder,
+  nextSort,
+  sortBy,
+  StableOrder,
+} from './process';
 
 function proc(pid: number, name: string, extra: Partial<ProcessInfo> = {}): ProcessInfo {
   return {
@@ -198,6 +206,36 @@ describe('keepOrder', () => {
           expect(keepOrder(sorted, once, id)).toEqual(once);
         }),
       );
+    });
+  });
+});
+
+describe('StableOrder', () => {
+  const byCpu = { key: 'cpu', direction: 'desc' } as const;
+  const keysOf = (order: ReadonlyMap<string, number>) =>
+    [...order].sort((a, b) => a[1] - b[1]).map(([key]) => key);
+
+  describe('equivalence', () => {
+    it('並べ替えの基準が同じあいだは、前の並びを保ち、新しい行は並べ替えた位置に入れる', () => {
+      const order = new StableOrder<string>((r) => r);
+      expect(keysOf(order.next(['a', 'b', 'c'], byCpu))).toEqual(['a', 'b', 'c']);
+      expect(keysOf(order.next(['c', 'x', 'a', 'b'], byCpu))).toEqual(['a', 'x', 'b', 'c']);
+    });
+
+    it('並べ替えの基準が変わったら、並べ替えた結果そのまま', () => {
+      const order = new StableOrder<string>((r) => r);
+      order.next(['a', 'b'], byCpu);
+      expect(keysOf(order.next(['b', 'a'], { key: 'cpu', direction: 'asc' }))).toEqual(['b', 'a']);
+      expect(keysOf(order.next(['a', 'b'], { key: 'memory', direction: 'asc' }))).toEqual(['a', 'b']);
+    });
+  });
+
+  describe('boundary', () => {
+    it('最初の 1 回と空の一覧は、並べ替えた結果そのまま', () => {
+      const order = new StableOrder<string>((r) => r);
+      expect(keysOf(order.next(['b', 'a'], byCpu))).toEqual(['b', 'a']);
+      expect(order.next([], byCpu).size).toBe(0);
+      expect(keysOf(order.next(['b', 'a'], byCpu))).toEqual(['b', 'a']);
     });
   });
 });

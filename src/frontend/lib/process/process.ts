@@ -112,3 +112,23 @@ export function keepOrder<T>(
   });
   return kept;
 }
+
+/** 並べ替えの基準が変わるまで前の並びを保つ。`$derived` の中で使うので、反応しない値で持つ。 */
+export class StableOrder<T> {
+  #keys: readonly string[] = [];
+  #sort = '';
+  readonly #keyOf: (row: T) => string;
+
+  constructor(keyOf: (row: T) => string) {
+    this.#keyOf = keyOf;
+  }
+
+  /** 行の鍵ごとの位置。 */
+  next(sorted: readonly T[], sort: SortState<string>): ReadonlyMap<string, number> {
+    const by = `${sort.key}:${sort.direction}`;
+    const rows = by === this.#sort ? keepOrder(sorted, this.#keys, this.#keyOf) : sorted;
+    this.#keys = rows.map((row) => this.#keyOf(row));
+    this.#sort = by;
+    return new Map(this.#keys.map((key, index) => [key, index]));
+  }
+}
