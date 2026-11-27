@@ -23,12 +23,12 @@
   let position = $state({ left: 0, top: 0 });
   let subPosition = $state({ left: 0, top: 0 });
   let active = $state(-1);
-  let openSub = $state(-1);
+  let openSub = $state<number | null>(null);
   let subActive = $state(-1);
 
   const menu = $derived(menus.current);
   const subEntries = $derived.by<MenuEntry[]>(() => {
-    const parent = menu?.entries[openSub];
+    const parent = openSub === null ? undefined : menu?.entries[openSub];
     return parent && isItem(parent) ? (parent.children ?? []) : [];
   });
 
@@ -50,7 +50,7 @@
     }
     if (openedAt?.x === current.x && openedAt.y === current.y) return;
     openedAt = { x: current.x, y: current.y };
-    openSub = -1;
+    openSub = null;
     active = nextIndex(current.entries, -1, 1);
     void tick().then(() => {
       if (!element) return;
@@ -102,7 +102,7 @@
     else menus.select(item.id);
   }
 
-  const inSub = () => openSub >= 0 && subActive >= 0;
+  const inSub = () => openSub !== null && subActive >= 0;
 
   function move(step: 1 | -1) {
     if (!menu) return;
@@ -111,18 +111,20 @@
       focusIn(subElement, subActive);
     } else {
       active = nextIndex(menu.entries, active, step);
-      openSub = -1;
+      openSub = null;
       focusIn(element, active);
     }
   }
 
-  function back(close: boolean) {
-    if (inSub()) {
-      openSub = -1;
-      focusIn(element, active);
-    } else if (close) {
-      menus.close();
-    }
+  function closeSub() {
+    if (!inSub()) return;
+    openSub = null;
+    focusIn(element, active);
+  }
+
+  function closeSubOrMenu() {
+    if (inSub()) closeSub();
+    else menus.close();
   }
 
   function forward() {
@@ -146,12 +148,8 @@
   }
 
   const KEYS: Record<string, () => void> = {
-    Escape: () => {
-      back(true);
-    },
-    ArrowLeft: () => {
-      back(false);
-    },
+    Escape: closeSubOrMenu,
+    ArrowLeft: closeSub,
     ArrowRight: forward,
     ArrowDown: () => {
       move(1);
@@ -197,7 +195,7 @@
           if (sub || entry.disabled === true) return;
           active = i;
           if (entry.children) showSub(i, false);
-          else openSub = -1;
+          else openSub = null;
         }}
       >
         <span class="check">
@@ -228,7 +226,7 @@
   >
     {@render items(menu.entries, active, false)}
   </div>
-  {#if openSub >= 0 && subEntries.length > 0}
+  {#if openSub !== null && subEntries.length > 0}
     {@const parent = menu.entries[openSub]}
     <div
       bind:this={subElement}
