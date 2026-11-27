@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { toKillTarget } from '../process/columns';
+import { ICON_REQUEST_LIMIT } from '../process/icons';
 import {
   isAppWindows,
   isConnections,
@@ -81,6 +82,10 @@ describe('バックエンドとの契約', () => {
 
     it('優先度の種類と並びが両側で一致する', () => {
       expect(fixture('priorities')).toEqual([...PRIORITIES]);
+    });
+
+    it('アイコンを 1 回に問い合わせる数の上限が両側で一致する', () => {
+      expect(fixture('icon-request-limit')).toBe(ICON_REQUEST_LIMIT);
     });
 
     it('プロセス状態の種類が両側で一致する', () => {
