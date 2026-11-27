@@ -21,6 +21,21 @@ describe('偽のバックエンド', () => {
   });
 
   describe('boundary', () => {
+    it('プロセスの数を倍にでき、PID は重ならず System は 1 つだけ。1 未満は 1 倍', () => {
+      const count = (scale: number) => {
+        const snapshot = handleCommand(createMockState(scale), 'snapshot');
+        if (!isSnapshot(snapshot)) throw new Error('snapshot');
+        return snapshot.processes;
+      };
+      const one = count(1);
+      const ten = count(10);
+      expect(ten.length).toBe(one.length * 10 - 9);
+      expect(new Set(ten.map((p) => p.pid)).size).toBe(ten.length);
+      expect(ten.filter((p) => p.name === 'System')).toHaveLength(1);
+      expect(ten.some((p) => p.name === 'chrome-9.exe')).toBe(true);
+      expect(count(0)).toHaveLength(one.length);
+    });
+
     it('場所が分からない実行ファイルにはアイコンが無い', () => {
       expect(mockIcon('')).toBeNull();
     });

@@ -65,10 +65,13 @@ export interface MockState extends SystemMockState {
   searched: string[];
   /** 変えた優先度と関係（PID ごと） */
   controls: Map<number, ProcessControls>;
+  /** プロセスの数を何倍にするか（実機に近い数で速さを測るため。既定は 1） */
+  scale: number;
 }
 
-export function createMockState(): MockState {
+export function createMockState(scale = 1): MockState {
   return {
+    scale: Math.max(1, Math.floor(scale)),
     ...createSystemMock(),
     tick: 0,
     killed: new Set(),
@@ -170,10 +173,22 @@ export function mockExe(name: string): string {
   return ['C:', 'Program Files', name.replace('.exe', ''), name].join('\\');
 }
 
-function processes(tick: number, killed: ReadonlySet<number>): ProcessInfo[] {
+/** 2 組目からは名前に番号を付けた写し（PID 4 の System は 1 つだけ）。 */
+function scaledSeeds(scale: number): ProcessSeed[] {
+  return Array.from({ length: scale }, (_, k) =>
+    k === 0
+      ? SEEDS
+      : SEEDS.filter((seed) => seed.name !== 'System').map((seed) => ({
+          ...seed,
+          name: seed.name.replace(/(.exe)?$/, `-${String(k)}$1`),
+        })),
+  ).flat();
+}
+
+function processes(tick: number, killed: ReadonlySet<number>, scale = 1): ProcessInfo[] {
   const list: ProcessInfo[] = [];
   let pid = 1000;
-  SEEDS.forEach((seed, s) => {
+  scaledSeeds(scale).forEach((seed, s) => {
     for (let i = 0; i < seed.count; i += 1) {
       pid += 4;
       const id = seed.name === 'System' ? 4 : pid;
@@ -203,7 +218,7 @@ function processes(tick: number, killed: ReadonlySet<number>): ProcessInfo[] {
 
 export function mockSnapshot(state: MockState): Snapshot {
   const t = state.tick;
-  const procs = processes(t, state.killed);
+  const procs = processes(t, state.killed, state.scale);
   const usage = Math.round((18 + 22 * wave(t, 0, 5) + 8 * wave(t, 2, 1.7)) * 10) / 10;
   return {
     timestampMs: 1_767_225_600_000 + t * 1000,
@@ -400,9 +415,9 @@ const HANDLERS: Record<string, Handler> = {
   network_connections: (state) => connections(state.killed),
   process_modules: (state, args) => {
     const pid = pidOf(args);
-    return modules(pid, processes(state.tick, state.killed).find((p) => p.pid === pid)?.exe);
+    return modules(pid, processes(state.tick, state.killed, state.scale).find((p) => p.pid === pid)?.exe);
   },
-  find_handles: (state, args) => handles(args.query, processes(state.tick, state.killed)),
+  find_handles: (state, args) => handles(args.query, processes(state.tick, state.killed, state.scale)),
   set_always_on_top: (state, args) => {
     state.alwaysOnTop = args.enabled === true;
     return null;
