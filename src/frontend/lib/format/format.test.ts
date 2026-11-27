@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import {
   formatBits,
   formatBytes,
+  formatCount,
+  formatCpuTime,
   formatDateTime,
   formatFrequency,
   formatPercent,
@@ -226,6 +228,49 @@ describe('表示名（すべて）', () => {
   describe('boundary', () => {
     it('ネットワークの速度がとても大きくても、いちばん大きな単位で出す', () => {
       expect(formatBits(1e15)).toMatch(/ Gbps$/);
+    });
+  });
+});
+
+describe('formatCpuTime・formatCount', () => {
+  describe('equivalence', () => {
+    it('CPU 時間は「時:分:秒」で、24 時間を超えても時で数える', () => {
+      expect(formatCpuTime(3_723_000)).toBe('1:02:03');
+      expect(formatCpuTime(90_000_000)).toBe('25:00:00');
+    });
+
+    it('数は 3 桁ごとに区切る', () => {
+      expect(formatCount(1234567)).toBe('1,234,567');
+      expect(formatCount(12)).toBe('12');
+    });
+  });
+
+  describe('boundary', () => {
+    it('0・負・不正な値', () => {
+      expect(formatCpuTime(0)).toBe('0:00:00');
+      expect(formatCpuTime(999)).toBe('0:00:00');
+      expect(formatCpuTime(-5)).toBe('0:00:00');
+      expect(formatCpuTime(Number.NaN)).toBe('0:00:00');
+      expect(formatCount(null)).toBe('');
+      expect(formatCount(Number.POSITIVE_INFINITY)).toBe('');
+      expect(formatCount(0)).toBe('0');
+    });
+  });
+});
+
+describe('processStatusBadge（印）', () => {
+  describe('equivalence', () => {
+    it('中断は効率モードより先に出し、終了済みはそのまま', () => {
+      expect(processStatusBadge('running', { efficient: true })).toBe('効率モード');
+      expect(processStatusBadge('running', { suspended: true, efficient: true })).toBe('中断');
+      expect(processStatusBadge('zombie', { efficient: true })).toBe('終了済み');
+    });
+  });
+
+  describe('boundary', () => {
+    it('印が無ければ今までどおり', () => {
+      expect(processStatusBadge('running', {})).toBe('');
+      expect(processStatusBadge('stopped', { efficient: false, suspended: false })).toBe('中断');
     });
   });
 });

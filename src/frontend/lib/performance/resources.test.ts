@@ -2,7 +2,15 @@ import type { NetworkStats } from '../model/types';
 import { describe, expect, it } from 'vitest';
 import { EMPTY_HISTORY, recordSnapshot } from '../history/history';
 import { snapshotFixture, systemInfoFixture } from '../../test/fixtures';
-import { buildResources, historySpanLabel, resourceStats, visibleNetworks } from './resources';
+import {
+  buildResources,
+  historySpanLabel,
+  memoryParts,
+  resourceStats,
+  statsText,
+  sumKnown,
+  visibleNetworks,
+} from './resources';
 
 const snapshot = snapshotFixture();
 const info = systemInfoFixture();
@@ -212,6 +220,45 @@ describe('パフォーマンスの一覧（細部）', () => {
         network('lo0', { totalReceived: 1 }),
       ]).map((n) => n.name);
       expect(names).toEqual(['wlo1']);
+    });
+  });
+});
+
+describe('メモリの構成・コピー・合計', () => {
+  describe('equivalence', () => {
+    it('空きが利用可能より少なければ、キャッシュと空きに分ける', () => {
+      const parts = memoryParts({ total: 16, used: 8, available: 8, free: 3, swapTotal: 0, swapUsed: 0 });
+      expect(parts.map((p) => [p.label, p.bytes])).toEqual([
+        ['使用中', 8],
+        ['キャッシュ済み', 5],
+        ['空き', 3],
+      ]);
+    });
+
+    it('コピーは見出しと数値を 1 行ずつ', () => {
+      const resource = buildResources(snapshot, EMPTY_HISTORY, info)[0];
+      if (!resource) throw new Error('resource');
+      const text = statsText(resource, [
+        { label: '使用率', value: '25%' },
+        { label: '速度', value: '3.20 GHz' },
+      ]);
+      expect(text).toBe('CPU\nExample CPU\n\n使用率\t25%\n速度\t3.20 GHz');
+    });
+
+    it('取れた数だけを足す', () => {
+      expect(sumKnown([1, null, 2])).toBe(3);
+    });
+  });
+
+  describe('boundary', () => {
+    it('Windows のように空きと利用可能が同じなら「利用可能」にまとめる', () => {
+      const parts = memoryParts({ total: 16, used: 8, available: 8, free: 8, swapTotal: 0, swapUsed: 0 });
+      expect(parts.map((p) => p.label)).toEqual(['使用中', '利用可能']);
+    });
+
+    it('1 つも取れなければ null', () => {
+      expect(sumKnown([])).toBeNull();
+      expect(sumKnown([null, null])).toBeNull();
     });
   });
 });
