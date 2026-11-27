@@ -1,8 +1,18 @@
 use std::fmt::Write as _;
 use std::path::Path;
 
+/// [`validate`] を通った場所。引用符と制御文字を含まない絶対パス。
+#[derive(Debug, Clone, Copy)]
+pub struct ValidPath<'a>(&'a str);
+
+impl<'a> ValidPath<'a> {
+    pub fn as_str(self) -> &'a str {
+        self.0
+    }
+}
+
 /// 開く前に場所を確かめる（純粋関数。実在の確認は呼び出し側）。
-pub fn validate(path: &str) -> Result<(), String> {
+pub fn validate(path: &str) -> Result<ValidPath<'_>, String> {
     if path.trim().is_empty() {
         return Err("ファイルの場所が分かりません。".to_owned());
     }
@@ -12,7 +22,7 @@ pub fn validate(path: &str) -> Result<(), String> {
     if !is_absolute(path) {
         return Err(format!("ファイルの場所が絶対パスではありません: {path}"));
     }
-    Ok(())
+    Ok(ValidPath(path))
 }
 
 fn is_absolute(path: &str) -> bool {
@@ -21,16 +31,16 @@ fn is_absolute(path: &str) -> bool {
     drive || path.starts_with(r"\\") || path.starts_with('/')
 }
 
-pub fn explorer_select_arg(path: &str) -> String {
-    format!("/select,\"{path}\"")
+pub fn explorer_select_arg(path: ValidPath<'_>) -> String {
+    format!("/select,\"{}\"", path.as_str())
 }
 
 pub fn reveal(path: &str) -> Result<(), String> {
-    validate(path)?;
+    let valid = validate(path)?;
     if !Path::new(path).is_file() {
         return Err(format!("ファイルが見つかりません: {path}"));
     }
-    open_location(path)
+    open_location(valid)
 }
 
 pub const SEARCH_URL: &str = "https://www.bing.com/search?q=";
@@ -82,9 +92,9 @@ fn open_url(url: &str) -> Result<(), String> {
 }
 
 #[cfg(windows)]
-fn open_location(path: &str) -> Result<(), String> {
+fn open_location(path: ValidPath<'_>) -> Result<(), String> {
     use std::os::windows::process::CommandExt;
-    // explorer は引用符の付け方が独特なので、引数をそのまま渡す（validate で引用符は除いてある）
+    // explorer は引用符の付け方が独特なので、引数をそのまま渡す
     std::process::Command::new("explorer.exe")
         .raw_arg(explorer_select_arg(path))
         .status()
@@ -93,9 +103,9 @@ fn open_location(path: &str) -> Result<(), String> {
 }
 
 #[cfg(not(windows))]
-fn open_location(path: &str) -> Result<(), String> {
+fn open_location(path: ValidPath<'_>) -> Result<(), String> {
     // ファイルを開くと実行されうるので、入っているフォルダーを開く
-    let dir = Path::new(path)
+    let dir = Path::new(path.as_str())
         .parent()
         .ok_or_else(|| "フォルダーが分かりません。".to_owned())?;
     std::process::Command::new("xdg-open")
@@ -128,15 +138,19 @@ mod tests {
 
         #[test]
         fn absolute_paths_are_accepted() {
-            assert_eq!(validate(r"C:\Program Files\App\app.exe"), Ok(()));
-            assert_eq!(validate(r"\\server\share\app.exe"), Ok(()));
-            assert_eq!(validate("/usr/bin/htop"), Ok(()));
+            for path in [
+                r"C:\Program Files\App\app.exe",
+                r"\\server\share\app.exe",
+                "/usr/bin/htop",
+            ] {
+                assert_eq!(validate(path).map(ValidPath::as_str), Ok(path));
+            }
         }
 
         #[test]
         fn explorer_argument_quotes_the_path() {
             assert_eq!(
-                explorer_select_arg(r"C:\Program Files\a.exe"),
+                explorer_select_arg(validate(r"C:\Program Files\a.exe").unwrap()),
                 r#"/select,"C:\Program Files\a.exe""#
             );
         }
