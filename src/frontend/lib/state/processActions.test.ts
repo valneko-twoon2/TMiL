@@ -229,6 +229,38 @@ describe('プロセスへの操作', () => {
       expect(actions.dialog).toMatchObject({ cpus: [0, 1, 2, 3] });
     });
 
+    it('関係の設定を読んでいる間にダイアログが閉じたり変わったりしたら、届いた設定で戻さない', async () => {
+      const answers: ((value: unknown) => void)[] = [];
+      const { actions } = setup({
+        process_controls: () =>
+          new Promise((resolve) => {
+            answers.push(resolve);
+          }),
+      });
+      const answer = () => answers.shift()?.({ priority: null, affinity: [0] });
+
+      const closed = actions.openAffinity(proc(5, null));
+      actions.close();
+      answer();
+      await closed;
+      expect(actions.dialog).toBeNull();
+
+      const replaced = actions.openAffinity(proc(5, null));
+      actions.showUsage(proc(5, null));
+      answer();
+      await replaced;
+      expect(actions.dialog).toMatchObject({ kind: 'usage' });
+
+      const first = actions.openAffinity(proc(5, null));
+      const second = actions.openAffinity(proc(6, null));
+      answer();
+      await first;
+      expect(actions.dialog).toMatchObject({ kind: 'affinity', process: { pid: 6 }, cpus: null });
+      answer();
+      await second;
+      expect(actions.dialog).toMatchObject({ kind: 'affinity', process: { pid: 6 }, cpus: [0] });
+    });
+
     it('CPU を 1 つも選ばなければ送らない', async () => {
       const { actions, calls } = setup({ process_controls: () => ({ priority: null, affinity: [0] }) });
       await actions.openAffinity(proc(5, null));
