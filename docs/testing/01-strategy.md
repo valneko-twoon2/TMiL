@@ -13,7 +13,7 @@
 | VRT                      | Playwright                      | -                                             | `tests/vrt`                                            |
 | E2E（モック）            | Playwright                      | -                                             | `tests/e2e/mock`                                       |
 | E2E（実アプリ）          | tauri-driver + WebDriver        | ← 両方                                        | `tests/e2e/native`                                     |
-| ミューテーション         | Stryker                         | cargo-mutants                                 | 設定だけ（手動で回す）                                 |
+| ミューテーション         | Stryker                         | cargo-mutants                                 | 手動で回す（CI では回さない）                          |
 
 分類の付け方は [02-tags.md](02-tags.md)、件数は [03-inventory.md](03-inventory.md) を見てください。
 
@@ -71,9 +71,20 @@ Actions から直接コミットしないのは、そのコミットに CI が�
 
 ## ミューテーションテスト
 
-準備だけしてあり、CI では回しません。
+時間がかかるので CI では回さず、手元で回します（`src/frontend` で実行。結果は `reports/mutation/`）。
 
 ```sh
-npm run test:mutation -- --backend    # cargo-mutants
-npm run test:mutation -- --frontend   # Stryker
+npm run test:mutation -- --backend    # cargo-mutants（4 並列・約 20 分）
+npm run test:mutation -- --frontend   # Stryker（約 3 分。その場で書き換えるので、終わるまでフロントを編集しない）
 ```
+
+生き残った変異は、1 つずつ次のどれかに分けます。
+
+| 分け方                                     | 対応                                                                        |
+| ------------------------------------------ | --------------------------------------------------------------------------- |
+| テストの抜け                               | 変異を殺すテストを足す（本体の不具合なら `bugfix` の手順で直す）            |
+| 等価変異（どんな入力でも結果が変わらない） | テストは足さない。値が変わらない理由を確かめる（例: 重ならないビットの `    | `と`^`、届かない分岐） |
+| 別の OS でだけ動く処理                     | その OS で回したときに確かめる（Windows で回すと Linux 用の処理は生き残る） |
+| ほかのアプリを開く操作                     | 単体テストでは確かめない（エクスプローラー・ブラウザー・UAC が開くため）    |
+
+2026-11-27 の結果: フロント 96.5%（残りは等価変異と、アプリ内でしか動かない呼び出し）、バックは Windows で 400 件を殺し、残りは上の表の下 3 つに当たる。
