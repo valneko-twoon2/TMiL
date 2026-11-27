@@ -173,10 +173,8 @@
 
 <div class="app">
   <header class="titlebar">
-    <div class="brand">
-      <img src="/logo.svg" alt="" width="18" height="18" />
-      <span>TaskManagerLite</span>
-    </div>
+    <!-- アプリ名は OS のタイトル バーに出るので、ここには出さない -->
+    <div class="spacer"></div>
     <label class="search" class:disabled={!searchable}>
       <Icon name="search" size={14} />
       <input
@@ -272,12 +270,6 @@
     height: 44px;
     padding: 0 12px;
     background: var(--bg);
-  }
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
   }
   .search {
     display: flex;
