@@ -117,7 +117,7 @@ test.describe('詳細', () => {
     await expect(page.getByTestId('detail-row')).toHaveCount(0);
   });
 
-  test('右クリックのメニューは本家の詳細タブと同じ並び', async ({ page }) => {
+  test('右クリックのメニューは本家の詳細タブと同じ並びに、使用状況のグラフを足したもの', async ({ page }) => {
     await open(page, '詳細');
     await page.getByTestId('detail-row').first().click({ button: 'right' });
     await expect(page.getByRole('menu', { name: 'プロセスの操作' }).getByRole('menuitem')).toHaveText([
@@ -125,6 +125,7 @@ test.describe('詳細', () => {
       'プロセス ツリーの終了(T)',
       '優先度の設定(P)',
       '関係の設定(F)',
+      '使用状況のグラフ(G)',
       'ファイルの場所を開く(O)',
       'オンライン検索(N)',
       'プロパティ(R)',

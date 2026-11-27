@@ -159,6 +159,35 @@ test.describe('リソース モニター', () => {
     await expect(page.getByTestId('resmon-listen')).toContainText('445');
   });
 
+  test('ポートで絞り込むと、そのポートの接続とプロセスだけが残る', async ({ page }) => {
+    await open(page, 'リソース モニター');
+    await page.getByRole('tab', { name: 'ネットワーク' }).click();
+    await expect(page.getByTestId('resmon-listen')).toContainText('445');
+    await page.getByTestId('resmon-port-filter').fill('1420');
+    const listen = page.getByTestId('resmon-listen').locator('tbody tr[data-key]');
+    await expect(listen).toHaveCount(1);
+    await expect(listen).toContainText('1420');
+    await expect(page.getByTestId('resmon-tcp').locator('tbody tr[data-key]')).toHaveCount(0);
+    await expect(page.getByTestId('resmon-network').locator('tbody tr[data-key]')).toHaveCount(1);
+    await page.getByTestId('resmon-port-filter').fill('');
+    await expect(page.getByTestId('resmon-tcp')).toContainText('142.250.196.110');
+  });
+
+  test('ハンドルを場所で探し、見つからなければ理由を出す', async ({ page }) => {
+    await open(page, 'リソース モニター');
+    await page.getByRole('tab', { name: 'CPU' }).click();
+    const handles = page.getByTestId('resmon-handles');
+    await expect(handles).toContainText('場所を入れて検索してください');
+    const search = page.getByTestId('resmon-handle-search');
+    await search.fill('/tmp/report.docx');
+    await search.press('Enter');
+    await expect(handles.locator('tbody tr[data-key]')).toHaveCount(2);
+    await expect(handles).toContainText('/tmp/report.docx');
+    await search.fill('/tmp/nosuch');
+    await page.getByRole('button', { name: '検索', exact: true }).click();
+    await expect(handles).toContainText('見つかりません');
+  });
+
   test('プロセスを右クリックして中断と再開ができる', async ({ page }) => {
     await open(page, 'リソース モニター');
     const row = page.getByTestId('resmon-cpu').locator('tbody tr', { hasText: 'Discord.exe' }).first();
@@ -188,5 +217,20 @@ test.describe('パフォーマンス', () => {
     await open(page, 'パフォーマンス');
     await page.getByRole('button', { name: 'リソース モニターを開く' }).click();
     await expect(page.getByRole('heading', { name: 'リソース モニター' })).toBeVisible();
+  });
+});
+
+test.describe('使用状況のグラフ', () => {
+  test('詳細タブの右クリックから、そのプロセスの CPU とメモリの推移を開ける', async ({ page }) => {
+    await open(page, '詳細');
+    await page.getByRole('searchbox', { name: '検索' }).fill('1052');
+    await page.getByTestId('detail-row').click({ button: 'right' });
+    await page.getByRole('menuitem', { name: '使用状況のグラフ(G)' }).click();
+    const dialog = page.getByRole('dialog', { name: /の使用状況/ });
+    await expect(dialog.getByTestId('usage-charts')).toBeVisible();
+    await expect(dialog.getByRole('img', { name: 'CPU のグラフ' })).toBeVisible();
+    await expect(dialog.getByRole('img', { name: 'メモリのグラフ' })).toBeVisible();
+    await dialog.getByRole('button', { name: '閉じる' }).click();
+    await expect(dialog).toHaveCount(0);
   });
 });
