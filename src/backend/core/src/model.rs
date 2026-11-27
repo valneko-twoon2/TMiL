@@ -465,3 +465,126 @@ mod tests {
         }
     }
 }
+
+/// 画面に送る計測結果。毎回送るので転送量を減らした形にする（Windows はこの受け渡しも I/O として数える）。
+/// - プロセスは項目名を付けない配列（[`ProcessRow`]）で送る
+/// - 実行ファイルの場所・コマンドライン・ユーザーは送らない。新しく出てきたプロセスの分だけ、
+///   画面が `process_details` で取りに来る（[`ProcessDetails`]）
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnapshotWire {
+    pub timestamp_ms: u64,
+    pub cpu: CpuStats,
+    pub memory: MemoryStats,
+    pub disks: Vec<DiskStats>,
+    pub networks: Vec<NetworkStats>,
+    pub gpus: Vec<GpuStats>,
+    pub processes: Vec<ProcessRow>,
+}
+
+/// プロセス 1 つ分の、毎回変わりうる項目。並びはフロントの `PROCESS_ROW_FIELDS` と同じ:
+/// pid, parentPid, name, startTime, state, cpu, memory, diskReadPerSec, diskWrittenPerSec,
+/// runTimeSecs, virtualMemory, cpuTimeMs, diskReadTotal, diskWrittenTotal, handles, threads,
+/// sessionId, gpu, gpuMemory, gpuEngine, efficient, appContainer
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct ProcessRow(
+    u32,
+    Option<u32>,
+    String,
+    u64,
+    ProcessState,
+    f32,
+    u64,
+    u64,
+    u64,
+    u64,
+    u64,
+    u64,
+    u64,
+    u64,
+    Option<u32>,
+    Option<u32>,
+    Option<u32>,
+    Option<f32>,
+    Option<u64>,
+    Option<String>,
+    bool,
+    bool,
+);
+
+impl From<&ProcessInfo> for ProcessRow {
+    fn from(p: &ProcessInfo) -> Self {
+        Self(
+            p.pid,
+            p.parent_pid,
+            p.name.clone(),
+            p.start_time,
+            p.state,
+            p.cpu,
+            p.memory,
+            p.disk_read_per_sec,
+            p.disk_written_per_sec,
+            p.run_time_secs,
+            p.virtual_memory,
+            p.cpu_time_ms,
+            p.disk_read_total,
+            p.disk_written_total,
+            p.handles,
+            p.threads,
+            p.session_id,
+            p.gpu,
+            p.gpu_memory,
+            p.gpu_engine.clone(),
+            p.efficient,
+            p.app_container,
+        )
+    }
+}
+
+impl From<&Snapshot> for SnapshotWire {
+    fn from(s: &Snapshot) -> Self {
+        Self {
+            timestamp_ms: s.timestamp_ms,
+            cpu: s.cpu.clone(),
+            memory: s.memory.clone(),
+            disks: s.disks.clone(),
+            networks: s.networks.clone(),
+            gpus: s.gpus.clone(),
+            processes: s.processes.iter().map(ProcessRow::from).collect(),
+        }
+    }
+}
+
+/// プロセスの、起動してからほぼ変わらない項目（新しく出てきたときだけ送る）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProcessDetails {
+    pub pid: u32,
+    /// 同じプロセスかを見分けるための起動時刻
+    pub start_time: u64,
+    pub exe: String,
+    pub command: String,
+    pub user: String,
+}
+
+impl From<&ProcessInfo> for ProcessDetails {
+    fn from(p: &ProcessInfo) -> Self {
+        Self {
+            pid: p.pid,
+            start_time: p.start_time,
+            exe: p.exe.clone(),
+            command: p.command.clone(),
+            user: p.user.clone(),
+        }
+    }
+}
+
+/// 頼まれた PID の [`ProcessDetails`]（いないものは返さない）。
+pub fn process_details(processes: &[ProcessInfo], pids: &[u32]) -> Vec<ProcessDetails> {
+    let wanted: std::collections::HashSet<u32> = pids.iter().copied().collect();
+    processes
+        .iter()
+        .filter(|p| wanted.contains(&p.pid))
+        .map(ProcessDetails::from)
+        .collect()
+}

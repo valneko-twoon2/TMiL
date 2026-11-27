@@ -21,10 +21,13 @@ import {
   type NetworkStats,
   PRIORITIES,
   type ProcessControls,
+  type ProcessDetails,
   type ProcessIcon,
   type ProcessInfo,
+  type ProcessRowValues,
   type ReplacementStatus,
   type Snapshot,
+  type SnapshotWire,
   type StartupEntry,
   type SystemInfo,
 } from './types';
@@ -104,14 +107,11 @@ export const isGpuStats = shape<GpuStats>({
   memoryUsed: nullable(isCount),
 });
 
-export const isProcessInfo = shape<ProcessInfo>({
+const PROCESS_ROW_SPEC: Record<keyof ProcessRowValues, Guard<unknown>> = {
   pid: isCount,
   parentPid: nullable(isCount),
   name: isStr,
-  exe: isStr,
-  command: isStr,
   state: oneOf(PROCESS_STATES),
-  user: isStr,
   cpu: isPercent,
   memory: isCount,
   diskReadPerSec: isCount,
@@ -130,6 +130,77 @@ export const isProcessInfo = shape<ProcessInfo>({
   gpuEngine: nullable(isStr),
   efficient: isBool,
   appContainer: isBool,
+};
+
+export const isProcessInfo = shape<ProcessInfo>({
+  ...PROCESS_ROW_SPEC,
+  exe: isStr,
+  command: isStr,
+  user: isStr,
+});
+
+const isProcessRowValues = shape<ProcessRowValues>(PROCESS_ROW_SPEC);
+
+/** 計測結果のプロセスの配列の並び（バックエンドの `ProcessRow` と同じ）。 */
+export const PROCESS_ROW_FIELDS = [
+  'pid',
+  'parentPid',
+  'name',
+  'startTime',
+  'state',
+  'cpu',
+  'memory',
+  'diskReadPerSec',
+  'diskWrittenPerSec',
+  'runTimeSecs',
+  'virtualMemory',
+  'cpuTimeMs',
+  'diskReadTotal',
+  'diskWrittenTotal',
+  'handles',
+  'threads',
+  'sessionId',
+  'gpu',
+  'gpuMemory',
+  'gpuEngine',
+  'efficient',
+  'appContainer',
+] as const satisfies readonly (keyof ProcessRowValues)[];
+
+/** プロセスの配列を読む。並びや値が契約と違えば null。 */
+export function decodeProcessRow(row: unknown): ProcessRowValues | null {
+  if (!Array.isArray(row) || row.length !== PROCESS_ROW_FIELDS.length) return null;
+  const values: Record<string, unknown> = {};
+  PROCESS_ROW_FIELDS.forEach((field, i) => {
+    values[field] = row[i];
+  });
+  return isProcessRowValues(values) ? values : null;
+}
+
+/** プロセスを項目名の無い配列にする（モックのバックエンドが送るときに使う）。 */
+export function encodeProcessRow(p: ProcessRowValues): unknown[] {
+  return PROCESS_ROW_FIELDS.map((field) => p[field]);
+}
+
+export const isProcessDetails = shape<ProcessDetails>({
+  pid: isCount,
+  startTime: isCount,
+  exe: isStr,
+  command: isStr,
+  user: isStr,
+});
+
+export const isProcessDetailsList = arrayOf(isProcessDetails);
+
+/** 計測結果（送られてくる形）。プロセスの配列の中身は decodeProcessRow で読む。 */
+export const isSnapshotWire = shape<SnapshotWire>({
+  timestampMs: isCount,
+  cpu: isCpuStats,
+  memory: isMemoryStats,
+  disks: arrayOf(isDiskStats),
+  networks: arrayOf(isNetworkStats),
+  gpus: arrayOf(isGpuStats),
+  processes: arrayOf((v: unknown): v is unknown[] => Array.isArray(v)),
 });
 
 export const isSnapshot = shape<Snapshot>({

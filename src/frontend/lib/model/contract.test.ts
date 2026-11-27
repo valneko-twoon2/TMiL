@@ -13,7 +13,10 @@ import {
   isProcessControls,
   isProcessIcons,
   isReplacementStatus,
+  decodeProcessRow,
+  isProcessDetailsList,
   isSnapshot,
+  isSnapshotWire,
   isStartupEntries,
   isSystemInfo,
 } from './guards';
@@ -42,6 +45,11 @@ describe('バックエンドとの契約', () => {
   describe('contract', () => {
     it.each([
       ['snapshot', isSnapshot],
+      [
+        'snapshot-wire',
+        (v: unknown) => isSnapshotWire(v) && v.processes.every((row) => decodeProcessRow(row) !== null),
+      ],
+      ['process-details', isProcessDetailsList],
       ['system-info', isSystemInfo],
       ['kill-results', isKillResults],
       ['kill-targets', isKillTargets],

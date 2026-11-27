@@ -16,8 +16,8 @@ mod contract {
         AppWindow, Connection, CpuStats, DiskKind, DiskStats, GpuStats, HandleInfo, KillResult,
         KillTarget, MemoryStats, ModuleInfo, NetworkStats, Priority, ProcessControls, ProcessIcon,
         ProcessInfo, ProcessState, Protocol, ReplacementStatus, ServiceAction, ServiceInfo,
-        ServiceStartType, ServiceStatus, Snapshot, StartupEntry, StartupLocation, SystemInfo,
-        TcpState,
+        ServiceStartType, ServiceStatus, Snapshot, SnapshotWire, StartupEntry, StartupLocation,
+        SystemInfo, TcpState, process_details,
     };
 
     fn fixtures_dir() -> PathBuf {
@@ -155,6 +155,10 @@ mod contract {
             ],
         };
         check("snapshot", &value);
+        // 画面に送る形。フロントでは、これと詳細を合わせると上の snapshot と同じになることを確かめる
+        check("snapshot-wire", &SnapshotWire::from(&value));
+        let pids: Vec<u32> = value.processes.iter().map(|p| p.pid).collect();
+        check("process-details", &process_details(&value.processes, &pids));
     }
 
     #[test]

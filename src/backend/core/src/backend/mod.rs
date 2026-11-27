@@ -14,7 +14,8 @@ use std::time::{Duration, Instant};
 use crate::collector::{Collector, CollectorError};
 use crate::machine::{Effect, Event, Machine, ProcessAction, Registry, State};
 use crate::model::{
-    KillResult, KillTarget, Priority, ProcessControls, ReplacementStatus, Snapshot, SystemInfo,
+    KillResult, KillTarget, Priority, ProcessControls, ProcessDetails, ReplacementStatus, Snapshot,
+    SystemInfo, process_details,
 };
 use crate::process_control;
 
@@ -105,6 +106,14 @@ impl Backend {
             Some(Effect::Reject(r)) => Err(r.to_string()),
             other => Err(format!("想定しない処理です: {other:?}")),
         }
+    }
+
+    /// 直前の計測結果から、頼まれたプロセスのほぼ変わらない項目（場所・コマンドライン・ユーザー）を返す。
+    pub fn process_details(&self, pids: &[u32]) -> Result<Vec<ProcessDetails>, String> {
+        Ok(lock(&self.cache)?
+            .as_ref()
+            .map(|(_, s)| process_details(&s.processes, pids))
+            .unwrap_or_default())
     }
 
     /// 変化しないシステム情報。

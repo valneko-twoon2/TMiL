@@ -29,6 +29,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         .manage(IconCache::new())
         .invoke_handler(tauri::generate_handler![
             commands::snapshot,
+            commands::process_details,
             commands::system_info,
             commands::kill_processes,
             commands::startup_entries,

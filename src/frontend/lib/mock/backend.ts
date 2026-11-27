@@ -10,7 +10,8 @@ import {
   type StartupEntry,
   type SystemInfo,
 } from '../model/types';
-import { isKillTarget } from '../model/guards';
+import { encodeProcessRow, isKillTarget } from '../model/guards';
+import { detailsOf, encodeSnapshot } from '../model/wire';
 import {
   appWindows,
   connections,
@@ -426,11 +427,14 @@ const HANDLERS: Record<string, Handler> = {
     state.alwaysOnTop = args.enabled === true;
     return null;
   },
+  // 本物と同じく、プロセスは項目名の無い配列で送り、場所・コマンドライン・ユーザーは別に取らせる
   snapshot: (state) => {
     const snap = mockSnapshot(state);
     state.tick += 1;
-    return snap;
+    return encodeSnapshot(snap, encodeProcessRow);
   },
+  process_details: (state, args) =>
+    detailsOf(processes(state.tick, state.killed, state.scale), Array.isArray(args.pids) ? args.pids : []),
   system_info: () => MOCK_SYSTEM_INFO,
   kill_processes: (state, args) => kill(state, targetsOf(args)),
   startup_entries: (state) => state.startup,

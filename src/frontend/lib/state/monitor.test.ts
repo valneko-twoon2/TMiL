@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { snapshotFixture } from '../../test/fixtures';
+import { snapshotFixture, snapshotInvoke } from '../../test/fixtures';
 import { createApi, type Invoke } from '../api/ipc';
 import { Monitor } from './monitor.svelte';
 
@@ -7,12 +7,12 @@ import { Monitor } from './monitor.svelte';
 function setup() {
   const pending: (() => void)[] = [];
   let calls = 0;
-  const call: Invoke = (cmd) => {
-    if (cmd !== 'snapshot') return Promise.reject(new Error(cmd));
+  const call: Invoke = (cmd, args) => {
+    if (cmd !== 'snapshot') return snapshotInvoke(snapshotFixture)(cmd, args);
     calls += 1;
     return new Promise((resolve) =>
       pending.push(() => {
-        resolve(snapshotFixture());
+        resolve(snapshotInvoke(snapshotFixture)(cmd, args));
       }),
     );
   };
@@ -95,7 +95,7 @@ describe('Monitor', () => {
     // バックエンドが直前の結果を返したときも履歴に足し、グラフに同じ点が並んでいた
     it('同じ時刻の計測結果は履歴に 2 度足さない', async () => {
       const snap = snapshotFixture();
-      const monitor = new Monitor(createApi(() => Promise.resolve(snap)));
+      const monitor = new Monitor(createApi(snapshotInvoke(() => snap)));
       await monitor.refresh();
       await monitor.refresh();
       expect(monitor.history.get('cpu')).toEqual([snap.cpu.usage]);

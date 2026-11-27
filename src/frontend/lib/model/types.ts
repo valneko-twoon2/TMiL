@@ -11,6 +11,26 @@ export interface Snapshot {
   processes: ProcessInfo[];
 }
 
+/**
+ * バックエンドが送る計測結果。転送量を減らすため、プロセスは項目名の無い配列
+ * （並びは guards.ts の PROCESS_ROW_FIELDS）で、場所・コマンドライン・ユーザーは別に取る（ProcessDetails）。
+ */
+export interface SnapshotWire extends Omit<Snapshot, 'processes'> {
+  processes: unknown[][];
+}
+
+/** プロセスの、起動してからほぼ変わらない項目（新しく出てきたプロセスの分だけ取る）。 */
+export interface ProcessDetails {
+  pid: number;
+  startTime: number;
+  exe: string;
+  command: string;
+  user: string;
+}
+
+/** 計測結果の配列から読み取れる項目（ProcessDetails の分を除く）。 */
+export type ProcessRowValues = Omit<ProcessInfo, 'exe' | 'command' | 'user'>;
+
 export interface CpuStats {
   usage: number;
   perCore: number[];

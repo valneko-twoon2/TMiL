@@ -7,8 +7,8 @@ use taskmanagerlite_core::backend::{Backend, set_replacement_for_exe};
 use taskmanagerlite_core::icons::{self, IconCache};
 use taskmanagerlite_core::model::{
     AppWindow, Connection, HandleInfo, KillResult, KillTarget, ModuleInfo, Priority,
-    ProcessControls, ProcessIcon, ReplacementStatus, ServiceAction, ServiceInfo, Snapshot,
-    StartupEntry, SystemInfo,
+    ProcessControls, ProcessDetails, ProcessIcon, ReplacementStatus, ServiceAction, ServiceInfo,
+    SnapshotWire, StartupEntry, SystemInfo,
 };
 use taskmanagerlite_core::{
     connections, handles, launch, modules, open, services, startup, taskmgr, windows_list,
@@ -29,10 +29,19 @@ async fn blocking<T: Send + 'static>(
         .map_err(|e| format!("処理が中断されました: {e}"))?
 }
 
-/// 最新の計測結果。
+/// 最新の計測結果（転送量を減らした形）。
 #[tauri::command]
-pub(crate) async fn snapshot(app: AppHandle) -> Result<Snapshot, String> {
-    blocking(app, Backend::snapshot).await
+pub(crate) async fn snapshot(app: AppHandle) -> Result<SnapshotWire, String> {
+    blocking(app, |b| b.snapshot().map(|s| SnapshotWire::from(&s))).await
+}
+
+/// プロセスのほぼ変わらない項目（新しく出てきたプロセスの分だけ、画面が取りに来る）。
+#[tauri::command]
+pub(crate) async fn process_details(
+    app: AppHandle,
+    pids: Vec<u32>,
+) -> Result<Vec<ProcessDetails>, String> {
+    blocking(app, move |b| b.process_details(&pids)).await
 }
 
 /// 変化しないシステム情報。

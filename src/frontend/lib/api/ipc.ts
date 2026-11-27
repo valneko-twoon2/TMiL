@@ -11,7 +11,9 @@ import {
   isProcessControls,
   isProcessIcons,
   isReplacementStatus,
-  isSnapshot,
+  decodeProcessRow,
+  isProcessDetailsList,
+  isSnapshotWire,
   isStartupEntries,
   isSystemInfo,
 } from '../model/guards';
@@ -26,12 +28,16 @@ import type {
   KillTarget,
   Priority,
   ProcessControls,
+  ProcessDetails,
   ProcessIcon,
+  ProcessRowValues,
   ReplacementStatus,
   Snapshot,
   StartupEntry,
   SystemInfo,
 } from '../model/types';
+
+import { DETAILS_RETRY_MS, detailsToFetch, joinSnapshot, rememberDetails } from '../model/wire';
 
 export type Invoke = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
 
@@ -96,8 +102,30 @@ export function createApi(call: Invoke): Api {
     return value;
   }
 
+  // 場所・コマンドライン・ユーザーは毎回は送られないので、ここで覚えておいて合わせる
+  let details: ReadonlyMap<string, ProcessDetails> = new Map();
+  let lastRetry = Number.NEGATIVE_INFINITY;
+
+  async function snapshot(): Promise<Snapshot> {
+    const wire = await request('snapshot', isSnapshotWire);
+    const rows: ProcessRowValues[] = [];
+    for (const raw of wire.processes) {
+      const row = decodeProcessRow(raw);
+      if (row === null) throw new ContractError('snapshot');
+      rows.push(row);
+    }
+    const now = Date.now();
+    const retry = now - lastRetry >= DETAILS_RETRY_MS;
+    if (retry) lastRetry = now;
+    const pids = detailsToFetch(rows, details, retry);
+    const received =
+      pids.length === 0 ? [] : await request('process_details', isProcessDetailsList, { pids });
+    details = rememberDetails(details, received, rows);
+    return joinSnapshot(wire, rows, details);
+  }
+
   return {
-    snapshot: () => request('snapshot', isSnapshot),
+    snapshot,
     systemInfo: () => request('system_info', isSystemInfo),
     killProcesses: (targets) => request('kill_processes', isKillResults, { targets }),
     startupEntries: () => request('startup_entries', isStartupEntries),

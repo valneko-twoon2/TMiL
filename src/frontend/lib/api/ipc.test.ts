@@ -14,10 +14,18 @@ function apiReturning(value: unknown) {
 
 describe('createApi', () => {
   describe('equivalence', () => {
-    it('snapshot は検証済みの値を返す', async () => {
-      const { api, call } = apiReturning(fixture('snapshot'));
-      await expect(api.snapshot()).resolves.toMatchObject({ timestampMs: 1767225600000 });
+    it('snapshot は送られた配列と詳細を合わせ、もとの計測結果と同じ形に戻す', async () => {
+      const call = vi.fn<Invoke>((cmd) =>
+        Promise.resolve(fixture(cmd === 'snapshot' ? 'snapshot-wire' : 'process-details')),
+      );
+      const api = createApi(call);
+      await expect(api.snapshot()).resolves.toEqual(fixture('snapshot'));
       expect(call).toHaveBeenCalledWith('snapshot', undefined);
+      expect(call).toHaveBeenCalledWith('process_details', { pids: [1, 100, 101, 102, 103] });
+      // 2 回目は、覚えている詳細を使い、聞き直さない
+      call.mockClear();
+      await expect(api.snapshot()).resolves.toEqual(fixture('snapshot'));
+      expect(call).toHaveBeenCalledTimes(1);
     });
 
     it('各コマンドに正しい名前と引数を渡す', async () => {

@@ -1,7 +1,10 @@
 // テスト用: バックエンドが書き出した契約 JSON（tests/contract/fixtures）を読む。
 import { readFileSync } from 'node:fs';
 import fc from 'fast-check';
+import type { Invoke } from '../lib/api/ipc';
+import { encodeProcessRow } from '../lib/model/guards';
 import type { ProcessInfo, Snapshot, StartupEntry, SystemInfo } from '../lib/model/types';
+import { detailsOf, encodeSnapshot } from '../lib/model/wire';
 
 export function readFixture(name: string): unknown {
   const url = new URL(`../../../tests/contract/fixtures/${name}.json`, import.meta.url);
@@ -9,6 +12,18 @@ export function readFixture(name: string): unknown {
 }
 
 export const snapshotFixture = (): Snapshot => readFixture('snapshot') as Snapshot;
+/** バックエンドの代わりに、計測結果を送る形（配列と詳細）で返す。ほかのコマンドは `other` に任せる。 */
+export function snapshotInvoke(snapshot: () => Snapshot, other?: Invoke): Invoke {
+  return (cmd, args) => {
+    if (cmd === 'snapshot') return Promise.resolve(encodeSnapshot(snapshot(), encodeProcessRow));
+    if (cmd === 'process_details') {
+      const pids = Array.isArray(args?.pids) ? (args.pids as unknown[]) : [];
+      return Promise.resolve(detailsOf(snapshot().processes, pids));
+    }
+    return other ? other(cmd, args) : Promise.reject(new Error(cmd));
+  };
+}
+
 export const systemInfoFixture = (): SystemInfo => readFixture('system-info') as SystemInfo;
 export const startupFixture = (): StartupEntry[] => readFixture('startup-entries') as StartupEntry[];
 
