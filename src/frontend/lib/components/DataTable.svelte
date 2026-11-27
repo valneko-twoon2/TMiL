@@ -148,16 +148,15 @@
           {/if}
           {#each columns as column (column.key)}
             {@const text = cellText(column, row)}
-            {@const icon = column.icon?.(row)}
             <td
               class="heat-{column.heat?.(row) ?? 0}"
               class:num={column.numeric}
               class:muted={column.muted}
               title={column.muted ? text : undefined}
             >
-              {#if icon !== undefined}
+              {#if column.icon}
                 <span class="name">
-                  <ProcessIcon src={icon} />
+                  <ProcessIcon src={column.icon(row)} />
                   <span class="text">{text}</span>
                 </span>
               {:else}

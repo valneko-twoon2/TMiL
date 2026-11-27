@@ -12,7 +12,7 @@ export interface TableColumn<T> {
   value: (row: T) => string | number | null;
   /** セルに出す文字（無ければ値をそのまま） */
   text?: (row: T) => string;
-  /** 名前の横に出すアイコン（data URL。undefined ならアイコンの場所も空けない） */
+  /** 名前の横に出すアイコン（data URL。null・undefined なら決まった絵。この関数が無い列はアイコンを出さない） */
   icon?: (row: T) => string | null | undefined;
   /** 使用量に応じた背景の濃さ（0〜5） */
   heat?: (row: T) => number;

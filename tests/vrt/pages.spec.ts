@@ -36,6 +36,35 @@ for (const scheme of ['light', 'dark'] as const) {
       await expect(page).toHaveScreenshot(`details-${scheme}.png`);
     });
 
+    test('アプリの履歴', async ({ page }) => {
+      await open(page, scheme);
+      await page.getByRole('navigation').getByRole('button', { name: 'アプリの履歴' }).click();
+      await expect(page.getByTestId('history-table').locator('tbody tr').first()).toBeVisible();
+      await expect(page).toHaveScreenshot(`history-${scheme}.png`);
+    });
+
+    test('ユーザー', async ({ page }) => {
+      await open(page, scheme);
+      await page.getByRole('navigation').getByRole('button', { name: 'ユーザー' }).click();
+      await expect(page.getByTestId('user-processes-table').locator('tbody tr').first()).toBeVisible();
+      await expect(page).toHaveScreenshot(`users-${scheme}.png`);
+    });
+
+    test('サービス', async ({ page }) => {
+      await open(page, scheme);
+      await page.getByRole('navigation').getByRole('button', { name: 'サービス' }).click();
+      await expect(page.getByTestId('services-table').getByText('wuauserv')).toBeVisible();
+      await expect(page).toHaveScreenshot(`services-${scheme}.png`);
+    });
+
+    test('リソース モニター', async ({ page }) => {
+      await open(page, scheme);
+      await page.getByRole('navigation').getByRole('button', { name: 'リソース モニター' }).click();
+      await page.getByRole('tab', { name: 'ネットワーク' }).click();
+      await expect(page.getByTestId('resmon-tcp').getByText('142.250.196.110').first()).toBeVisible();
+      await expect(page).toHaveScreenshot(`resmon-${scheme}.png`);
+    });
+
     test('設定', async ({ page }) => {
       await open(page, scheme);
       await page.getByRole('navigation').getByRole('button', { name: '設定' }).click();
