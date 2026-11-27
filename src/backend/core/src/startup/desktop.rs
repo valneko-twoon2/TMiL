@@ -61,9 +61,9 @@ pub fn with_enabled(content: &str, enabled: bool) -> String {
         format!("{HIDDEN}={}", !enabled),
         format!("{GNOME_ENABLED}={enabled}"),
     ];
-    let has_main = content.lines().any(|l| l.trim() == MAIN_GROUP);
+    let prepends_main_group = !content.lines().any(|l| l.trim() == MAIN_GROUP);
     let mut out: Vec<String> = Vec::new();
-    let mut in_main = !has_main;
+    let mut in_main = prepends_main_group;
     let mut found_main = false;
     for raw in content.lines() {
         let line = raw.trim();
@@ -81,7 +81,7 @@ pub fn with_enabled(content: &str, enabled: bool) -> String {
         }
         out.push(raw.to_owned());
     }
-    if !found_main {
+    if prepends_main_group {
         let mut head = vec![MAIN_GROUP.to_owned()];
         head.extend(toggles);
         head.extend(out);
