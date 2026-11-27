@@ -4,7 +4,7 @@ pub const MAX_HANDLES: usize = 2000;
 
 pub const MAX_FILES: usize = 5000;
 
-pub const PER_FILE_LIMIT: usize = 100;
+pub const MAX_FILES_REPORTED_BY_FILE: usize = 100;
 
 const NOT_FOUND: &str = "TASKMANAGERLITE_NOT_FOUND";
 
@@ -79,7 +79,7 @@ if (Test-Path -LiteralPath $query -PathType Container) {{
   exit 3
 }}
 if ($files.Count -eq 0) {{ exit 0 }}
-if ($files.Count -le {PER_FILE_LIMIT}) {{
+if ($files.Count -le {MAX_FILES_REPORTED_BY_FILE}) {{
   foreach ($f in $files) {{
     foreach ($p in [TaskManagerLiteRm]::Find(@($f))) {{ [Console]::Out.WriteLine([string]$p + [char]9 + $f) }}
   }}
