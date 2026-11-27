@@ -29,6 +29,7 @@
   const { monitor, intervalMs, menus, toasts, summaryView, onopenresmon }: Props = $props();
   let selectedId = $state('cpu');
   let perCore = $state(false);
+  let showGraphs = $state(true);
   const summary = $derived(summaryView.on);
 
   const resources = $derived(
@@ -68,6 +69,7 @@
           ]
         : []),
       { id: 'summary', label: '要約ビュー', key: 'W', checked: summary },
+      { id: 'graphs', label: 'グラフの表示', key: 'S', checked: showGraphs },
       SEPARATOR,
       { id: 'copy', label: 'コピー', key: 'C' },
     ];
@@ -75,6 +77,7 @@
       if (id === 'graph:total') perCore = false;
       else if (id === 'graph:cores') perCore = true;
       else if (id === 'summary') void summaryView.toggle();
+      else if (id === 'graphs') showGraphs = !showGraphs;
       else if (id === 'copy') void copy();
     });
   }
@@ -101,7 +104,7 @@
           aria-pressed={current?.id === r.id}
           onclick={() => (selectedId = r.id)}
         >
-          {#if summary}
+          {#if !showGraphs}
             <i class="dot" style:background={RESOURCE_COLORS[r.kind]}></i>
           {:else}
             <span class="mini">
@@ -117,6 +120,9 @@
           {/if}
           <span class="card-text">
             <span class="card-title">{r.title}</span>
+            {#if r.subtitle !== ''}
+              <span class="card-summary">{r.subtitle}</span>
+            {/if}
             <span class="card-summary">{r.summary}</span>
           </span>
         </button>
@@ -203,9 +209,6 @@
     flex: none;
     margin: 0 4px;
     border-radius: 50%;
-  }
-  .summary .card-summary {
-    white-space: normal;
   }
   .cores {
     display: grid;

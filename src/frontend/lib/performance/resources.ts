@@ -32,6 +32,8 @@ export interface Resource {
   id: string;
   kind: ResourceKind;
   title: string;
+  /** 契約: 見出しの下の行（ディスクの種類・アダプター名・GPU の名前）。無ければ空。 */
+  subtitle: string;
   summary: string;
   caption: string;
   series: Series[];
@@ -57,6 +59,13 @@ const DISK_KIND_LABEL: Record<DiskKind, string> = { ssd: 'SSD', hdd: 'HDD', unkn
 /** ループバックの名前（Linux の lo・lo0、Windows の Loopback Pseudo-Interface）。名前全体で判定する。 */
 const LOOPBACK = /^(lo\d*|loopback\b.*)$/i;
 
+const WIRELESS = /wi-?fi|wireless|wlan|無線/i;
+
+/** なぜ: 本家と同じく、見出しは接続の種類（無線は Wi-Fi、それ以外はイーサネット）。 */
+export function networkTitle(name: string): string {
+  return WIRELESS.test(name) ? 'Wi-Fi' : 'イーサネット';
+}
+
 export function visibleNetworks(networks: readonly NetworkStats[]): NetworkStats[] {
   return networks.filter(
     (n) => !LOOPBACK.test(n.name) && n.totalReceived + n.totalTransmitted + n.receivedPerSec > 0,
@@ -76,6 +85,7 @@ export function buildResources(snapshot: Snapshot, history: HistoryMap, info: Sy
       id: 'cpu',
       kind: 'cpu',
       title: 'CPU',
+      subtitle: '',
       summary: `${formatPercent(cpu.usage, 0)}  ${formatFrequency(cpu.frequencyMhz)}`,
       caption: info?.cpuBrand ?? '',
       series: [{ label: '使用率', values: get(historyKey.cpu), color: RESOURCE_COLORS.cpu }],
@@ -86,6 +96,7 @@ export function buildResources(snapshot: Snapshot, history: HistoryMap, info: Sy
       id: 'memory',
       kind: 'memory',
       title: 'メモリ',
+      subtitle: '',
       summary: `${formatBytes(memory.used)} / ${formatBytes(memory.total)} (${formatPercent(shareOf(memory.used, memory.total), 0)})`,
       caption: formatBytes(memory.total),
       series: [{ label: '使用中', values: get(historyKey.memory), color: RESOURCE_COLORS.memory }],
@@ -103,7 +114,8 @@ export function buildResources(snapshot: Snapshot, history: HistoryMap, info: Sy
       id: `disk:${key}`,
       kind: 'disk',
       title: `ディスク ${String(i)} (${d.mountPoint})`,
-      summary: `${DISK_KIND_LABEL[d.kind]}  ${formatRate(d.readPerSec + d.writtenPerSec)}`,
+      subtitle: DISK_KIND_LABEL[d.kind],
+      summary: formatRate(d.readPerSec + d.writtenPerSec),
       caption: d.name,
       series: [
         { label: '読み取り', values: read, color: RESOURCE_COLORS.disk },
@@ -124,7 +136,8 @@ export function buildResources(snapshot: Snapshot, history: HistoryMap, info: Sy
     resources.push({
       id: `net:${n.name}`,
       kind: 'network',
-      title: `ネットワーク`,
+      title: networkTitle(n.name),
+      subtitle: n.name,
       summary: `送信: ${formatBits(n.transmittedPerSec)} 受信: ${formatBits(n.receivedPerSec)}`,
       caption: n.name,
       series: [
@@ -143,7 +156,8 @@ function gpuResource(g: GpuStats, i: number, usage: readonly number[], memory: r
     id: `gpu:${String(i)}`,
     kind: 'gpu',
     title: `GPU ${String(i)}`,
-    summary: `${g.name}  ${g.usage === null ? '-' : formatPercent(g.usage, 0)}`,
+    subtitle: g.name,
+    summary: g.usage === null ? '-' : formatPercent(g.usage, 0),
     caption: g.name,
     series: [
       { label: '使用率', values: usage, color: RESOURCE_COLORS.gpu },

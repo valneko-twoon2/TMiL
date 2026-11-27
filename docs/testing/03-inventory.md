@@ -3,15 +3,15 @@
 > 自動生成です。手で編集せず `npm run docs:tests` で更新してください。
 > 種類の決め方は [02-tags.md](02-tags.md) を参照。
 
-合計 **1095** 件
+合計 **1099** 件
 
 ## 種類 × 対象
 
 | 種類 | フロント | バック | ツール | アプリ全体 | 合計 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| 単体（同値分割） | 194 | 155 | 78 | 0 | 427 |
+| 単体（同値分割） | 195 | 155 | 78 | 0 | 428 |
 | 単体（境界値） | 196 | 132 | 40 | 0 | 368 |
-| 単体（回帰） | 12 | 24 | 12 | 0 | 48 |
+| 単体（回帰） | 12 | 24 | 13 | 0 | 49 |
 | 単体（その他） | 0 | 24 | 2 | 0 | 26 |
 | スナップショット | 25 | 1 | 0 | 0 | 26 |
 | 契約 | 32 | 14 | 0 | 0 | 46 |
@@ -19,9 +19,9 @@
 | ファジング | 10 | 6 | 0 | 0 | 16 |
 | 形式検証 | 0 | 21 | 0 | 0 | 21 |
 | VRT | 18 | 0 | 0 | 0 | 18 |
-| E2E（モック） | 50 | 0 | 0 | 0 | 50 |
+| E2E（モック） | 52 | 0 | 0 | 0 | 52 |
 | E2E（実アプリ） | 0 | 0 | 0 | 7 | 7 |
-| **合計** | **567** | **389** | **132** | **7** | **1095** |
+| **合計** | **570** | **389** | **133** | **7** | **1099** |
 
 ## フロントの内訳
 
@@ -40,7 +40,7 @@
 | `src/frontend/lib/model/contract.test.ts` | 24 | 契約 24 |
 | `src/frontend/lib/model/guards.test.ts` | 24 | 単体（同値分割） 6 / 単体（境界値） 10 / 契約 8 |
 | `src/frontend/lib/model/wire.test.ts` | 7 | 単体（同値分割） 4 / 単体（境界値） 2 / プロパティベース 1 |
-| `src/frontend/lib/performance/resources.test.ts` | 23 | 単体（同値分割） 10 / 単体（境界値） 10 / 単体（回帰） 2 / スナップショット 1 |
+| `src/frontend/lib/performance/resources.test.ts` | 24 | 単体（同値分割） 11 / 単体（境界値） 10 / 単体（回帰） 2 / スナップショット 1 |
 | `src/frontend/lib/process/process.property.test.ts` | 8 | プロパティベース 8 |
 | `src/frontend/lib/process/process.test.ts` | 42 | 単体（同値分割） 23 / 単体（境界値） 17 / プロパティベース 2 |
 | `src/frontend/lib/process/processColumns.test.ts` | 20 | 単体（同値分割） 12 / 単体（境界値） 7 / プロパティベース 1 |
@@ -64,7 +64,7 @@
 | `src/frontend/lib/users/users.test.ts` | 7 | 単体（同値分割） 3 / 単体（境界値） 3 / プロパティベース 1 |
 | `src/frontend/test/config.test.ts` | 1 | 単体（回帰） 1 |
 | `tests/e2e/mock/app.spec.ts` | 28 | E2E（モック） 28 |
-| `tests/e2e/mock/features.spec.ts` | 22 | E2E（モック） 22 |
+| `tests/e2e/mock/features.spec.ts` | 24 | E2E（モック） 24 |
 | `tests/vrt/pages.spec.ts` | 18 | VRT 18 |
 
 ## バックの内訳
@@ -176,7 +176,7 @@
 
 | ファイル / モジュール | 件数 | 内訳 |
 | --- | ---: | --- |
-| `scripts/lib/added-comments.test.mjs` | 7 | 単体（同値分割） 3 / 単体（境界値） 3 / 単体（回帰） 1 |
+| `scripts/lib/added-comments.test.mjs` | 8 | 単体（同値分割） 3 / 単体（境界値） 3 / 単体（回帰） 2 |
 | `scripts/lib/changelog.test.mjs` | 8 | 単体（同値分割） 4 / 単体（境界値） 4 |
 | `scripts/lib/command-guard.test.mjs` | 19 | 単体（同値分割） 15 / 単体（境界値） 3 / 単体（回帰） 1 |
 | `scripts/lib/commit-message.test.mjs` | 17 | 単体（同値分割） 13 / 単体（境界値） 4 |

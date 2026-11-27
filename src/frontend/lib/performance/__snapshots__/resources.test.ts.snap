@@ -44,6 +44,7 @@ exports[`パフォーマンスの一覧（細部） > snapshot > すべてのリ
         "value": "8",
       },
     ],
+    "subtitle": "",
     "summary": "26%  3.20 GHz",
     "title": "CPU",
   },
@@ -81,6 +82,7 @@ exports[`パフォーマンスの一覧（細部） > snapshot > すべてのリ
         "value": "4.0 GB",
       },
     ],
+    "subtitle": "",
     "summary": "8.0 GB / 16.0 GB (50%)",
     "title": "メモリ",
   },
@@ -119,7 +121,8 @@ exports[`パフォーマンスの一覧（細部） > snapshot > すべてのリ
         "value": "ext4",
       },
     ],
-    "summary": "SSD  5.0 KB/秒",
+    "subtitle": "SSD",
+    "summary": "5.0 KB/秒",
     "title": "ディスク 0 (/)",
   },
   {
@@ -157,7 +160,8 @@ exports[`パフォーマンスの一覧（細部） > snapshot > すべてのリ
         "value": "ext4",
       },
     ],
-    "summary": "HDD  5.0 KB/秒",
+    "subtitle": "HDD",
+    "summary": "5.0 KB/秒",
     "title": "ディスク 1 (/data)",
   },
   {
@@ -195,7 +199,8 @@ exports[`パフォーマンスの一覧（細部） > snapshot > すべてのリ
         "value": "ext4",
       },
     ],
-    "summary": "不明  5.0 KB/秒",
+    "subtitle": "不明",
+    "summary": "5.0 KB/秒",
     "title": "ディスク 2 (/snap/core)",
   },
   {
@@ -225,7 +230,8 @@ exports[`パフォーマンスの一覧（細部） > snapshot > すべてのリ
         "value": "Example",
       },
     ],
-    "summary": "Example GPU  13%",
+    "subtitle": "Example GPU",
+    "summary": "13%",
     "title": "GPU 0",
   },
   {
@@ -255,7 +261,8 @@ exports[`パフォーマンスの一覧（細部） > snapshot > すべてのリ
         "value": "-",
       },
     ],
-    "summary": "Basic Display  -",
+    "subtitle": "Basic Display",
+    "summary": "-",
     "title": "GPU 1",
   },
   {
@@ -297,8 +304,9 @@ exports[`パフォーマンスの一覧（細部） > snapshot > すべてのリ
         "value": "00:11:22:33:44:55",
       },
     ],
+    "subtitle": "eth0",
     "summary": "送信: 1.6 Kbps 受信: 8.0 Kbps",
-    "title": "ネットワーク",
+    "title": "イーサネット",
   },
 ]
 `;

@@ -10,6 +10,7 @@ import {
   statsText,
   sumKnown,
   visibleNetworks,
+  networkTitle,
 } from './resources';
 
 const snapshot = snapshotFixture();
@@ -45,6 +46,14 @@ describe('buildResources', () => {
       expect(labels('memory')).toContain('利用可能');
       expect(labels('disk')).toContain('ファイルシステム');
       expect(labels('network')).toContain('受信');
+    });
+
+    it('ネットワークの見出しは接続の種類で、アダプター名は下の行に出す', () => {
+      expect(networkTitle('Wi-Fi 2')).toBe('Wi-Fi');
+      expect(networkTitle('Intel Wireless-AC')).toBe('Wi-Fi');
+      expect(networkTitle('VMware Network Adapter VMnet1')).toBe('イーサネット');
+      const net = buildResources(snapshot, EMPTY_HISTORY, info).find((r) => r.kind === 'network');
+      expect(net?.subtitle).toBe('eth0');
     });
 
     it('ループバックと通信実績の無いインターフェースは出さない', () => {
@@ -146,6 +155,7 @@ describe('パフォーマンスの一覧（細部）', () => {
       const view = list.map((r) => ({
         id: r.id,
         title: r.title,
+        subtitle: r.subtitle,
         summary: r.summary,
         caption: r.caption,
         axisLabel: r.axisLabel,

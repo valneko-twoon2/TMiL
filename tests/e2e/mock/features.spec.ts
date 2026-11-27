@@ -247,6 +247,26 @@ test.describe('リソース モニター', () => {
   });
 });
 
+test.describe('画面全体', () => {
+  // 一覧をドラッグすると文字が青く選択されて見づらかった
+  test('文字は選択できず、入力欄だけ選択できる', async ({ page }) => {
+    await open(page, 'プロセス');
+    const select = (selector: string) =>
+      page
+        .locator(selector)
+        .first()
+        .evaluate((e) => getComputedStyle(e).userSelect);
+    expect(await select('tbody')).toBe('none');
+    expect(await select('input[type="search"]')).toBe('text');
+  });
+
+  test('上の空いている場所は、ウィンドウをドラッグして動かす場所になる', async ({ page }) => {
+    await open(page, 'プロセス');
+    await expect(page.locator('header.titlebar[data-tauri-drag-region]')).toHaveCount(1);
+    await expect(page.locator('header.titlebar > .spacer[data-tauri-drag-region]')).toHaveCount(2);
+  });
+});
+
 test.describe('パフォーマンス', () => {
   test('GPU が並び、CPU のグラフを論理プロセッサごとに分けられる', async ({ page }) => {
     await open(page, 'パフォーマンス');
@@ -257,7 +277,7 @@ test.describe('パフォーマンス', () => {
     await expect(page.getByLabel('論理プロセッサごとのグラフ')).toBeVisible();
   });
 
-  test('要約ビューでは、ナビ・検索・詳細が消えて色付きの丸の一覧だけになり、もう一度で戻る', async ({
+  test('要約ビューでは、ナビ・検索・詳細が消えて一覧だけになり、グラフは「グラフの表示」で丸と切り替わる', async ({
     page,
   }) => {
     await open(page, 'パフォーマンス');
@@ -265,6 +285,9 @@ test.describe('パフォーマンス', () => {
     await expect(list.getByRole('img').first()).toBeVisible();
     await list.click({ button: 'right' });
     await page.getByRole('menuitemcheckbox', { name: '要約ビュー(W)' }).click();
+    await expect(list.getByRole('img').first()).toBeVisible();
+    await list.click({ button: 'right' });
+    await page.getByRole('menuitemcheckbox', { name: 'グラフの表示(S)' }).click();
     await expect(list.getByRole('img')).toHaveCount(0);
     await expect(list.locator('i.dot').first()).toBeVisible();
     await expect(page.getByRole('region', { name: 'CPU の詳細' })).toHaveCount(0);
