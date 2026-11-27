@@ -3,25 +3,25 @@
 > 自動生成です。手で編集せず `npm run docs:tests` で更新してください。
 > 種類の決め方は [02-tags.md](02-tags.md) を参照。
 
-合計 **1072** 件
+合計 **1077** 件
 
 ## 種類 × 対象
 
 | 種類 | フロント | バック | ツール | アプリ全体 | 合計 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| 単体（同値分割） | 191 | 155 | 73 | 0 | 419 |
-| 単体（境界値） | 193 | 132 | 35 | 0 | 360 |
+| 単体（同値分割） | 193 | 155 | 73 | 0 | 421 |
+| 単体（境界値） | 195 | 132 | 35 | 0 | 362 |
 | 単体（回帰） | 12 | 24 | 10 | 0 | 46 |
 | 単体（その他） | 0 | 24 | 0 | 0 | 24 |
 | スナップショット | 24 | 1 | 0 | 0 | 25 |
-| 契約 | 31 | 14 | 0 | 0 | 45 |
+| 契約 | 32 | 14 | 0 | 0 | 46 |
 | プロパティベース | 30 | 12 | 0 | 0 | 42 |
 | ファジング | 10 | 6 | 0 | 0 | 16 |
 | 形式検証 | 0 | 21 | 0 | 0 | 21 |
 | VRT | 18 | 0 | 0 | 0 | 18 |
 | E2E（モック） | 49 | 0 | 0 | 0 | 49 |
 | E2E（実アプリ） | 0 | 0 | 0 | 7 | 7 |
-| **合計** | **558** | **389** | **118** | **7** | **1072** |
+| **合計** | **563** | **389** | **118** | **7** | **1077** |
 
 ## フロントの内訳
 
@@ -37,12 +37,12 @@
 | `src/frontend/lib/menu/menu.test.ts` | 17 | 単体（同値分割） 8 / 単体（境界値） 9 |
 | `src/frontend/lib/mock/backend.test.ts` | 6 | 単体（同値分割） 2 / 単体（境界値） 3 / 単体（回帰） 1 |
 | `src/frontend/lib/mock/system.test.ts` | 8 | 単体（同値分割） 4 / 単体（境界値） 4 |
-| `src/frontend/lib/model/contract.test.ts` | 23 | 契約 23 |
+| `src/frontend/lib/model/contract.test.ts` | 24 | 契約 24 |
 | `src/frontend/lib/model/guards.test.ts` | 24 | 単体（同値分割） 6 / 単体（境界値） 10 / 契約 8 |
 | `src/frontend/lib/model/wire.test.ts` | 7 | 単体（同値分割） 4 / 単体（境界値） 2 / プロパティベース 1 |
 | `src/frontend/lib/performance/resources.test.ts` | 23 | 単体（同値分割） 10 / 単体（境界値） 10 / 単体（回帰） 2 / スナップショット 1 |
 | `src/frontend/lib/process/process.property.test.ts` | 8 | プロパティベース 8 |
-| `src/frontend/lib/process/process.test.ts` | 39 | 単体（同値分割） 21 / 単体（境界値） 16 / プロパティベース 2 |
+| `src/frontend/lib/process/process.test.ts` | 42 | 単体（同値分割） 23 / 単体（境界値） 17 / プロパティベース 2 |
 | `src/frontend/lib/process/processColumns.test.ts` | 20 | 単体（同値分割） 12 / 単体（境界値） 7 / プロパティベース 1 |
 | `src/frontend/lib/process/processTable.test.ts` | 4 | 単体（同値分割） 2 / 単体（境界値） 2 |
 | `src/frontend/lib/process/tree.test.ts` | 5 | 単体（同値分割） 2 / 単体（境界値） 3 |
@@ -55,7 +55,7 @@
 | `src/frontend/lib/state/icons.test.ts` | 8 | 単体（同値分割） 3 / 単体（境界値） 5 |
 | `src/frontend/lib/state/monitor.test.ts` | 6 | 単体（同値分割） 2 / 単体（境界値） 1 / 単体（回帰） 3 |
 | `src/frontend/lib/state/newStates.test.ts` | 13 | 単体（同値分割） 8 / 単体（境界値） 5 |
-| `src/frontend/lib/state/processActions.test.ts` | 20 | 単体（同値分割） 12 / 単体（境界値） 7 / 単体（回帰） 1 |
+| `src/frontend/lib/state/processActions.test.ts` | 21 | 単体（同値分割） 12 / 単体（境界値） 8 / 単体（回帰） 1 |
 | `src/frontend/lib/table/progressive.test.ts` | 7 | 単体（同値分割） 3 / 単体（境界値） 2 / プロパティベース 2 |
 | `src/frontend/lib/table/table.test.ts` | 8 | 単体（同値分割） 5 / 単体（境界値） 2 / プロパティベース 1 |
 | `src/frontend/lib/table/widths.property.test.ts` | 6 | プロパティベース 6 |
