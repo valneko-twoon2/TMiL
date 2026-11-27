@@ -344,7 +344,7 @@ describe('画面部品', () => {
       ];
       const props = {
         label: '表',
-        table: 'test',
+        table: 'test' as const,
         columns,
         rows: [{ name: 'System' }],
         rowKey: name,

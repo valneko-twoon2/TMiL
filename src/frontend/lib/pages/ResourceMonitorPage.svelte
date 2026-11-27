@@ -44,6 +44,7 @@
   import type { ResourceMonitorState } from '../state/resmon.svelte';
   import type { ServiceList } from '../state/services.svelte';
   import type { SettingsStore } from '../state/settings.svelte';
+  import type { TableName } from '../table/widths';
 
   interface Props {
     monitor: Monitor;
@@ -261,7 +262,7 @@
 
 {#snippet processTable(
   label: string,
-  table: string,
+  table: TableName,
   cols: typeof cpuColumns,
   rows: ProcessInfo[],
   testid: string,

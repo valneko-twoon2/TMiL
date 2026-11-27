@@ -4,7 +4,7 @@ const MAX_ENTRIES = 100;
 const KEY_PATTERN = /^[a-z]+\.[A-Za-z0-9]+$/;
 
 export type ColumnWidths = Record<string, number>;
-export type TableName = string;
+export type TableName = Lowercase<string>;
 
 export const DEFAULT_WIDTHS: Record<string, Record<string, number> | undefined> = {
   processes: {

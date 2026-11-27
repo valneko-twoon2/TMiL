@@ -12,14 +12,15 @@
     sortRowsPinned,
     type TableColumn,
   } from '../table/table';
+  import type { TableName } from '../table/widths';
   import ProcessIcon from './ProcessIcon.svelte';
   import SortHeader from './SortHeader.svelte';
 
   interface Props {
     /** 表の名前（読み上げ用） */
     label: string;
-    /** 列の幅を保存するときの名前（英小文字だけ） */
-    table: string;
+    /** 列の幅を保存するときの名前 */
+    table: TableName;
     columns: readonly TableColumn<T>[];
     rows: readonly T[];
     rowKey: (row: T) => string;
