@@ -6,11 +6,12 @@
 use taskmanagerlite_core::backend::{Backend, set_replacement_for_exe};
 use taskmanagerlite_core::icons::{self, IconCache};
 use taskmanagerlite_core::model::{
-    AppWindow, Connection, KillResult, KillTarget, ModuleInfo, Priority, ProcessControls,
-    ProcessIcon, ReplacementStatus, ServiceAction, ServiceInfo, Snapshot, StartupEntry, SystemInfo,
+    AppWindow, Connection, HandleInfo, KillResult, KillTarget, ModuleInfo, Priority,
+    ProcessControls, ProcessIcon, ReplacementStatus, ServiceAction, ServiceInfo, Snapshot,
+    StartupEntry, SystemInfo,
 };
 use taskmanagerlite_core::{
-    connections, launch, modules, open, services, startup, taskmgr, windows_list,
+    connections, handles, launch, modules, open, services, startup, taskmgr, windows_list,
 };
 use tauri::{AppHandle, Manager};
 
@@ -213,6 +214,12 @@ pub(crate) async fn network_connections() -> Result<Vec<Connection>, String> {
 #[tauri::command]
 pub(crate) async fn process_modules(pid: u32) -> Result<Vec<ModuleInfo>, String> {
     detached(move || modules::list(pid)).await?
+}
+
+/// ファイルやフォルダーを開いているプロセス（読むだけ）。
+#[tauri::command]
+pub(crate) async fn find_handles(query: String) -> Result<Vec<HandleInfo>, String> {
+    detached(move || handles::find(&query)).await?
 }
 
 /// ウィンドウを常に手前に出すかを切り替える。

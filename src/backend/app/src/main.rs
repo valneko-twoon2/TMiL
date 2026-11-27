@@ -52,6 +52,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             commands::open_services_tool,
             commands::network_connections,
             commands::process_modules,
+            commands::find_handles,
             commands::set_always_on_top,
         ])
         .setup(|app| {

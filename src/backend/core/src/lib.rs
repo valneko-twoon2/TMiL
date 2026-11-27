@@ -5,6 +5,7 @@ pub mod base64;
 pub mod collector;
 pub mod connections;
 pub mod gpu;
+pub mod handles;
 pub mod icons;
 pub mod launch;
 pub mod machine;

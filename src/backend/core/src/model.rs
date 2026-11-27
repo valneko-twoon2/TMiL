@@ -409,6 +409,15 @@ pub struct ModuleInfo {
     pub version: Option<String>,
 }
 
+/// ファイルなどを開いているプロセス 1 つ分（リソース モニターの「関連付けられたハンドル」）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HandleInfo {
+    pub pid: u32,
+    /// 開いているものの場所（Linux ではソケットなども含む）
+    pub path: String,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

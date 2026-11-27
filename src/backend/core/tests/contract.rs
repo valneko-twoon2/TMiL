@@ -13,10 +13,11 @@ mod contract {
 
     use serde::Serialize;
     use taskmanagerlite_core::model::{
-        AppWindow, Connection, CpuStats, DiskKind, DiskStats, GpuStats, KillResult, KillTarget,
-        MemoryStats, ModuleInfo, NetworkStats, Priority, ProcessControls, ProcessIcon, ProcessInfo,
-        ProcessState, Protocol, ReplacementStatus, ServiceAction, ServiceInfo, ServiceStartType,
-        ServiceStatus, Snapshot, StartupEntry, StartupLocation, SystemInfo, TcpState,
+        AppWindow, Connection, CpuStats, DiskKind, DiskStats, GpuStats, HandleInfo, KillResult,
+        KillTarget, MemoryStats, ModuleInfo, NetworkStats, Priority, ProcessControls, ProcessIcon,
+        ProcessInfo, ProcessState, Protocol, ReplacementStatus, ServiceAction, ServiceInfo,
+        ServiceStartType, ServiceStatus, Snapshot, StartupEntry, StartupLocation, SystemInfo,
+        TcpState,
     };
 
     fn fixtures_dir() -> PathBuf {
@@ -405,6 +406,23 @@ mod contract {
                     name: "libc.so.6".to_owned(),
                     path: "/usr/lib/libc.so.6".to_owned(),
                     version: None,
+                },
+            ],
+        );
+    }
+
+    #[test]
+    fn handles() {
+        check(
+            "handles",
+            &vec![
+                HandleInfo {
+                    pid: 4120,
+                    path: r"C:\Users\me\report.docx".to_owned(),
+                },
+                HandleInfo {
+                    pid: 812,
+                    path: "/home/me/report.txt".to_owned(),
                 },
             ],
         );
