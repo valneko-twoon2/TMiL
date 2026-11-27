@@ -63,3 +63,19 @@ export function formatBits(bytesPerSec: number): string {
   }
   return unit === 0 ? `${String(Math.round(value))} bps` : `${value.toFixed(1)} ${units[unit] ?? 'bps'}`;
 }
+
+/** CPU 時間を「時:分:秒」で表す（本家の詳細タブと同じ。例: 3723000 → "1:02:03"）。 */
+export function formatCpuTime(totalMs: number): string {
+  const secs = Math.max(0, Math.floor(Number.isFinite(totalMs) ? totalMs / 1000 : 0));
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${String(h)}:${pad(m)}:${pad(s)}`;
+}
+
+/** 数を 3 桁ごとに区切る（例: 12345 → "12,345"）。null は空。 */
+export function formatCount(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '';
+  return Math.round(value).toLocaleString('en-US');
+}

@@ -11,10 +11,9 @@ import {
   parseWidths,
   widthOf,
   withWidth,
-  type TableName,
 } from './widths';
 
-const tableArb = fc.constantFrom(...(Object.keys(DEFAULT_WIDTHS) as TableName[]));
+const tableArb = fc.constantFrom(...Object.keys(DEFAULT_WIDTHS));
 const anyNumber = fc.oneof(fc.double(), fc.integer(), fc.constantFrom(Number.NaN, Infinity, -Infinity));
 
 describe('列の幅・メニュー・設定', () => {

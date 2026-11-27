@@ -31,9 +31,21 @@
     query: string;
     /** 開いたときに選んでおくプロセス（プロセス タブの「詳細の表示に移動」） */
     focusPid?: number | null;
+    /** 「サービスに移動」でサービス タブを開く */
+    ongotoservices?: (pid: number) => void;
   }
 
-  const { monitor, settings, icons, menus, processActions, query, focusPid = null }: Props = $props();
+  const {
+    monitor,
+    settings,
+    icons,
+    menus,
+    processActions,
+    query,
+    focusPid = null,
+    ongotoservices,
+  }: Props = $props();
+  const describe = (exe: string) => icons.description(exe);
 
   let sort = $state<SortState<DetailColumn>>({ key: 'name', direction: 'asc' });
   let selected = $state<number | null>(untrack(() => focusPid));
@@ -45,7 +57,9 @@
     columns.includes(sort.key) ? sort : { key: REQUIRED_DETAIL_COLUMN, direction: 'asc' },
   );
   const rows = $derived(
-    sortBy(filterProcesses(monitor.snapshot?.processes ?? [], query), activeSort, detailValue),
+    sortBy(filterProcesses(monitor.snapshot?.processes ?? [], query), activeSort, (p, key) =>
+      detailValue(p, key, describe),
+    ),
   );
   const target = $derived(rows.find((r) => r.pid === selected));
 
@@ -91,6 +105,17 @@
     >
       <Icon name="endTask" />
       タスクを終了する
+    </button>
+    <button
+      type="button"
+      class="command"
+      disabled={target === undefined || processActions.busy}
+      onclick={() => {
+        if (target) processActions.toggleEfficiency([target]);
+      }}
+    >
+      <Icon name="leaf" />
+      効率モード
     </button>
   {/snippet}
 </PageHeader>
@@ -142,6 +167,10 @@
               onend: () => {
                 void endTask();
               },
+              after: ongotoservices ? [{ id: 'services', label: 'サービスに移動', key: 'S' }] : [],
+              onextra: (id) => {
+                if (id === 'services') ongotoservices?.(p.pid);
+              },
             });
           }}
           data-testid="detail-row"
@@ -155,8 +184,9 @@
                   <span class="text">{p.name}</span>
                 </span>
               </td>
-            {:else if column === 'command' || column === 'exe'}
-              <td class="long" title={detailText(p, column)}>{detailText(p, column)}</td>
+            {:else if column === 'command' || column === 'exe' || column === 'description'}
+              {@const text = detailText(p, column, describe)}
+              <td class="long" title={text}>{text}</td>
             {:else}
               <td class:num={DETAIL_NUMERIC.includes(column)}>{detailText(p, column)}</td>
             {/if}

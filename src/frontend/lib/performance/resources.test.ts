@@ -9,9 +9,18 @@ const info = systemInfoFixture();
 
 describe('buildResources', () => {
   describe('equivalence', () => {
-    it('CPU・メモリ・ディスク・ネットワークの順に並べる', () => {
+    it('CPU・メモリ・ディスク・GPU・ネットワークの順に並べる', () => {
       const list = buildResources(snapshot, recordSnapshot(EMPTY_HISTORY, snapshot), info);
-      expect(list.map((r) => r.kind)).toEqual(['cpu', 'memory', 'disk', 'disk', 'disk', 'network']);
+      expect(list.map((r) => r.kind)).toEqual([
+        'cpu',
+        'memory',
+        'disk',
+        'disk',
+        'disk',
+        'gpu',
+        'gpu',
+        'network',
+      ]);
       expect(list[0]?.caption).toBe('Example CPU');
       expect(list[0]?.series[0]?.values).toEqual([25.5]);
       expect(list[2]?.title).toBe('ディスク 0 (/)');

@@ -1,25 +1,16 @@
 // プロセス表・詳細表の列定義と選択状態。
-import { formatBytes, formatDateTime, formatPercent, formatRate, formatUptime } from '../format/format';
+import {
+  formatBytes,
+  formatCount,
+  formatCpuTime,
+  formatDateTime,
+  formatPercent,
+  formatRate,
+  formatUptime,
+} from '../format/format';
 import { processStateLabel } from '../format/labels';
 import type { KillTarget, ProcessInfo } from '../model/types';
 import type { ProcessGroup } from './process';
-
-export type GroupColumn = 'name' | 'cpu' | 'memory' | 'disk';
-export const GROUP_NUMERIC: readonly GroupColumn[] = ['cpu', 'memory', 'disk'];
-
-/** プロセス タブの並べ替えに使う値。 */
-export function groupValue(group: ProcessGroup, column: GroupColumn): string | number {
-  switch (column) {
-    case 'name':
-      return group.name;
-    case 'cpu':
-      return group.cpu;
-    case 'memory':
-      return group.memory;
-    case 'disk':
-      return group.diskPerSec;
-  }
-}
 
 /** 詳細タブで選べる列（この順に並ぶ）。名前は外せない。 */
 export const DETAIL_COLUMNS = [
@@ -35,8 +26,18 @@ export const DETAIL_COLUMNS = [
   { key: 'parentPid', label: '親 PID', numeric: true },
   { key: 'runTime', label: '稼働時間', numeric: true },
   { key: 'startTime', label: '開始時刻', numeric: true },
+  { key: 'cpuTime', label: 'CPU 時間', numeric: true },
+  { key: 'commit', label: 'コミット サイズ', numeric: true },
+  { key: 'handles', label: 'ハンドル', numeric: true },
+  { key: 'threads', label: 'スレッド', numeric: true },
+  { key: 'sessionId', label: 'セッション ID', numeric: true },
+  { key: 'ioRead', label: 'I/O 読み取りバイト', numeric: true },
+  { key: 'ioWrite', label: 'I/O 書き込みバイト', numeric: true },
+  { key: 'gpu', label: 'GPU', numeric: true },
+  { key: 'gpuMemory', label: 'GPU メモリ', numeric: true },
   { key: 'exe', label: 'イメージ パス名', numeric: false },
   { key: 'command', label: 'コマンドライン', numeric: false },
+  { key: 'description', label: '説明', numeric: false },
 ] as const;
 
 export type DetailColumn = (typeof DETAIL_COLUMNS)[number]['key'];
@@ -53,8 +54,7 @@ export const DEFAULT_DETAIL_COLUMNS: readonly DetailColumn[] = [
   'user',
   'cpu',
   'memory',
-  'disk',
-  'command',
+  'description',
 ];
 
 /** 列の見出し。 */
@@ -62,10 +62,15 @@ export function detailLabel(column: DetailColumn): string {
   return DETAIL_COLUMNS.find((c) => c.key === column)?.label ?? column;
 }
 
+/** 実行ファイルの説明を引く関数（分からなければ空）。 */
+type Describe = (exe: string) => string;
+
+const optional = (v: number | null) => v ?? -1;
+
 /** 列ごとの、並べ替えに使う値と、セルに出す文字。 */
 const DETAIL_CELLS: Record<
   DetailColumn,
-  { value: (p: ProcessInfo) => string | number; text?: (p: ProcessInfo) => string }
+  { value: (p: ProcessInfo, describe: Describe) => string | number; text?: (p: ProcessInfo) => string }
 > = {
   name: { value: (p) => p.name },
   pid: { value: (p) => p.pid },
@@ -86,19 +91,45 @@ const DETAIL_CELLS: Record<
   },
   runTime: { value: (p) => p.runTimeSecs, text: (p) => formatUptime(p.runTimeSecs) },
   startTime: { value: (p) => p.startTime, text: (p) => formatDateTime(p.startTime) },
+  cpuTime: { value: (p) => p.cpuTimeMs, text: (p) => formatCpuTime(p.cpuTimeMs) },
+  commit: { value: (p) => p.virtualMemory, text: (p) => formatBytes(p.virtualMemory) },
+  handles: { value: (p) => optional(p.handles), text: (p) => formatCount(p.handles) },
+  threads: { value: (p) => optional(p.threads), text: (p) => formatCount(p.threads) },
+  sessionId: {
+    value: (p) => optional(p.sessionId),
+    text: (p) => (p.sessionId === null ? '' : String(p.sessionId)),
+  },
+  ioRead: { value: (p) => p.diskReadTotal, text: (p) => formatBytes(p.diskReadTotal) },
+  ioWrite: { value: (p) => p.diskWrittenTotal, text: (p) => formatBytes(p.diskWrittenTotal) },
+  gpu: { value: (p) => optional(p.gpu), text: (p) => (p.gpu === null ? '' : formatPercent(p.gpu)) },
+  gpuMemory: {
+    value: (p) => optional(p.gpuMemory),
+    text: (p) => (p.gpuMemory === null ? '' : formatBytes(p.gpuMemory)),
+  },
   exe: { value: (p) => p.exe },
   command: { value: (p) => p.command },
+  description: { value: (p, describe) => describe(p.exe) },
 };
 
+const NO_DESCRIPTION: Describe = () => '';
+
 /** 詳細タブの並べ替えに使う値。 */
-export function detailValue(p: ProcessInfo, column: DetailColumn): string | number {
-  return DETAIL_CELLS[column].value(p);
+export function detailValue(
+  p: ProcessInfo,
+  column: DetailColumn,
+  describe: Describe = NO_DESCRIPTION,
+): string | number {
+  return DETAIL_CELLS[column].value(p, describe);
 }
 
 /** 詳細タブのセルに出す文字。 */
-export function detailText(p: ProcessInfo, column: DetailColumn): string {
+export function detailText(
+  p: ProcessInfo,
+  column: DetailColumn,
+  describe: Describe = NO_DESCRIPTION,
+): string {
   const cell = DETAIL_CELLS[column];
-  return cell.text ? cell.text(p) : String(cell.value(p));
+  return cell.text ? cell.text(p) : String(cell.value(p, describe));
 }
 
 /**

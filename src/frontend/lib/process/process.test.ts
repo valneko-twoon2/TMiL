@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { groupValue, PROCESS_NUMERIC } from './processColumns';
 import { PROCESS_EXTRAS } from '../../test/fixtures';
 import type { ProcessInfo } from '../model/types';
 import {
@@ -10,8 +11,6 @@ import {
   detailValue,
   normalizeDetailColumns,
   toggleDetailColumn,
-  GROUP_NUMERIC,
-  groupValue,
   selectedTargets,
   toKillTarget,
 } from './columns';
@@ -96,16 +95,16 @@ describe('filterProcesses', () => {
 describe('nextSort / sortBy', () => {
   describe('equivalence', () => {
     it('同じ列なら向きを反転する', () => {
-      expect(nextSort({ key: 'cpu', direction: 'desc' }, 'cpu', GROUP_NUMERIC)).toEqual({
+      expect(nextSort({ key: 'cpu', direction: 'desc' }, 'cpu', PROCESS_NUMERIC)).toEqual({
         key: 'cpu',
         direction: 'asc',
       });
-      expect(nextSort({ key: 'cpu', direction: 'asc' }, 'cpu', GROUP_NUMERIC).direction).toBe('desc');
+      expect(nextSort({ key: 'cpu', direction: 'asc' }, 'cpu', PROCESS_NUMERIC).direction).toBe('desc');
     });
 
     it('数値の列は降順、文字の列は昇順から始める', () => {
-      expect(nextSort({ key: 'name', direction: 'asc' }, 'memory', GROUP_NUMERIC).direction).toBe('desc');
-      expect(nextSort({ key: 'cpu', direction: 'asc' }, 'name', GROUP_NUMERIC).direction).toBe('asc');
+      expect(nextSort({ key: 'name', direction: 'asc' }, 'memory', PROCESS_NUMERIC).direction).toBe('desc');
+      expect(nextSort({ key: 'cpu', direction: 'asc' }, 'name', PROCESS_NUMERIC).direction).toBe('asc');
     });
 
     it('数値と文字列を並べ替える', () => {
@@ -163,7 +162,19 @@ describe('columns', () => {
         ['parentPid', -1],
         ['runTime', 0],
         ['startTime', 1007],
+        ['cpuTime', 0],
+        ['commit', 0],
+        // 取れない値（null）は、並べ替えで先頭に来るよう -1 にする
+        ['handles', -1],
+        ['threads', -1],
+        ['sessionId', -1],
+        ['ioRead', 0],
+        ['ioWrite', 0],
+        ['gpu', -1],
+        ['gpuMemory', -1],
       ]);
+      expect(detailValue(p, 'description')).toBe('');
+      expect(detailValue(p, 'description', () => 'アプリ A')).toBe('アプリ A');
       expect(detailValue(p, 'exe')).toBe(p.exe);
       expect(detailValue(p, 'name')).toBe('a.exe');
       expect(detailValue(p, 'state')).toBe('stopped');
@@ -196,10 +207,18 @@ describe('columns', () => {
     it('プロセス タブの各列の値', () => {
       const [g] = groupProcesses([p]);
       if (!g) throw new Error('group');
-      expect(groupValue(g, 'name')).toBe('a');
-      expect(groupValue(g, 'cpu')).toBe(3);
-      expect(groupValue(g, 'memory')).toBe(9);
-      expect(groupValue(g, 'disk')).toBe(15);
+      const ctx = {
+        kind: () => 'background' as const,
+        windows: true,
+        description: () => '',
+        company: () => '',
+        marks: () => ({ efficient: false, suspended: false }),
+        memoryTotal: 100,
+      };
+      expect(groupValue(g, 'name', ctx)).toBe('a');
+      expect(groupValue(g, 'cpu', ctx)).toBe(3);
+      expect(groupValue(g, 'memory', ctx)).toBe(9);
+      expect(groupValue(g, 'disk', ctx)).toBe(15);
     });
 
     it('選択から終了対象を求める（起動時刻つき）', () => {
@@ -254,7 +273,7 @@ describe('プロセスの一覧（細部）', () => {
 
     it('プロセス タブの数値の列は大きい順から並べる', () => {
       for (const key of ['cpu', 'memory', 'disk'] as const) {
-        expect(nextSort({ key: 'name', direction: 'asc' }, key, GROUP_NUMERIC).direction).toBe('desc');
+        expect(nextSort({ key: 'name', direction: 'asc' }, key, PROCESS_NUMERIC).direction).toBe('desc');
       }
     });
 

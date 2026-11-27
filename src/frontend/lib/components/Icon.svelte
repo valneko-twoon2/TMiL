@@ -16,6 +16,17 @@
     refresh: 'M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7',
     close: 'M6 6l12 12M18 6L6 18',
     app: 'M4 5h16v14H4zM4 9h16M7 7h.01',
+    history: 'M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2',
+    users:
+      'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.1a4 4 0 0 1 0 7.8M22 21a7 7 0 0 0-4.5-6.5',
+    services: 'M4 7h3a2 2 0 1 1 4 0h3v3a2 2 0 1 1 0 4v3h-3a2 2 0 1 0-4 0H4v-3a2 2 0 1 0 0-4z',
+    resmon: 'M3 4h18v12H3zM8 20h8M12 16v4M6 11h3l2-3 2 5 2-2h3',
+    run: 'M4 5h16v14H4zM4 9h16M10 12l4 2-4 2z',
+    leaf: 'M5 19c8 0 14-6 14-14-8 0-14 6-14 14zM5 19l7-7',
+    view: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+    play: 'M7 5l12 7-12 7z',
+    stop: 'M7 7h10v10H7z',
+    copy: 'M9 9h11v11H9zM5 15H4V4h11v1',
   } as const;
 
   export type IconName = keyof typeof ICONS;

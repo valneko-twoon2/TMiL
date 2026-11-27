@@ -1,17 +1,37 @@
 <script lang="ts">
   import LineChart from '../components/LineChart.svelte';
   import PageHeader from '../components/PageHeader.svelte';
-  import { buildResources, historySpanLabel, resourceStats } from '../performance/resources';
+  import { shareOf } from '../format/heat';
+  import { historyKey } from '../history/history';
+  import { SEPARATOR, type MenuEntry } from '../menu/menu';
+  import {
+    buildResources,
+    historySpanLabel,
+    memoryParts,
+    RESOURCE_COLORS,
+    resourceStats,
+    statsText,
+  } from '../performance/resources';
+  import type { ContextMenus } from '../state/menus.svelte';
   import type { Monitor } from '../state/monitor.svelte';
+  import type { Toasts } from '../state/toast.svelte';
 
   interface Props {
     monitor: Monitor;
     /** 更新間隔（ミリ秒）。グラフの横軸の長さに使う */
     intervalMs: number;
+    menus?: ContextMenus;
+    toasts?: Toasts;
+    /** 「リソース モニターを開く」 */
+    onopenresmon?: () => void;
   }
 
-  const { monitor, intervalMs }: Props = $props();
+  const { monitor, intervalMs, menus, toasts, onopenresmon }: Props = $props();
   let selectedId = $state('cpu');
+  /** CPU のグラフを論理プロセッサごとに分けるか */
+  let perCore = $state(false);
+  /** 概要表示（左の一覧だけを出す） */
+  let summary = $state(false);
 
   const resources = $derived(
     monitor.snapshot ? buildResources(monitor.snapshot, monitor.history, monitor.systemInfo) : [],
@@ -20,11 +40,51 @@
   const stats = $derived(
     current && monitor.snapshot ? resourceStats(current, monitor.snapshot, monitor.systemInfo) : [],
   );
+  const cores = $derived(monitor.snapshot?.cpu.perCore ?? []);
+  const memory = $derived(monitor.snapshot?.memory);
+
+  async function copy() {
+    if (!current) return;
+    try {
+      await navigator.clipboard.writeText(statsText(current, stats));
+      toasts?.show('コピーしました。');
+    } catch {
+      toasts?.show('コピーできませんでした。', 'error');
+    }
+  }
+
+  function openMenu(event: MouseEvent) {
+    if (!menus || !current) return;
+    const entries: MenuEntry[] = [
+      ...(current.kind === 'cpu'
+        ? [
+            {
+              id: 'graph',
+              label: 'グラフの変更',
+              key: 'G',
+              children: [
+                { id: 'graph:total', label: '全体の使用率', checked: !perCore },
+                { id: 'graph:cores', label: '論理プロセッサ', checked: perCore },
+              ],
+            },
+          ]
+        : []),
+      { id: 'summary', label: '概要表示', key: 'S', checked: summary },
+      SEPARATOR,
+      { id: 'copy', label: 'コピー', key: 'C' },
+    ];
+    menus.open(event, 'パフォーマンス', entries, (id) => {
+      if (id === 'graph:total') perCore = false;
+      else if (id === 'graph:cores') perCore = true;
+      else if (id === 'summary') summary = !summary;
+      else if (id === 'copy') void copy();
+    });
+  }
 </script>
 
 <PageHeader title="パフォーマンス" />
 
-<div class="layout">
+<div class="layout" class:summary oncontextmenu={openMenu} role="presentation">
   <ul class="list" aria-label="リソース">
     {#each resources as r (r.id)}
       <li>
@@ -56,7 +116,7 @@
     {/each}
   </ul>
 
-  {#if current}
+  {#if current && !summary}
     <section class="detail" aria-label="{current.title} の詳細">
       <div class="detail-head">
         <h2>{current.title}</h2>
@@ -70,9 +130,42 @@
           {/each}
         </span>
       </div>
-      <div class="big-chart">
-        <LineChart series={current.series} max={current.max} label="{current.title} のグラフ" />
-      </div>
+      {#if current.kind === 'cpu' && perCore}
+        <div class="cores" aria-label="論理プロセッサごとのグラフ">
+          {#each cores.map((_, i) => i) as i (i)}
+            <div class="core">
+              <LineChart
+                series={[
+                  {
+                    label: `CPU ${String(i)}`,
+                    values: monitor.history.get(historyKey.core(i)) ?? [],
+                    color: RESOURCE_COLORS.cpu,
+                  },
+                ]}
+                max={100}
+                grid={false}
+                label="CPU {i} のグラフ"
+              />
+            </div>
+          {/each}
+        </div>
+      {:else}
+        <div class="big-chart">
+          <LineChart series={current.series} max={current.max} label="{current.title} のグラフ" />
+        </div>
+      {/if}
+      {#if current.kind === 'memory' && memory}
+        <div class="composition" aria-label="メモリの構成">
+          {#each memoryParts(memory) as part (part.label)}
+            <span
+              class="part"
+              style:width="{shareOf(part.bytes, memory.total)}%"
+              style:background={part.color}
+              title={part.label}
+            ></span>
+          {/each}
+        </div>
+      {/if}
       <div class="axis bottom"><span>{historySpanLabel(intervalMs)}</span><span>0</span></div>
       <dl class="stats">
         {#each stats as s (s.label)}
@@ -82,11 +175,50 @@
           </div>
         {/each}
       </dl>
+      {#if onopenresmon}
+        <button type="button" class="link" onclick={onopenresmon}>リソース モニターを開く</button>
+      {/if}
     </section>
   {/if}
 </div>
 
 <style>
+  .layout.summary {
+    grid-template-columns: 250px;
+  }
+  .cores {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .core {
+    height: 70px;
+    border: 1px solid var(--border);
+  }
+  .composition {
+    display: flex;
+    height: 22px;
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .part {
+    display: block;
+    height: 100%;
+    border-right: 1px solid var(--border);
+  }
+  .link {
+    align-self: flex-start;
+    margin-top: 16px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    cursor: pointer;
+  }
   .layout {
     display: grid;
     grid-template-columns: 250px 1fr;

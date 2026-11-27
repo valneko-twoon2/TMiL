@@ -27,7 +27,7 @@
 
   const { api, toasts, icons, menus, settings, query }: Props = $props();
 
-  const COLUMNS = ['name', 'program', 'location', 'enabled'] as const;
+  const COLUMNS = ['name', 'publisher', 'program', 'location', 'enabled'] as const;
   const sizer = untrack(() => new ColumnSizer(settings, 'startup'));
   const resizer = (column: string) => (width: number | null, done: boolean) => {
     sizer.resize(column, width, done);
@@ -38,7 +38,10 @@
   let sort = $state<SortState<StartupColumn>>({ key: 'name', direction: 'asc' });
   let busy = $state(false);
 
-  const rows = $derived(sortBy(filterStartup(entries ?? [], query), sort, startupValue));
+  const company = (exe: string) => icons.company(exe);
+  const rows = $derived(
+    sortBy(filterStartup(entries ?? [], query), sort, (e, column) => startupValue(e, column, company)),
+  );
   const selected = $derived(rows.find((e) => e.id === selectedId) ?? null);
 
   function onsort(key: StartupColumn) {
@@ -142,7 +145,7 @@
     </colgroup>
     <thead>
       <tr>
-        {#each [['name', '名前'], ['program', 'プログラム'], ['location', '場所'], ['enabled', '状態']] as const as [key, label] (key)}
+        {#each [['name', '名前'], ['publisher', '発行元'], ['program', 'プログラム'], ['location', '場所'], ['enabled', '状態']] as const as [key, label] (key)}
           <SortHeader {key} {label} {sort} {onsort} width={sizer.width(key)} onresize={resizer(key)} />
         {/each}
         <th class="filler"></th>
@@ -167,6 +170,7 @@
               <ProcessIcon src={icons.get(e.program)} /><span class="text">{e.name}</span>
             </span>
           </td>
+          <td class="program">{company(e.program)}</td>
           <td class="program" title={e.command}>{e.program}</td>
           <td>{startupLocationLabel(e.location)}</td>
           <td class:disabled-text={!e.enabled}>{e.enabled ? '有効' : '無効'}</td>
@@ -174,7 +178,7 @@
         </tr>
       {:else}
         <tr>
-          <td colspan="5" class="empty">{entries ? 'スタートアップ アプリはありません' : '読み込み中…'}</td>
+          <td colspan="6" class="empty">{entries ? 'スタートアップ アプリはありません' : '読み込み中…'}</td>
         </tr>
       {/each}
     </tbody>

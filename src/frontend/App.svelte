@@ -3,21 +3,32 @@
   import { onMount, untrack } from 'svelte';
   import type { Api } from './lib/api/ipc';
   import ContextMenuHost from './lib/components/ContextMenuHost.svelte';
-  import ProcessDialogs from './lib/components/ProcessDialogs.svelte';
   import Icon from './lib/components/Icon.svelte';
   import NavRail from './lib/components/NavRail.svelte';
+  import ProcessDialogs from './lib/components/ProcessDialogs.svelte';
+  import RunTaskDialog from './lib/components/RunTaskDialog.svelte';
   import ToastHost from './lib/components/ToastHost.svelte';
+  import { allowsNativeMenu } from './lib/menu/menu';
+  import AppHistoryPage from './lib/pages/AppHistoryPage.svelte';
   import DetailsPage from './lib/pages/DetailsPage.svelte';
   import PerformancePage from './lib/pages/PerformancePage.svelte';
   import ProcessesPage from './lib/pages/ProcessesPage.svelte';
+  import ResourceMonitorPage from './lib/pages/ResourceMonitorPage.svelte';
+  import ServicesPage from './lib/pages/ServicesPage.svelte';
   import SettingsPage from './lib/pages/SettingsPage.svelte';
   import StartupPage from './lib/pages/StartupPage.svelte';
-  import { allowsNativeMenu } from './lib/menu/menu';
+  import UsersPage from './lib/pages/UsersPage.svelte';
   import { intervalOf, type Page } from './lib/settings/settings';
+  import { shortcutOf } from './lib/shortcuts/shortcuts';
+  import type { AppHistoryStore } from './lib/state/appHistory.svelte';
+  import type { AppWindows } from './lib/state/appWindows.svelte';
   import type { IconStore } from './lib/state/icons.svelte';
   import type { ContextMenus } from './lib/state/menus.svelte';
-  import type { ProcessActions } from './lib/state/processActions.svelte';
   import type { Monitor } from './lib/state/monitor.svelte';
+  import type { ProcessActions } from './lib/state/processActions.svelte';
+  import type { ResourceMonitorState } from './lib/state/resmon.svelte';
+  import { provideRunTask, type RunTask } from './lib/state/runTask.svelte';
+  import type { ServiceList } from './lib/state/services.svelte';
   import type { SettingsStore } from './lib/state/settings.svelte';
   import type { Toasts } from './lib/state/toast.svelte';
 
@@ -29,22 +40,47 @@
     icons: IconStore;
     menus: ContextMenus;
     processActions: ProcessActions;
+    services: ServiceList;
+    appWindows: AppWindows;
+    appHistory: AppHistoryStore;
+    runTask: RunTask;
+    resmon: ResourceMonitorState;
   }
 
-  const { api, settings, monitor, toasts, icons, menus, processActions }: Props = $props();
+  const {
+    api,
+    settings,
+    monitor,
+    toasts,
+    icons,
+    menus,
+    processActions,
+    services,
+    appWindows,
+    appHistory,
+    runTask,
+    resmon,
+  }: Props = $props();
+
+  provideRunTask(untrack(() => runTask));
 
   // 起動時だけ既定のページを使う（設定を変えても今の画面は動かさない）
   let page = $state<Page>(untrack(() => settings.value.startPage));
   let navExpanded = $state(false);
   let query = $state('');
-  /** 詳細タブで選んでおくプロセス（プロセス タブから移ってきたとき） */
+  let search = $state<HTMLInputElement | null>(null);
+  /** 詳細タブで選んでおくプロセス（ほかのタブから移ってきたとき） */
   let detailsFocus = $state<number | null>(null);
+  /** サービス タブで絞り込む PID（詳細タブの「サービスに移動」） */
+  let servicesFocus = $state<number | null>(null);
 
-  const searchable = $derived(page === 'processes' || page === 'details' || page === 'startup');
+  const SEARCHABLE: readonly Page[] = ['processes', 'details', 'startup', 'users', 'services', 'history'];
+  const searchable = $derived(SEARCHABLE.includes(page));
 
   function onnavigate(next: Page) {
     page = next;
     detailsFocus = null;
+    servicesFocus = null;
   }
 
   function gotoDetails(pid: number) {
@@ -54,10 +90,26 @@
     page = 'details';
   }
 
+  function gotoServices(pid: number) {
+    query = '';
+    servicesFocus = pid;
+    page = 'services';
+  }
+
   // 一覧に出てきた実行ファイルのアイコンを取りに行く（覚えているものは聞かない）
   $effect(() => {
     const processes = monitor.snapshot?.processes;
     if (processes) void icons.request(processes.map((p) => p.exe));
+  });
+
+  // 計測結果が届くたびに、アプリの履歴とリソース モニターの平均を進める
+  $effect(() => {
+    const snapshot = monitor.snapshot;
+    if (!snapshot) return;
+    untrack(() => {
+      appHistory.record(snapshot);
+      resmon.record(snapshot);
+    });
   });
 
   // 間隔の値が変わったときだけ再設定する（テーマなど他の設定の変更では動かさない）
@@ -73,10 +125,28 @@
     else document.documentElement.dataset.theme = theme;
   });
 
+  const alwaysOnTop = $derived(settings.value.alwaysOnTop);
+  $effect(() => {
+    api.setAlwaysOnTop(alwaysOnTop).catch((cause: unknown) => {
+      toasts.show(cause instanceof Error ? cause.message : String(cause), 'error');
+    });
+  });
+
+  function onkeydown(event: KeyboardEvent) {
+    const action = shortcutOf(event);
+    if (action === null) return;
+    // F5 で WebView が読み込み直さないよう、こちらで受け持つ
+    event.preventDefault();
+    if (action === 'refresh') void monitor.refresh();
+    else if (action === 'search' && searchable) search?.focus();
+    else if (action === 'runTask') runTask.show();
+  }
+
   onMount(() => {
     void monitor.loadSystemInfo();
     const onVisibility = () => {
       monitor.setVisible(document.visibilityState === 'visible');
+      if (document.visibilityState === 'hidden') appHistory.save();
     };
     document.addEventListener('visibilitychange', onVisibility);
     // WebView 標準の右クリックメニュー（戻る・再読み込み・検証など）は出さない。入力欄だけは残す
@@ -86,15 +156,19 @@
     document.addEventListener('contextmenu', onContextMenu);
     const unlisten = listen<boolean>('window-visibility', (event) => {
       monitor.setVisible(event.payload);
+      if (!event.payload) appHistory.save();
     }).catch(() => undefined);
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
       document.removeEventListener('contextmenu', onContextMenu);
       void unlisten.then((stop) => stop?.());
       monitor.stop();
+      appHistory.save();
     };
   });
 </script>
+
+<svelte:window {onkeydown} />
 
 <div class="app">
   <header class="titlebar">
@@ -105,6 +179,7 @@
     <label class="search" class:disabled={!searchable}>
       <Icon name="search" size={14} />
       <input
+        bind:this={search}
         type="search"
         placeholder="名前、PID、ユーザーで検索"
         aria-label="検索"
@@ -128,13 +203,24 @@
           {icons}
           {menus}
           {processActions}
+          {appWindows}
           {query}
           ongotodetails={gotoDetails}
         />
       {:else if page === 'performance'}
-        <PerformancePage {monitor} intervalMs={interval} />
+        <PerformancePage
+          {monitor}
+          {menus}
+          {toasts}
+          intervalMs={interval}
+          onopenresmon={() => (page = 'resmon')}
+        />
+      {:else if page === 'history'}
+        <AppHistoryPage history={appHistory} {settings} {icons} {query} />
       {:else if page === 'startup'}
         <StartupPage {api} {toasts} {icons} {menus} {settings} {query} />
+      {:else if page === 'users'}
+        <UsersPage {monitor} {settings} {icons} {processActions} {query} ongotodetails={gotoDetails} />
       {:else if page === 'details'}
         {#key detailsFocus}
           <DetailsPage
@@ -145,8 +231,21 @@
             {processActions}
             {query}
             focusPid={detailsFocus}
+            ongotoservices={gotoServices}
           />
         {/key}
+      {:else if page === 'services'}
+        <ServicesPage
+          {services}
+          {settings}
+          {menus}
+          {processActions}
+          {query}
+          focusPid={servicesFocus}
+          ongotodetails={gotoDetails}
+        />
+      {:else if page === 'resmon'}
+        <ResourceMonitorPage {monitor} {settings} {icons} {menus} {processActions} {services} {resmon} />
       {:else}
         <SettingsPage {settings} {api} {toasts} />
       {/if}
@@ -155,6 +254,7 @@
   <ToastHost {toasts} />
   <ContextMenuHost {menus} />
   <ProcessDialogs actions={processActions} />
+  <RunTaskDialog {runTask} />
 </div>
 
 <style>

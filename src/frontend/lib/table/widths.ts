@@ -7,11 +7,24 @@ const MAX_ENTRIES = 100;
 const KEY_PATTERN = /^[a-z]+\.[A-Za-z0-9]+$/;
 
 export type ColumnWidths = Record<string, number>;
-export type TableName = 'processes' | 'details' | 'startup';
+/** 表の名前（英小文字だけ。保存するときの鍵の前半になる）。 */
+export type TableName = string;
 
-/** 最初の幅。 */
-export const DEFAULT_WIDTHS: Record<TableName, Record<string, number>> = {
-  processes: { name: 300, status: 90, cpu: 90, memory: 110, disk: 110 },
+/** 最初の幅（ここに無い表は、列の定義に書いた幅を使う）。 */
+export const DEFAULT_WIDTHS: Record<string, Record<string, number> | undefined> = {
+  processes: {
+    name: 300,
+    type: 130,
+    status: 90,
+    publisher: 160,
+    pid: 70,
+    processName: 140,
+    command: 300,
+    cpu: 90,
+    memory: 110,
+    disk: 110,
+    gpu: 80,
+  },
   details: {
     name: 220,
     pid: 70,
@@ -25,10 +38,20 @@ export const DEFAULT_WIDTHS: Record<TableName, Record<string, number>> = {
     parentPid: 70,
     runTime: 100,
     startTime: 160,
+    cpuTime: 90,
+    commit: 110,
+    handles: 80,
+    threads: 80,
+    sessionId: 90,
+    ioRead: 130,
+    ioWrite: 130,
+    gpu: 70,
+    gpuMemory: 100,
     exe: 280,
     command: 360,
+    description: 240,
   },
-  startup: { name: 240, program: 340, location: 200, enabled: 80 },
+  startup: { name: 240, publisher: 180, program: 340, location: 200, enabled: 80 },
 };
 
 const FALLBACK_WIDTH = 120;
@@ -39,9 +62,14 @@ export function clampWidth(width: number): number {
   return Math.round(Math.min(MAX_COLUMN_WIDTH, Math.max(MIN_COLUMN_WIDTH, width)));
 }
 
-/** 列の幅。保存されていなければ最初の幅。 */
-export function widthOf(widths: ColumnWidths, table: TableName, column: string): number {
-  return widths[`${table}.${column}`] ?? DEFAULT_WIDTHS[table][column] ?? FALLBACK_WIDTH;
+/** 列の幅。保存されていなければ最初の幅（表ごとの既定 → `fallback` の順）。 */
+export function widthOf(
+  widths: ColumnWidths,
+  table: TableName,
+  column: string,
+  fallback: number = FALLBACK_WIDTH,
+): number {
+  return widths[`${table}.${column}`] ?? DEFAULT_WIDTHS[table]?.[column] ?? fallback;
 }
 
 /** 列の幅を変えた新しい値。`null` なら最初の幅に戻す。 */

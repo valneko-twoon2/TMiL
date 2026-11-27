@@ -1,9 +1,20 @@
 // 画面部品をサーバー描画して HTML をスナップショットで固定する。
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import { snapshotFixture, startupFixture, systemInfoFixture } from '../../test/fixtures';
+import { readFixture, snapshotFixture, startupFixture, systemInfoFixture } from '../../test/fixtures';
 import { createApi, type Invoke } from '../api/ipc';
 import { EMPTY_HISTORY, recordSnapshot } from '../history/history';
+import type { ServiceInfo } from '../model/types';
+import AppHistoryPage from '../pages/AppHistoryPage.svelte';
+import ResourceMonitorPage from '../pages/ResourceMonitorPage.svelte';
+import ServicesPage from '../pages/ServicesPage.svelte';
+import UsersPage from '../pages/UsersPage.svelte';
+import { AppHistoryStore } from '../state/appHistory.svelte';
+import { AppWindows } from '../state/appWindows.svelte';
+import { ResourceMonitorState } from '../state/resmon.svelte';
+import { RunTask } from '../state/runTask.svelte';
+import { ServiceList } from '../state/services.svelte';
+import RunTaskDialog from './RunTaskDialog.svelte';
 import DetailsPage from '../pages/DetailsPage.svelte';
 import PerformancePage from '../pages/PerformancePage.svelte';
 import ProcessesPage from '../pages/ProcessesPage.svelte';
@@ -40,6 +51,14 @@ async function iconStore(exe: string | undefined): Promise<IconStore> {
 }
 
 const actionsFor = (monitor: Monitor) => new ProcessActions(api, monitor, new Toasts(), new ContextMenus());
+const noWindows = () => new AppWindows({ appWindows: () => Promise.resolve([]) });
+
+function loadedServices(): ServiceList {
+  const services = new ServiceList(api, new Toasts());
+  services.list = readFixture('services') as ServiceInfo[];
+  services.loaded = true;
+  return services;
+}
 
 const firstExe = (): string | undefined => snapshotFixture().processes[0]?.exe;
 
@@ -97,6 +116,7 @@ describe('画面部品', () => {
         icons: await iconStore(firstExe()),
         menus: new ContextMenus(),
         processActions: actionsFor(monitor),
+        appWindows: noWindows(),
         query: '',
       };
       expect(render(ProcessesPage, { props }).body).toMatchSnapshot();
@@ -110,6 +130,7 @@ describe('画面部品', () => {
         icons: await iconStore(undefined),
         menus: new ContextMenus(),
         processActions: actionsFor(monitor),
+        appWindows: noWindows(),
         query: '',
       };
       expect(render(ProcessesPage, { props }).body).toContain('読み込み中');
@@ -186,6 +207,93 @@ describe('画面部品', () => {
         query: '',
       };
       expect(render(StartupPage, { props }).body).toMatchSnapshot();
+    });
+
+    it('ユーザー', async () => {
+      const monitor = filledMonitor();
+      const props = {
+        monitor,
+        settings: new SettingsStore(undefined),
+        icons: await iconStore(firstExe()),
+        processActions: actionsFor(monitor),
+        query: '',
+      };
+      expect(render(UsersPage, { props }).body).toMatchSnapshot();
+    });
+
+    it('サービス', () => {
+      const monitor = filledMonitor();
+      const props = {
+        services: loadedServices(),
+        settings: new SettingsStore(undefined),
+        menus: new ContextMenus(),
+        processActions: actionsFor(monitor),
+        query: '',
+      };
+      expect(render(ServicesPage, { props }).body).toMatchSnapshot();
+    });
+
+    it('サービス（PID で絞り込み）', () => {
+      const monitor = filledMonitor();
+      const props = {
+        services: loadedServices(),
+        settings: new SettingsStore(undefined),
+        menus: new ContextMenus(),
+        processActions: actionsFor(monitor),
+        query: '',
+        focusPid: 100,
+      };
+      const body = render(ServicesPage, { props }).body;
+      expect(body).toContain('PID 100 のサービスだけを表示しています');
+      expect(body).toContain('svc0');
+      expect(body).not.toContain('svc1');
+    });
+
+    it('アプリの履歴', async () => {
+      const history = new AppHistoryStore(undefined, 0);
+      const snapshot = snapshotFixture();
+      history.record(snapshot);
+      const later = {
+        ...snapshot,
+        timestampMs: snapshot.timestampMs + 1000,
+        processes: snapshot.processes.map((p) => ({ ...p, cpuTimeMs: p.cpuTimeMs + 3_600_000 })),
+      };
+      history.record(later);
+      const props = {
+        history,
+        settings: new SettingsStore(undefined),
+        icons: await iconStore(undefined),
+        query: '',
+      };
+      const body = render(AppHistoryPage, { props }).body;
+      expect(body).toContain('使用状況の履歴の削除');
+      expect(body).toContain('1:00:00');
+      expect(body).toContain('CPU 時間');
+    });
+
+    it('リソース モニター（概要）', async () => {
+      const monitor = filledMonitor();
+      const resmon = new ResourceMonitorState(api);
+      const snapshot = monitor.snapshot;
+      if (snapshot) resmon.record(snapshot);
+      const props = {
+        monitor,
+        settings: new SettingsStore(undefined),
+        icons: await iconStore(firstExe()),
+        menus: new ContextMenus(),
+        processActions: actionsFor(monitor),
+        services: loadedServices(),
+        resmon,
+      };
+      expect(render(ResourceMonitorPage, { props }).body).toMatchSnapshot();
+    });
+
+    it('新しいタスクの実行', () => {
+      const runTask = new RunTask(api);
+      expect(render(RunTaskDialog, { props: { runTask } }).body).not.toContain('dialog');
+      runTask.show();
+      runTask.error = "'x' が見つかりません。";
+      expect(render(RunTaskDialog, { props: { runTask } }).body).toMatchSnapshot();
     });
 
     it('設定', () => {

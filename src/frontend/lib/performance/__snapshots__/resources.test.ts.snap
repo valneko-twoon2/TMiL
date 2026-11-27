@@ -24,6 +24,14 @@ exports[`パフォーマンスの一覧（細部） > snapshot > すべてのリ
         "value": "5",
       },
       {
+        "label": "スレッド",
+        "value": "8",
+      },
+      {
+        "label": "ハンドル",
+        "value": "120",
+      },
+      {
         "label": "稼働時間",
         "value": "1:02:03:04",
       },
@@ -63,6 +71,14 @@ exports[`パフォーマンスの一覧（細部） > snapshot > すべてのリ
       {
         "label": "スワップ",
         "value": "0 B / 4.0 GB",
+      },
+      {
+        "label": "キャッシュ済み",
+        "value": "4.0 GB",
+      },
+      {
+        "label": "空き",
+        "value": "4.0 GB",
       },
     ],
     "summary": "8.0 GB / 16.0 GB (50%)",
@@ -183,6 +199,66 @@ exports[`パフォーマンスの一覧（細部） > snapshot > すべてのリ
     "title": "ディスク 2 (/snap/core)",
   },
   {
+    "axisLabel": "% 使用率",
+    "caption": "Example GPU",
+    "id": "gpu:0",
+    "max": 100,
+    "series": [
+      "使用率:#00897b:12.5",
+      "専用 GPU メモリ:#80cbc4:12.5",
+    ],
+    "stats": [
+      {
+        "label": "使用率",
+        "value": "13%",
+      },
+      {
+        "label": "専用 GPU メモリ",
+        "value": "1.0 GB / 8.0 GB",
+      },
+      {
+        "label": "名前",
+        "value": "Example GPU",
+      },
+      {
+        "label": "ベンダー",
+        "value": "Example",
+      },
+    ],
+    "summary": "Example GPU  13%",
+    "title": "GPU 0",
+  },
+  {
+    "axisLabel": "% 使用率",
+    "caption": "Basic Display",
+    "id": "gpu:1",
+    "max": 100,
+    "series": [
+      "使用率:#00897b:0",
+      "専用 GPU メモリ:#80cbc4:0",
+    ],
+    "stats": [
+      {
+        "label": "使用率",
+        "value": "-",
+      },
+      {
+        "label": "専用 GPU メモリ",
+        "value": "-",
+      },
+      {
+        "label": "名前",
+        "value": "Basic Display",
+      },
+      {
+        "label": "ベンダー",
+        "value": "-",
+      },
+    ],
+    "summary": "Basic Display  -",
+    "title": "GPU 1",
+  },
+  {
     "axisLabel": "スループット",
     "caption": "eth0",
     "id": "net:eth0",
@@ -207,6 +283,18 @@ exports[`パフォーマンスの一覧（細部） > snapshot > すべてのリ
       {
         "label": "受信済み（合計）",
         "value": "976.6 KB",
+      },
+      {
+        "label": "IPv4 アドレス",
+        "value": "192.168.1.2",
+      },
+      {
+        "label": "IPv6 アドレス",
+        "value": "fe80::1",
+      },
+      {
+        "label": "MAC アドレス",
+        "value": "00:11:22:33:44:55",
       },
     ],
     "summary": "送信: 1.6 Kbps 受信: 8.0 Kbps",

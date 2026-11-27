@@ -16,6 +16,10 @@ describe('startup', () => {
   describe('equivalence', () => {
     it('列ごとの値', () => {
       expect(startupValue(entry, 'name')).toBe('Chat');
+      expect(startupValue(entry, 'publisher')).toBe('');
+      expect(startupValue(entry, 'publisher', (exe) => (exe === entry.program ? 'Chat Inc.' : ''))).toBe(
+        'Chat Inc.',
+      );
       expect(startupValue(entry, 'program')).toBe('C:\\Chat\\chat.exe');
       expect(startupValue(entry, 'location')).toBe('レジストリ（ユーザー）');
       expect(startupValue(entry, 'enabled')).toBe('無効');

@@ -37,6 +37,9 @@ export const historyKey = {
   diskWrite: (key: string) => `disk:${key}:write`,
   netReceive: (name: string) => `net:${name}:rx`,
   netTransmit: (name: string) => `net:${name}:tx`,
+  core: (index: number) => `core:${String(index)}`,
+  gpu: (index: number) => `gpu:${String(index)}`,
+  gpuMemory: (index: number) => `gpu:${String(index)}:memory`,
 } as const;
 
 /** 計測結果を 1 回分記録した新しい履歴を返す。消えたディスクなどの履歴は捨てる。 */
@@ -59,6 +62,11 @@ export function recordSnapshot(
     values.set(historyKey.netReceive(n.name), n.receivedPerSec);
     values.set(historyKey.netTransmit(n.name), n.transmittedPerSec);
   }
+  snapshot.cpu.perCore.forEach((usage, i) => values.set(historyKey.core(i), usage));
+  snapshot.gpus.forEach((g, i) => {
+    values.set(historyKey.gpu(i), g.usage ?? 0);
+    values.set(historyKey.gpuMemory(i), shareOf(g.memoryUsed ?? 0, g.memoryTotal ?? 0));
+  });
   const next = new Map<string, number[]>();
   for (const [key, value] of values) {
     next.set(key, pushValue(history.get(key) ?? [], value, capacity));

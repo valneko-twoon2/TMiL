@@ -13,7 +13,13 @@ describe('列の幅', () => {
   describe('equivalence', () => {
     it('保存した幅があればそれ、無ければ最初の幅', () => {
       expect(widthOf({ 'details.pid': 99 }, 'details', 'pid')).toBe(99);
-      expect(widthOf({}, 'details', 'pid')).toBe(DEFAULT_WIDTHS.details.pid);
+      expect(widthOf({}, 'details', 'pid')).toBe(DEFAULT_WIDTHS.details?.pid);
+    });
+
+    it('表ごとの既定が無ければ、渡した幅、それも無ければ決まった幅', () => {
+      expect(widthOf({}, 'services', 'name', 180)).toBe(180);
+      expect(widthOf({}, 'services', 'name')).toBe(120);
+      expect(widthOf({ 'services.name': 99 }, 'services', 'name', 180)).toBe(99);
     });
 
     it('幅を変えると、ほかの列はそのまま', () => {

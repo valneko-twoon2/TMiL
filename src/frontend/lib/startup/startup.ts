@@ -2,12 +2,19 @@
 import { startupLocationLabel } from '../format/labels';
 import type { StartupEntry } from '../model/types';
 
-export type StartupColumn = 'name' | 'program' | 'location' | 'enabled';
+export type StartupColumn = 'name' | 'publisher' | 'program' | 'location' | 'enabled';
 
-export function startupValue(entry: StartupEntry, column: StartupColumn): string {
+/** 並べ替えに使う値。発行元は実行ファイルの会社名（`company` で引く。分からなければ空）。 */
+export function startupValue(
+  entry: StartupEntry,
+  column: StartupColumn,
+  company: (exe: string) => string = () => '',
+): string {
   switch (column) {
     case 'name':
       return entry.name;
+    case 'publisher':
+      return company(entry.program);
     case 'program':
       return entry.program;
     case 'location':

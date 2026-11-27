@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { useRunTask } from '../state/runTask.svelte';
+  import Icon from './Icon.svelte';
 
   interface Props {
     title: string;
@@ -7,12 +9,28 @@
   }
 
   const { title, actions }: Props = $props();
+  // 本家と同じく、どのページにも「新しいタスクを実行する」を置く（App が配っているときだけ）
+  const runTask = useRunTask();
 </script>
 
 <header class="page-header">
   <h1>{title}</h1>
-  {#if actions}
-    <div class="actions">{@render actions()}</div>
+  {#if actions !== undefined || runTask !== undefined}
+    <div class="actions">
+      {#if runTask}
+        <button
+          type="button"
+          class="command"
+          onclick={() => {
+            runTask.show();
+          }}
+        >
+          <Icon name="run" />
+          新しいタスクを実行する
+        </button>
+      {/if}
+      {#if actions}{@render actions()}{/if}
+    </div>
   {/if}
 </header>
 

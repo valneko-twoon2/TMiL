@@ -6,16 +6,19 @@ export class ColumnSizer {
   #live = $state<{ column: string; width: number } | null>(null);
   readonly #settings: SettingsStore;
   readonly #table: TableName;
+  readonly #defaults: Readonly<Record<string, number>>;
 
-  constructor(settings: SettingsStore, table: TableName) {
+  /** `defaults` は、表ごとの既定の幅が無い列に使う幅。 */
+  constructor(settings: SettingsStore, table: TableName, defaults: Readonly<Record<string, number>> = {}) {
     this.#settings = settings;
     this.#table = table;
+    this.#defaults = defaults;
   }
 
   /** 列の幅（px）。 */
   width(column: string): number {
     if (this.#live?.column === column) return this.#live.width;
-    return widthOf(this.#settings.value.columnWidths, this.#table, column);
+    return widthOf(this.#settings.value.columnWidths, this.#table, column, this.#defaults[column]);
   }
 
   /** 列の幅の合計（表がこれより狭くならないようにする）。 */

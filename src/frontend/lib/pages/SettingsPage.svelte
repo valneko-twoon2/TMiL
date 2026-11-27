@@ -3,7 +3,7 @@
   import type { Api } from '../api/ipc';
   import PageHeader from '../components/PageHeader.svelte';
   import type { ReplacementStatus } from '../model/types';
-  import { REFRESH_OPTIONS, THEME_OPTIONS, type Page } from '../settings/settings';
+  import { PAGE_LABELS, PAGES, REFRESH_OPTIONS, THEME_OPTIONS } from '../settings/settings';
   import type { SettingsStore } from '../state/settings.svelte';
   import type { Toasts } from '../state/toast.svelte';
 
@@ -18,12 +18,7 @@
   let replacement = $state<ReplacementStatus | null>(null);
   let busy = $state(false);
 
-  const pageOptions: { id: Page; label: string }[] = [
-    { id: 'processes', label: 'プロセス' },
-    { id: 'performance', label: 'パフォーマンス' },
-    { id: 'startup', label: 'スタートアップ アプリ' },
-    { id: 'details', label: '詳細' },
-  ];
+  const pageOptions = PAGES.filter((id) => id !== 'settings').map((id) => ({ id, label: PAGE_LABELS[id] }));
 
   async function toggleReplacement() {
     if (!replacement || busy) return;
@@ -107,6 +102,20 @@
         </label>
       {/each}
     </div>
+  </section>
+
+  <section>
+    <h2>ウィンドウの管理</h2>
+    <label>
+      <input
+        type="checkbox"
+        checked={settings.value.alwaysOnTop}
+        onchange={(e) => {
+          settings.update({ alwaysOnTop: e.currentTarget.checked });
+        }}
+      />
+      常に手前に表示
+    </label>
   </section>
 
   <section>

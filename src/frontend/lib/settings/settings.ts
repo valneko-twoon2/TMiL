@@ -1,5 +1,10 @@
 // ユーザー設定の型と読み書き。
 import { DEFAULT_DETAIL_COLUMNS, normalizeDetailColumns, type DetailColumn } from '../process/columns';
+import {
+  DEFAULT_PROCESS_COLUMNS,
+  normalizeProcessColumns,
+  type ProcessColumn,
+} from '../process/processColumns';
 import { parseWidths, type ColumnWidths } from '../table/widths';
 
 export const REFRESH_OPTIONS = [
@@ -17,8 +22,32 @@ export const THEME_OPTIONS = [
 ] as const;
 export type Theme = (typeof THEME_OPTIONS)[number]['id'];
 
-export const PAGES = ['processes', 'performance', 'startup', 'details', 'settings'] as const;
+/** ページ（サイドバーの並び。設定は一番下に別に置く）。 */
+export const PAGES = [
+  'processes',
+  'performance',
+  'history',
+  'startup',
+  'users',
+  'details',
+  'services',
+  'resmon',
+  'settings',
+] as const;
 export type Page = (typeof PAGES)[number];
+
+/** ページの名前（本家のタスク マネージャーの言い方）。 */
+export const PAGE_LABELS: Record<Page, string> = {
+  processes: 'プロセス',
+  performance: 'パフォーマンス',
+  history: 'アプリの履歴',
+  startup: 'スタートアップ アプリ',
+  users: 'ユーザー',
+  details: '詳細',
+  services: 'サービス',
+  resmon: 'リソース モニター',
+  settings: '設定',
+};
 
 export interface Settings {
   refresh: RefreshSpeed;
@@ -30,6 +59,12 @@ export interface Settings {
   columnWidths: ColumnWidths;
   /** 効率モードを入れる前に確かめる */
   confirmEfficiency: boolean;
+  /** プロセス タブに出す列 */
+  processColumns: ProcessColumn[];
+  /** プロセス タブを種類（アプリ・バックグラウンド・Windows プロセス）ごとに分ける */
+  groupByType: boolean;
+  /** ウィンドウを常に手前に出す */
+  alwaysOnTop: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -39,11 +74,15 @@ export const DEFAULT_SETTINGS: Settings = {
   detailColumns: [...DEFAULT_DETAIL_COLUMNS],
   columnWidths: {},
   confirmEfficiency: true,
+  processColumns: [...DEFAULT_PROCESS_COLUMNS],
+  groupByType: true,
+  alwaysOnTop: false,
 };
 
 const defaults = (): Settings => ({
   ...DEFAULT_SETTINGS,
   detailColumns: [...DEFAULT_SETTINGS.detailColumns],
+  processColumns: [...DEFAULT_SETTINGS.processColumns],
   columnWidths: {},
 });
 
@@ -52,6 +91,11 @@ export const SETTINGS_STORAGE_KEY = 'taskmanagerlite.settings';
 /** 候補に含まれる値ならそれを、そうでなければ既定値を返す。 */
 function pick<T extends string>(candidates: readonly T[], value: unknown, fallback: T): T {
   return candidates.find((c) => c === value) ?? fallback;
+}
+
+/** オン・オフの値。真偽値でなければ既定値。 */
+function flag(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback;
 }
 
 /** 保存された JSON を読む。壊れた値は既定値に戻す。 */
@@ -79,8 +123,10 @@ export function parseSettings(raw: string | null): Settings {
     startPage: pick(PAGES, rec.startPage, DEFAULT_SETTINGS.startPage),
     detailColumns: normalizeDetailColumns(rec.detailColumns),
     columnWidths: parseWidths(rec.columnWidths),
-    confirmEfficiency:
-      typeof rec.confirmEfficiency === 'boolean' ? rec.confirmEfficiency : DEFAULT_SETTINGS.confirmEfficiency,
+    confirmEfficiency: flag(rec.confirmEfficiency, DEFAULT_SETTINGS.confirmEfficiency),
+    processColumns: normalizeProcessColumns(rec.processColumns),
+    groupByType: flag(rec.groupByType, DEFAULT_SETTINGS.groupByType),
+    alwaysOnTop: flag(rec.alwaysOnTop, DEFAULT_SETTINGS.alwaysOnTop),
   };
 }
 

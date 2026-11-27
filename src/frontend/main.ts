@@ -1,10 +1,15 @@
 import { mount } from 'svelte';
 import App from './App.svelte';
 import { api } from './lib/api/ipc';
+import { AppHistoryStore } from './lib/state/appHistory.svelte';
+import { AppWindows } from './lib/state/appWindows.svelte';
 import { IconStore } from './lib/state/icons.svelte';
 import { ContextMenus } from './lib/state/menus.svelte';
 import { Monitor } from './lib/state/monitor.svelte';
 import { ProcessActions } from './lib/state/processActions.svelte';
+import { ResourceMonitorState } from './lib/state/resmon.svelte';
+import { RunTask } from './lib/state/runTask.svelte';
+import { ServiceList } from './lib/state/services.svelte';
 import { SettingsStore } from './lib/state/settings.svelte';
 import { Toasts } from './lib/state/toast.svelte';
 import './app.css';
@@ -33,6 +38,11 @@ async function start(): Promise<void> {
       processActions: new ProcessActions(api, monitor, toasts, menus, {
         confirmEfficiency: () => settings.value.confirmEfficiency,
       }),
+      services: new ServiceList(api, toasts),
+      appWindows: new AppWindows(api),
+      appHistory: new AppHistoryStore(window.localStorage),
+      runTask: new RunTask(api),
+      resmon: new ResourceMonitorState(api),
     },
   });
 }

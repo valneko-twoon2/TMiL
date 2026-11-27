@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Page } from '../settings/settings';
+  import { PAGE_LABELS, type Page } from '../settings/settings';
   import Icon, { type IconName } from './Icon.svelte';
 
   interface Props {
@@ -12,10 +12,14 @@
   const { page, expanded, onnavigate, ontoggle }: Props = $props();
 
   const main: { id: Page; label: string; icon: IconName }[] = [
-    { id: 'processes', label: 'プロセス', icon: 'processes' },
-    { id: 'performance', label: 'パフォーマンス', icon: 'performance' },
-    { id: 'startup', label: 'スタートアップ アプリ', icon: 'startup' },
-    { id: 'details', label: '詳細', icon: 'details' },
+    { id: 'processes', label: PAGE_LABELS.processes, icon: 'processes' },
+    { id: 'performance', label: PAGE_LABELS.performance, icon: 'performance' },
+    { id: 'history', label: PAGE_LABELS.history, icon: 'history' },
+    { id: 'startup', label: PAGE_LABELS.startup, icon: 'startup' },
+    { id: 'users', label: PAGE_LABELS.users, icon: 'users' },
+    { id: 'details', label: PAGE_LABELS.details, icon: 'details' },
+    { id: 'services', label: PAGE_LABELS.services, icon: 'services' },
+    { id: 'resmon', label: PAGE_LABELS.resmon, icon: 'resmon' },
   ];
 </script>
 

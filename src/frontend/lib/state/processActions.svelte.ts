@@ -40,6 +40,8 @@ export interface MenuExtras {
   before?: MenuItem[];
   /** 「ファイルの場所を開く」の前に足す項目 */
   middle?: MenuItem[];
+  /** 最後に足す項目（詳細タブの「サービスに移動」など） */
+  after?: MenuItem[];
   /** 足した項目が選ばれたとき */
   onextra?: (id: string) => void;
   /** 「タスクの終了」（ページで選択の解除などをしたいとき） */
@@ -78,6 +80,7 @@ export function processMenuEntries(
     { id: 'reveal', label: 'ファイルの場所を開く', key: 'O', disabled: p.exe === '' },
     { id: 'search', label: 'オンライン検索', key: 'N' },
     { id: 'properties', label: 'プロパティ', key: 'R' },
+    ...(extras.after ?? []),
   ];
 }
 
@@ -237,6 +240,25 @@ export class ProcessActions {
       const results = await this.#api.resumeProcesses(processes.map(toKillTarget));
       this.#mark(this.suspended, processes, results, false);
       this.#report(results, '再開できませんでした。');
+    });
+  }
+
+  /** そのプロセスのウィンドウに切り替える（本家の「切り替え」）。 */
+  async switchTo(pid: number): Promise<void> {
+    try {
+      await this.#api.switchToWindow(pid);
+    } catch (cause) {
+      this.#toasts.show(message(cause), 'error');
+    }
+  }
+
+  /** 終了してから起動し直す（本家のエクスプローラーの「再起動」）。 */
+  restart(p: ProcessInfo): Promise<void> {
+    return this.#run(async () => {
+      const results = await this.#api.killProcesses([toKillTarget(p)]);
+      this.#report(results, '終了できませんでした。');
+      if (results.every((r) => r.ok)) await this.#api.runTask(p.exe === '' ? p.name : `"${p.exe}"`, false);
+      await this.#monitor.refresh();
     });
   }
 
