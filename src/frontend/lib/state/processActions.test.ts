@@ -83,7 +83,7 @@ describe('プロセスへの操作', () => {
     it('ページの項目を足せる', () => {
       const entries = processMenuEntries(proc(1, null), null, false, {
         before: [{ id: 'toggle', label: '展開する' }],
-        middle: [{ id: 'details', label: '詳細の表示に移動' }],
+        beforeReveal: [{ id: 'details', label: '詳細の表示に移動' }],
       });
       const names = labels(entries);
       expect(names[0]).toBe('展開する');

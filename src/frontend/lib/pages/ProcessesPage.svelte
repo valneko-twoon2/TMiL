@@ -221,7 +221,7 @@
         ...(windowPid === undefined ? [] : [switchItem]),
         ...(isExplorer(representative) ? [restartItem] : []),
       ];
-      processActions.openMenu(event, representative, { before, middle: [detailsItem], onextra, onend });
+      processActions.openMenu(event, representative, { before, beforeReveal: [detailsItem], onextra, onend });
       return;
     }
     const efficient = group.children.every((p) => processActions.marks(p).efficient);

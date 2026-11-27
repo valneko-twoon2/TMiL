@@ -58,7 +58,7 @@
 
   function openProcessMenu(event: MouseEvent, p: ProcessInfo) {
     processActions.openMenu(event, p, {
-      middle: ongotodetails ? [{ id: 'details', label: '詳細の表示に移動', key: 'D' }] : [],
+      beforeReveal: ongotodetails ? [{ id: 'details', label: '詳細の表示に移動', key: 'D' }] : [],
       onextra: (id) => {
         if (id === 'details') ongotodetails?.(p.pid);
       },

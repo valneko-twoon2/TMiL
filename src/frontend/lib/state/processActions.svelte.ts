@@ -34,7 +34,7 @@ export interface ProcessActionOptions {
 
 export interface MenuExtras {
   before?: MenuItem[];
-  middle?: MenuItem[];
+  beforeReveal?: MenuItem[];
   after?: MenuItem[];
   onextra?: (id: string) => void;
   onend?: () => void;
@@ -67,7 +67,7 @@ export function processMenuEntries(
     { id: 'affinity', label: '関係の設定', key: 'F' },
     { id: 'usage', label: '使用状況のグラフ', key: 'G' },
     SEPARATOR,
-    ...(extras.middle ?? []),
+    ...(extras.beforeReveal ?? []),
     { id: 'reveal', label: 'ファイルの場所を開く', key: 'O', disabled: p.exe === '' },
     { id: 'search', label: 'オンライン検索', key: 'N' },
     { id: 'properties', label: 'プロパティ', key: 'R' },
