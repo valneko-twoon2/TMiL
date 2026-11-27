@@ -101,3 +101,7 @@ npm test             # テスト（並列）
 ## ドキュメント
 
 [docs/README.md](docs/README.md) に一覧があります。
+
+## ライセンス
+
+[Apache License 2.0](LICENSE)

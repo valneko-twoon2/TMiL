@@ -7,6 +7,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.95"
 repository = "https://github.com/valneko-twoon2/TaskManagerLite"
+license = "Apache-2.0"
 publish = false
 
 [workspace.dependencies]
