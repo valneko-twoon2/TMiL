@@ -61,6 +61,16 @@ pub fn is_stale(last_sample: Option<Instant>, now: Instant) -> bool {
     last_sample.is_none_or(|at| now.saturating_duration_since(at) >= MIN_SAMPLE_INTERVAL)
 }
 
+type Outcome = Result<(), String>;
+
+fn kill_result(pid: u32, outcome: Outcome) -> KillResult {
+    KillResult {
+        pid,
+        ok: outcome.is_ok(),
+        error: outcome.err(),
+    }
+}
+
 #[derive(Debug)]
 pub struct Backend {
     machine: MachineLock,
@@ -131,9 +141,17 @@ impl Backend {
     }
 
     pub fn kill(&self, targets: &[KillTarget]) -> Result<Vec<KillResult>, String> {
-        let results = self.act(targets, ProcessAction::Kill, |_, _| {
-            Err("内部エラー: 終了は collector で行います。".to_owned())
-        })?;
+        let results: Vec<KillResult> = self
+            .decide(targets, ProcessAction::Kill, |collector, pid| {
+                if collector.terminate(pid) {
+                    Ok(())
+                } else {
+                    Err("終了できませんでした。権限が足りない可能性があります。".to_owned())
+                }
+            })?
+            .into_iter()
+            .map(|(pid, outcome)| kill_result(pid, outcome))
+            .collect();
         let killed: Vec<u32> = results.iter().filter(|r| r.ok).map(|r| r.pid).collect();
         if !killed.is_empty()
             && let Some((_, snap)) = lock(&self.cache)?.as_mut()
@@ -149,7 +167,7 @@ impl Backend {
         targets: &[KillTarget],
         priority: Priority,
     ) -> Result<Vec<KillResult>, String> {
-        self.act(targets, ProcessAction::SetPriority(priority), |pid, _| {
+        self.act(targets, ProcessAction::SetPriority(priority), |pid| {
             process_control::set_priority(pid, priority)
         })
     }
@@ -160,19 +178,19 @@ impl Backend {
         cpus: &[u32],
     ) -> Result<Vec<KillResult>, String> {
         let mask = process_control::mask_from_cpus(cpus)?;
-        self.act(targets, ProcessAction::SetAffinity(mask), |pid, _| {
+        self.act(targets, ProcessAction::SetAffinity(mask), |pid| {
             process_control::set_affinity(pid, mask)
         })
     }
 
     pub fn suspend(&self, targets: &[KillTarget]) -> Result<Vec<KillResult>, String> {
-        self.act(targets, ProcessAction::Suspend, |pid, _| {
+        self.act(targets, ProcessAction::Suspend, |pid| {
             process_control::suspend(pid)
         })
     }
 
     pub fn resume(&self, targets: &[KillTarget]) -> Result<Vec<KillResult>, String> {
-        self.act(targets, ProcessAction::Resume, |pid, _| {
+        self.act(targets, ProcessAction::Resume, |pid| {
             process_control::resume(pid)
         })
     }
@@ -182,7 +200,7 @@ impl Backend {
         targets: &[KillTarget],
         on: bool,
     ) -> Result<Vec<KillResult>, String> {
-        self.act(targets, ProcessAction::SetEfficiency(on), |pid, _| {
+        self.act(targets, ProcessAction::SetEfficiency(on), |pid| {
             process_control::set_efficiency(pid, on)
         })
     }
@@ -191,51 +209,39 @@ impl Backend {
         &self,
         targets: &[KillTarget],
         action: ProcessAction,
-        apply: impl Fn(u32, ProcessAction) -> Result<(), String>,
+        apply: impl Fn(u32) -> Outcome,
     ) -> Result<Vec<KillResult>, String> {
-        let result = |pid, outcome: Result<(), String>| KillResult {
-            pid,
-            ok: outcome.is_ok(),
-            error: outcome.err(),
-        };
-        let decided: Vec<(u32, Result<Option<ProcessAction>, String>)> = {
-            let mut collector = lock(&self.collector)?;
-            collector.refresh_process_list();
-            let mut decided = Vec::with_capacity(targets.len());
-            for &target in targets {
+        Ok(self
+            .decide(targets, action, |_, _| Ok(()))?
+            .into_iter()
+            .map(|(pid, approved)| kill_result(pid, approved.and_then(|()| apply(pid))))
+            .collect())
+    }
+
+    fn decide(
+        &self,
+        targets: &[KillTarget],
+        action: ProcessAction,
+        while_locked: impl Fn(&Collector, u32) -> Outcome,
+    ) -> Result<Vec<(u32, Outcome)>, String> {
+        let mut collector = lock(&self.collector)?;
+        collector.refresh_process_list();
+        targets
+            .iter()
+            .map(|&target| {
                 let observed = collector.observe(target.pid);
-                let effect = self.dispatch(&Event::ProcessActionRequested {
+                let outcome = match self.dispatch(&Event::ProcessActionRequested {
                     target,
                     observed,
                     action,
-                })?;
-                let outcome = match effect {
-                    Some(Effect::Act {
-                        pid,
-                        action: ProcessAction::Kill,
-                    }) => {
-                        if collector.terminate(pid) {
-                            Ok(None)
-                        } else {
-                            Err("終了できませんでした。権限が足りない可能性があります。".to_owned())
-                        }
-                    }
-                    Some(Effect::Act { action, .. }) => Ok(Some(action)),
+                })? {
+                    Some(Effect::Act { pid, .. }) => while_locked(&collector, pid),
                     Some(Effect::Reject(r)) => Err(r.to_string()),
                     other => Err(format!("想定しない処理です: {other:?}")),
                 };
-                decided.push((target.pid, outcome));
-            }
-            decided
-        };
-        Ok(decided
-            .into_iter()
-            .map(|(pid, outcome)| match outcome {
-                Ok(Some(action)) => result(pid, apply(pid, action)),
-                Ok(None) => result(pid, Ok(())),
-                Err(msg) => result(pid, Err(msg)),
+                Ok((target.pid, outcome))
             })
-            .collect())
+            .collect()
     }
 
     pub fn controls(pid: u32) -> ProcessControls {
