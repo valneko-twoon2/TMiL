@@ -274,6 +274,15 @@ mod contract {
         );
     }
 
+    /// フロントの `ICON_REQUEST_LIMIT` も同じ数にする。
+    #[test]
+    fn icon_request_limit() {
+        check(
+            "icon-request-limit",
+            &taskmanagerlite_core::icons::MAX_PER_REQUEST,
+        );
+    }
+
     /// 優先度はすべての値を並べ、フロントと種類が一致するかも確かめる。
     #[test]
     fn process_controls() {
