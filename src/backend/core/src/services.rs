@@ -4,6 +4,8 @@
 //! - Windows: 一覧は PowerShell の `Win32_Service`。操作は管理者として PowerShell を起動して行う（UAC の確認が出る）
 //! - Linux: systemd の `systemctl`（操作で権限が要るときは polkit が確認を出す）
 
+use std::collections::HashMap;
+
 use crate::model::{ServiceAction, ServiceInfo, ServiceStartType, ServiceStatus};
 
 /// サービス名の長さの上限（Windows の上限と同じ）。
@@ -139,9 +141,52 @@ pub fn systemd_start_type(state: &str) -> ServiceStartType {
     }
 }
 
-/// `systemctl show -p Id,Description,ActiveState,SubState,MainPID,UnitFileState ...` の出力を読む。
-/// 空行で区切られた `キー=値` のまとまりが 1 つのサービス。
-pub fn parse_systemctl_show(output: &str) -> Vec<ServiceInfo> {
+/// `systemctl list-units --type=service --all --plain --no-legend` の 1 行。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnitLine {
+    pub name: String,
+    pub active: String,
+    pub sub: String,
+    pub description: String,
+}
+
+/// `systemctl list-units` の出力を読む（読み込めなかった印の `●` は飛ばす）。
+pub fn parse_list_units(output: &str) -> Vec<UnitLine> {
+    output
+        .lines()
+        .filter_map(|line| {
+            let mut words = line.split_whitespace().skip_while(|w| *w == "●");
+            let unit = words.next()?;
+            let name = unit.strip_suffix(".service")?;
+            let _load = words.next()?;
+            let active = words.next()?;
+            let sub = words.next()?;
+            Some(UnitLine {
+                name: name.to_owned(),
+                active: active.to_owned(),
+                sub: sub.to_owned(),
+                description: words.collect::<Vec<_>>().join(" "),
+            })
+        })
+        .collect()
+}
+
+/// `systemctl list-unit-files --type=service --no-legend` の出力を、名前 → 状態（`enabled` など）にする。
+/// 名前だけでは動かせない雛形（`getty@.service`）は除く。
+pub fn parse_unit_files(output: &str) -> HashMap<String, String> {
+    output
+        .lines()
+        .filter_map(|line| {
+            let mut words = line.split_whitespace();
+            let name = words.next()?.strip_suffix(".service")?;
+            let state = words.next()?;
+            (!name.ends_with('@')).then(|| (name.to_owned(), state.to_owned()))
+        })
+        .collect()
+}
+
+/// `systemctl show --property=Id,MainPID ...` の出力を、名前 → 動いている PID にする。
+pub fn parse_main_pids(output: &str) -> HashMap<String, u32> {
     output
         .split("\n\n")
         .filter_map(|block| {
@@ -152,18 +197,54 @@ pub fn parse_systemctl_show(output: &str) -> Vec<ServiceInfo> {
                     .unwrap_or_default()
                     .trim()
             };
-            let id = value("Id");
-            let name = id.strip_suffix(".service")?;
-            Some(ServiceInfo {
-                name: name.to_owned(),
-                display_name: value("Description").to_owned(),
-                description: value("Description").to_owned(),
-                status: systemd_status(value("ActiveState"), value("SubState")),
-                pid: value("MainPID").parse().ok().filter(|p| *p != 0),
-                start_type: systemd_start_type(value("UnitFileState")),
-                group: String::new(),
-            })
+            let name = value("Id").strip_suffix(".service")?;
+            let pid: u32 = value("MainPID").parse().ok().filter(|p| *p != 0)?;
+            Some((name.to_owned(), pid))
         })
+        .collect()
+}
+
+/// systemd の 3 つの出力をまとめる。読み込まれていないサービス（無効なものなど）は停止として足す。
+pub fn merge_systemd<S: std::hash::BuildHasher>(
+    units: &[UnitLine],
+    files: &HashMap<String, String, S>,
+    pids: &HashMap<String, u32, S>,
+) -> Vec<ServiceInfo> {
+    let start_type = |name: &str| systemd_start_type(files.get(name).map_or("", String::as_str));
+    let mut list: Vec<ServiceInfo> = units
+        .iter()
+        .map(|u| ServiceInfo {
+            name: u.name.clone(),
+            display_name: u.description.clone(),
+            description: u.description.clone(),
+            status: systemd_status(&u.active, &u.sub),
+            pid: pids.get(&u.name).copied(),
+            start_type: start_type(&u.name),
+            group: String::new(),
+        })
+        .collect();
+    for name in files.keys() {
+        if !units.iter().any(|u| &u.name == name) {
+            list.push(ServiceInfo {
+                name: name.clone(),
+                display_name: String::new(),
+                description: String::new(),
+                status: ServiceStatus::Stopped,
+                pid: None,
+                start_type: start_type(name),
+                group: String::new(),
+            });
+        }
+    }
+    list
+}
+
+/// 動いているか、動き始め・止まりかけのユニット（PID を聞く相手）。
+pub fn active_units(units: &[UnitLine]) -> Vec<String> {
+    units
+        .iter()
+        .filter(|u| u.active != "inactive" && u.active != "failed")
+        .map(|u| format!("{}.service", u.name))
         .collect()
 }
 
@@ -202,21 +283,54 @@ pub fn control(name: &str, action: ServiceAction) -> Result<(), String> {
         })
 }
 
-/// サービスの一覧。
+/// systemctl を動かして標準出力を返す。失敗したら理由を返す。
 #[cfg(not(windows))]
-pub fn list() -> Result<Vec<ServiceInfo>, String> {
+fn systemctl(args: &[&str]) -> Result<String, String> {
     let output = std::process::Command::new("systemctl")
-        .args([
-            "show",
-            "--no-pager",
-            "--property=Id,Description,ActiveState,SubState,MainPID,UnitFileState",
-            "*.service",
-        ])
+        .args(args)
         .output()
         .map_err(|e| format!("サービスの一覧を取れません（systemctl を起動できません）: {e}"))?;
-    Ok(sorted(parse_systemctl_show(&String::from_utf8_lossy(
-        &output.stdout,
-    ))))
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+    } else {
+        Err(format!(
+            "サービスの一覧を取れません: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ))
+    }
+}
+
+/// サービスの一覧（読み込まれているものと、無効などで読み込まれていないもの）。
+#[cfg(not(windows))]
+pub fn list() -> Result<Vec<ServiceInfo>, String> {
+    let units = parse_list_units(&systemctl(&[
+        "list-units",
+        "--type=service",
+        "--all",
+        "--plain",
+        "--no-legend",
+        "--no-pager",
+    ])?);
+    // ユニット ファイルと PID は、取れなくても一覧は出す
+    let files = systemctl(&[
+        "list-unit-files",
+        "--type=service",
+        "--no-legend",
+        "--no-pager",
+    ])
+    .map(|out| parse_unit_files(&out))
+    .unwrap_or_default();
+    let active = active_units(&units);
+    let pids = if active.is_empty() {
+        HashMap::new()
+    } else {
+        let mut args = vec!["show", "--no-pager", "--property=Id,MainPID", "--"];
+        args.extend(active.iter().map(String::as_str));
+        systemctl(&args)
+            .map(|out| parse_main_pids(&out))
+            .unwrap_or_default()
+    };
+    Ok(sorted(merge_systemd(&units, &files, &pids)))
 }
 
 /// サービスを操作する。
@@ -280,21 +394,42 @@ Spooler\tPrint Spooler\tStopped\t0\tAuto\tC:\\WINDOWS\\System32\\spoolsv.exe\t\r
         }
 
         #[test]
-        fn systemctl_show_blocks_become_services() {
-            let out = "Id=ssh.service\nDescription=OpenBSD Secure Shell server\nActiveState=active\nSubState=running\nMainPID=812\nUnitFileState=enabled\n\n\
-Id=cups.service\nDescription=CUPS Scheduler\nActiveState=inactive\nSubState=dead\nMainPID=0\nUnitFileState=disabled\n\n\
-Id=dev-sda.device\nDescription=x\n";
-            let list = parse_systemctl_show(out);
-            assert_eq!(list.len(), 2);
-            let ssh = list.first().unwrap();
-            assert_eq!(ssh.name, "ssh");
+        fn systemd_outputs_are_merged_into_services() {
+            let units = parse_list_units(
+                "ssh.service      loaded active   running OpenBSD Secure Shell server\n\
+● bad.service      not-found inactive dead bad.service\n\
+cups.service     loaded inactive dead    CUPS Scheduler\n\
+dev-sda.device   loaded active   plugged /dev/sda\n",
+            );
+            assert_eq!(units.len(), 3);
+            assert_eq!(units.get(1).map(|u| u.name.as_str()), Some("bad"));
+            let files = parse_unit_files(
+                "ssh.service     enabled  enabled\n\
+cups.service    disabled enabled\n\
+getty@.service  enabled  enabled\n\
+nfs.service     masked   -\n",
+            );
+            assert!(!files.contains_key("getty@"), "雛形は除く");
+            let pids =
+                parse_main_pids("Id=ssh.service\nMainPID=812\n\nId=other.service\nMainPID=0\n");
+            assert_eq!(active_units(&units), vec!["ssh.service".to_owned()]);
+            let list = sorted(merge_systemd(&units, &files, &pids));
+            let names: Vec<&str> = list.iter().map(|s| s.name.as_str()).collect();
+            assert_eq!(names, vec!["bad", "cups", "nfs", "ssh"]);
+            let ssh = list.iter().find(|s| s.name == "ssh").unwrap();
             assert_eq!(ssh.status, ServiceStatus::Running);
             assert_eq!(ssh.pid, Some(812));
             assert_eq!(ssh.start_type, ServiceStartType::Automatic);
-            let cups = list.get(1).unwrap();
+            assert_eq!(ssh.display_name, "OpenBSD Secure Shell server");
+            let cups = list.iter().find(|s| s.name == "cups").unwrap();
             assert_eq!(cups.status, ServiceStatus::Stopped);
             assert_eq!(cups.pid, None);
             assert_eq!(cups.start_type, ServiceStartType::Manual);
+            // 読み込まれていないものは停止として足す
+            let nfs = list.iter().find(|s| s.name == "nfs").unwrap();
+            assert_eq!(nfs.status, ServiceStatus::Stopped);
+            assert_eq!(nfs.start_type, ServiceStartType::Disabled);
+            assert_eq!(nfs.display_name, "");
         }
 
         #[test]
@@ -386,7 +521,14 @@ Id=dev-sda.device\nDescription=x\n";
         #[test]
         fn empty_outputs_are_empty_lists() {
             assert_eq!(parse_windows(""), Vec::new());
-            assert_eq!(parse_systemctl_show(""), Vec::new());
+            assert_eq!(parse_list_units(""), Vec::new());
+            assert!(parse_unit_files("").is_empty());
+            assert!(parse_main_pids("").is_empty());
+            assert_eq!(
+                merge_systemd(&[], &HashMap::new(), &HashMap::new()),
+                Vec::new()
+            );
+            assert_eq!(parse_list_units("short.service loaded\n"), Vec::new());
         }
     }
 
