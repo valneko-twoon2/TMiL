@@ -94,3 +94,27 @@ export function sortBy<T, K extends string>(
     .sort((x, y) => sign * compareValues(pick(x.row, sort.key), pick(y.row, sort.key)) || x.index - y.index)
     .map(({ row }) => row);
 }
+
+/**
+ * 前の並びを保つ（本家と同じく、値が変わっても行は動かさない）。
+ * 前にあった行はその順のまま、新しく出てきた行は `sorted` での位置に差し込む。
+ */
+export function keepOrder<T>(
+  sorted: readonly T[],
+  previous: readonly string[],
+  keyOf: (row: T) => string,
+): T[] {
+  const byKey = new Map(sorted.map((row) => [keyOf(row), row]));
+  const kept: T[] = [];
+  const seen = new Set<string>();
+  for (const key of previous) {
+    const row = byKey.get(key);
+    if (row === undefined || seen.has(key)) continue;
+    kept.push(row);
+    seen.add(key);
+  }
+  sorted.forEach((row, index) => {
+    if (!seen.has(keyOf(row))) kept.splice(Math.min(index, kept.length), 0, row);
+  });
+  return kept;
+}

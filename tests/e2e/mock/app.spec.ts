@@ -16,6 +16,20 @@ test.describe('プロセス', () => {
     await expect(page.getByRole('columnheader', { name: /CPU/ })).toContainText('%');
   });
 
+  test('使用率が変わっても行の位置は動かず、見出しを押すと並べ直す', async ({ page }) => {
+    await open(page);
+    const names = page.getByTestId('process-group').locator('td:first-child');
+    const before = await names.allTextContents();
+    // モックの CPU 使用率は計測ごとに変わり、CPU の順なら数秒で入れ替わる。しばらく見ても並びは同じ
+    for (let i = 0; i < 10; i += 1) {
+      await page.waitForTimeout(1000);
+      expect(await names.allTextContents()).toEqual(before);
+    }
+    await page.getByRole('columnheader', { name: /名前/ }).click();
+    const sorted = await names.allTextContents();
+    expect(sorted).not.toEqual(before);
+  });
+
   test('検索で絞り込める', async ({ page }) => {
     await open(page);
     await page.getByRole('searchbox', { name: '検索' }).fill('chrome');

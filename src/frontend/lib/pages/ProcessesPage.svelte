@@ -13,6 +13,7 @@
   import {
     filterProcesses,
     groupProcesses,
+    keepOrder,
     nextSort,
     sortBy,
     type ProcessGroup,
@@ -85,9 +86,23 @@
   const activeSort = $derived<SortState<ProcessColumn>>(
     columns.includes(sort.key) ? sort : { key: 'cpu', direction: 'desc' },
   );
-  const groups = $derived(
-    sortBy(groupProcesses(filterProcesses(snapshot?.processes ?? [], query)), activeSort, (g, key) =>
+  // 本家と同じく、使用率などが変わっても行は動かさない。並べ直すのは見出しを押したときだけ。
+  // 絞り込みで隠れた行も覚えておけるよう、並びは絞り込む前の全部で決める
+  let lastOrder: readonly string[] = [];
+  let lastSort = '';
+  const order = $derived.by(() => {
+    const sorted = sortBy(groupProcesses(snapshot?.processes ?? []), activeSort, (g, key) =>
       groupValue(g, key, ctx),
+    );
+    const by = `${activeSort.key}:${activeSort.direction}`;
+    const rows = by === lastSort ? keepOrder(sorted, lastOrder, (g) => g.key) : sorted;
+    lastOrder = rows.map((g) => g.key);
+    lastSort = by;
+    return new Map(lastOrder.map((key, index) => [key, index]));
+  });
+  const groups = $derived(
+    groupProcesses(filterProcesses(snapshot?.processes ?? [], query)).sort(
+      (a, b) => (order.get(a.key) ?? 0) - (order.get(b.key) ?? 0),
     ),
   );
   const sections = $derived(tableSections(groups, grouped, ctx.kind));

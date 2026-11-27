@@ -1,3 +1,4 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { groupValue, PROCESS_NUMERIC } from './processColumns';
 import { PROCESS_EXTRAS } from '../../test/fixtures';
@@ -14,7 +15,7 @@ import {
   selectedTargets,
   toKillTarget,
 } from './columns';
-import { displayName, filterProcesses, groupProcesses, nextSort, sortBy } from './process';
+import { displayName, filterProcesses, groupProcesses, keepOrder, nextSort, sortBy } from './process';
 
 function proc(pid: number, name: string, extra: Partial<ProcessInfo> = {}): ProcessInfo {
   return {
@@ -143,6 +144,60 @@ describe('nextSort / sortBy', () => {
       const rows = [{ v: 2 }, { v: 1 }];
       sortBy(rows, { key: 'v', direction: 'asc' }, (r) => r.v);
       expect(rows.map((r) => r.v)).toEqual([2, 1]);
+    });
+  });
+});
+
+describe('keepOrder', () => {
+  const id = (r: string) => r;
+
+  describe('equivalence', () => {
+    it('前にあった行は、並べ替えた結果が変わっても前の順のまま', () => {
+      expect(keepOrder(['c', 'a', 'b'], ['a', 'b', 'c'], id)).toEqual(['a', 'b', 'c']);
+    });
+
+    it('新しい行は、並べ替えた結果での位置に入る', () => {
+      expect(keepOrder(['x', 'a', 'b'], ['a', 'b'], id)).toEqual(['x', 'a', 'b']);
+      expect(keepOrder(['a', 'b', 'x'], ['b', 'a'], id)).toEqual(['b', 'a', 'x']);
+    });
+
+    it('消えた行は除く', () => {
+      expect(keepOrder(['b'], ['a', 'b', 'c'], id)).toEqual(['b']);
+    });
+  });
+
+  describe('boundary', () => {
+    it('前の並びが空なら、並べ替えた結果そのまま', () => {
+      expect(keepOrder(['b', 'a'], [], id)).toEqual(['b', 'a']);
+      expect(keepOrder([], ['a'], id)).toEqual([]);
+    });
+
+    it('前の並びに同じ鍵が重なっていても、行は 1 つだけ', () => {
+      expect(keepOrder(['a', 'b'], ['a', 'a', 'b'], id)).toEqual(['a', 'b']);
+    });
+  });
+
+  describe('property', () => {
+    const keys = fc.uniqueArray(fc.string({ maxLength: 3 }), { maxLength: 30 });
+
+    it('行の数と中身は並べ替えた結果と同じで、前にあった行どうしの順は変わらない', () => {
+      fc.assert(
+        fc.property(keys, keys, (sorted, previous) => {
+          const result = keepOrder(sorted, previous, id);
+          expect([...result].sort()).toEqual([...sorted].sort());
+          const kept = previous.filter((k) => sorted.includes(k));
+          expect(result.filter((k) => previous.includes(k))).toEqual(kept);
+        }),
+      );
+    });
+
+    it('同じ並びを渡し直しても変わらない', () => {
+      fc.assert(
+        fc.property(keys, keys, (sorted, previous) => {
+          const once = keepOrder(sorted, previous, id);
+          expect(keepOrder(sorted, once, id)).toEqual(once);
+        }),
+      );
     });
   });
 });
