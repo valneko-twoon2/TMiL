@@ -131,6 +131,9 @@ public static class TaskManagerLiteNative {
     const uint SuspendResume = 0x0800;
     const uint SetInformation = 0x0200;
     const int PowerThrottling = 4;
+    const uint ExecutionSpeed = 1;
+    const uint IdlePriorityClass = 0x40;
+    const uint NormalPriorityClass = 0x20;
     static IntPtr Open(uint pid, uint access) {
         IntPtr handle = OpenProcess(access, false, pid);
         if (handle == IntPtr.Zero) throw new Win32Exception();
@@ -149,9 +152,9 @@ public static class TaskManagerLiteNative {
     public static void Efficiency(uint pid, bool on) {
         IntPtr handle = Open(pid, SetInformation);
         try {
-            Throttling state = new Throttling { Version = 1, ControlMask = on ? 1u : 0u, StateMask = on ? 1u : 0u };
+            Throttling state = new Throttling { Version = 1, ControlMask = on ? ExecutionSpeed : 0u, StateMask = on ? ExecutionSpeed : 0u };
             if (!SetProcessInformation(handle, PowerThrottling, ref state, (uint)Marshal.SizeOf(state))) throw new Win32Exception();
-            if (!SetPriorityClass(handle, on ? 0x40u : 0x20u)) throw new Win32Exception();
+            if (!SetPriorityClass(handle, on ? IdlePriorityClass : NormalPriorityClass)) throw new Win32Exception();
         } finally { CloseHandle(handle); }
     }
 }
