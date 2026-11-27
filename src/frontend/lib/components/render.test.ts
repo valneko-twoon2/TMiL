@@ -21,12 +21,14 @@ import ProcessesPage from '../pages/ProcessesPage.svelte';
 import SettingsPage from '../pages/SettingsPage.svelte';
 import StartupPage from '../pages/StartupPage.svelte';
 import { IconStore } from '../state/icons.svelte';
+import type { TableColumn } from '../table/table';
 import { ContextMenus } from '../state/menus.svelte';
 import { Monitor } from '../state/monitor.svelte';
 import { ProcessActions } from '../state/processActions.svelte';
 import { SettingsStore } from '../state/settings.svelte';
 import { Toasts } from '../state/toast.svelte';
 import ContextMenuHost from './ContextMenuHost.svelte';
+import DataTable from './DataTable.svelte';
 import Icon from './Icon.svelte';
 import LineChart from './LineChart.svelte';
 import NavRail from './NavRail.svelte';
@@ -299,6 +301,26 @@ describe('画面部品', () => {
     it('設定', () => {
       const props = { settings: new SettingsStore(undefined), api, toasts: new Toasts() };
       expect(render(SettingsPage, { props }).body).toMatchSnapshot();
+    });
+  });
+
+  describe('regression', () => {
+    // アイコンをまだ読めていない行（System など）だけ、アイコンの場所が無くなり名前がずれていた
+    it('共通の表で、アイコンの無い行にも決まった絵を出す', () => {
+      // サーバー描画では行の型を推論できないので、unknown の行として渡す
+      const name = (r: unknown) => (r as { name: string }).name;
+      const columns: TableColumn<unknown>[] = [
+        { key: 'name', label: '名前', value: name, icon: () => undefined },
+      ];
+      const props = {
+        label: '表',
+        table: 'test',
+        columns,
+        rows: [{ name: 'System' }],
+        rowKey: name,
+        settings: new SettingsStore(undefined),
+      };
+      expect(render(DataTable, { props }).body).toContain('process-icon fallback');
     });
   });
 });
