@@ -44,6 +44,15 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             commands::suspend_processes,
             commands::resume_processes,
             commands::set_process_efficiency,
+            commands::run_task,
+            commands::app_windows,
+            commands::switch_to_window,
+            commands::services,
+            commands::control_service,
+            commands::open_services_tool,
+            commands::network_connections,
+            commands::process_modules,
+            commands::set_always_on_top,
         ])
         .setup(|app| {
             tray::create(app.handle())?;

@@ -129,6 +129,15 @@ describe('createApi（新しいコマンド）', () => {
           'set_process_efficiency',
           { targets: [target], enabled: true },
         ],
+        [null, (api) => api.runTask('notepad', true), 'run_task', { command: 'notepad', admin: true }],
+        [fixture('app-windows'), (api) => api.appWindows(), 'app_windows', undefined],
+        [null, (api) => api.switchToWindow(3), 'switch_to_window', { pid: 3 }],
+        [fixture('services'), (api) => api.services(), 'services', undefined],
+        [null, (api) => api.controlService('a', 'stop'), 'control_service', { name: 'a', action: 'stop' }],
+        [null, (api) => api.openServicesTool(), 'open_services_tool', undefined],
+        [fixture('connections'), (api) => api.networkConnections(), 'network_connections', undefined],
+        [fixture('modules'), (api) => api.processModules(9), 'process_modules', { pid: 9 }],
+        [null, (api) => api.setAlwaysOnTop(true), 'set_always_on_top', { enabled: true }],
       ];
       for (const [value, run, name, args] of cases) {
         const { api, call } = apiReturning(value);

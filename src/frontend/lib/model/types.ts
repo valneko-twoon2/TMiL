@@ -167,3 +167,76 @@ export interface ReplacementStatus {
   replaced: boolean;
   other: string | null;
 }
+
+/** 画面にウィンドウを出しているプロセス（本家の「アプリ」）。 */
+export interface AppWindow {
+  pid: number;
+  title: string;
+}
+
+export const SERVICE_STATUSES = [
+  'running',
+  'stopped',
+  'paused',
+  'startPending',
+  'stopPending',
+  'other',
+] as const;
+export type ServiceStatus = (typeof SERVICE_STATUSES)[number];
+
+export const SERVICE_START_TYPES = ['automatic', 'manual', 'disabled', 'other'] as const;
+export type ServiceStartType = (typeof SERVICE_START_TYPES)[number];
+
+export const SERVICE_ACTIONS = ['start', 'stop', 'restart'] as const;
+export type ServiceAction = (typeof SERVICE_ACTIONS)[number];
+
+/** サービス 1 つ分。 */
+export interface ServiceInfo {
+  /** サービス名（操作に使う） */
+  name: string;
+  /** 表示名（本家の「説明」の列） */
+  displayName: string;
+  description: string;
+  status: ServiceStatus;
+  pid: number | null;
+  startType: ServiceStartType;
+  /** svchost のグループ（Windows のみ） */
+  group: string;
+}
+
+export const PROTOCOLS = ['tcp', 'udp'] as const;
+export type Protocol = (typeof PROTOCOLS)[number];
+
+export const TCP_STATES = [
+  'listen',
+  'established',
+  'synSent',
+  'synReceived',
+  'finWait1',
+  'finWait2',
+  'timeWait',
+  'closeWait',
+  'lastAck',
+  'closing',
+  'closed',
+] as const;
+export type TcpState = (typeof TCP_STATES)[number];
+
+/** ネットワークの接続か待ち受け 1 つ分。 */
+export interface Connection {
+  protocol: Protocol;
+  localAddress: string;
+  localPort: number;
+  remoteAddress: string;
+  remotePort: number;
+  /** TCP の状態（UDP は null） */
+  state: TcpState | null;
+  pid: number | null;
+}
+
+/** プロセスが読み込んでいるモジュール。 */
+export interface ModuleInfo {
+  name: string;
+  path: string;
+  version: string | null;
+}

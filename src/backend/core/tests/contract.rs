@@ -13,9 +13,10 @@ mod contract {
 
     use serde::Serialize;
     use taskmanagerlite_core::model::{
-        CpuStats, DiskKind, DiskStats, GpuStats, KillResult, KillTarget, MemoryStats, NetworkStats,
-        Priority, ProcessControls, ProcessIcon, ProcessInfo, ProcessState, ReplacementStatus,
-        Snapshot, StartupEntry, StartupLocation, SystemInfo,
+        AppWindow, Connection, CpuStats, DiskKind, DiskStats, GpuStats, KillResult, KillTarget,
+        MemoryStats, ModuleInfo, NetworkStats, Priority, ProcessControls, ProcessIcon, ProcessInfo,
+        ProcessState, Protocol, ReplacementStatus, ServiceAction, ServiceInfo, ServiceStartType,
+        ServiceStatus, Snapshot, StartupEntry, StartupLocation, SystemInfo, TcpState,
     };
 
     fn fixtures_dir() -> PathBuf {
@@ -282,5 +283,130 @@ mod contract {
             ],
         );
         check("priorities", &Priority::ALL);
+    }
+    #[test]
+    fn app_windows() {
+        check(
+            "app-windows",
+            &vec![
+                AppWindow {
+                    pid: 1234,
+                    title: "メモ帳 - 無題".to_owned(),
+                },
+                AppWindow {
+                    pid: 5678,
+                    title: String::new(),
+                },
+            ],
+        );
+    }
+
+    /// 状態と開始の種類はすべての値を並べ、フロントと種類が一致するかも確かめる。
+    #[test]
+    fn services() {
+        let statuses = [
+            ServiceStatus::Running,
+            ServiceStatus::Stopped,
+            ServiceStatus::Paused,
+            ServiceStatus::StartPending,
+            ServiceStatus::StopPending,
+            ServiceStatus::Other,
+        ];
+        let start_types = [
+            ServiceStartType::Automatic,
+            ServiceStartType::Manual,
+            ServiceStartType::Disabled,
+            ServiceStartType::Other,
+        ];
+        let list: Vec<ServiceInfo> = statuses
+            .iter()
+            .enumerate()
+            .map(|(i, &status)| ServiceInfo {
+                name: format!("svc{i}"),
+                display_name: format!("サービス {i}"),
+                description: if i == 0 {
+                    "説明".to_owned()
+                } else {
+                    String::new()
+                },
+                status,
+                pid: (status == ServiceStatus::Running).then_some(100),
+                start_type: start_types[i % start_types.len()],
+                group: if i == 0 {
+                    "netsvcs".to_owned()
+                } else {
+                    String::new()
+                },
+            })
+            .collect();
+        check("services", &list);
+        check(
+            "service-actions",
+            &[
+                ServiceAction::Start,
+                ServiceAction::Stop,
+                ServiceAction::Restart,
+            ],
+        );
+    }
+
+    /// TCP の状態はすべての値を出す。
+    #[test]
+    fn connections() {
+        let states = [
+            TcpState::Listen,
+            TcpState::Established,
+            TcpState::SynSent,
+            TcpState::SynReceived,
+            TcpState::FinWait1,
+            TcpState::FinWait2,
+            TcpState::TimeWait,
+            TcpState::CloseWait,
+            TcpState::LastAck,
+            TcpState::Closing,
+            TcpState::Closed,
+        ];
+        let mut list: Vec<Connection> = states
+            .iter()
+            .enumerate()
+            .map(|(i, &state)| Connection {
+                protocol: Protocol::Tcp,
+                local_address: "192.168.1.2".to_owned(),
+                local_port: 50000 + u16::try_from(i).unwrap(),
+                remote_address: "203.0.113.5".to_owned(),
+                remote_port: 443,
+                state: Some(state),
+                pid: Some(100),
+            })
+            .collect();
+        list.push(Connection {
+            protocol: Protocol::Udp,
+            local_address: "::".to_owned(),
+            local_port: 5353,
+            remote_address: "*".to_owned(),
+            remote_port: 0,
+            state: None,
+            pid: None,
+        });
+        check("connections", &list);
+    }
+
+    #[test]
+    fn modules() {
+        check(
+            "modules",
+            &vec![
+                ModuleInfo {
+                    name: "ntdll.dll".to_owned(),
+                    path: r"C:\Windows\SYSTEM32\ntdll.dll".to_owned(),
+                    version: Some("10.0.26100.1".to_owned()),
+                },
+                ModuleInfo {
+                    name: "libc.so.6".to_owned(),
+                    path: "/usr/lib/libc.so.6".to_owned(),
+                    version: None,
+                },
+            ],
+        );
     }
 }

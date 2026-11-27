@@ -6,10 +6,12 @@
 use taskmanagerlite_core::backend::{Backend, set_replacement_for_exe};
 use taskmanagerlite_core::icons::{self, IconCache};
 use taskmanagerlite_core::model::{
-    KillResult, KillTarget, Priority, ProcessControls, ProcessIcon, ReplacementStatus, Snapshot,
-    StartupEntry, SystemInfo,
+    AppWindow, Connection, KillResult, KillTarget, ModuleInfo, Priority, ProcessControls,
+    ProcessIcon, ReplacementStatus, ServiceAction, ServiceInfo, Snapshot, StartupEntry, SystemInfo,
 };
-use taskmanagerlite_core::{open, startup, taskmgr};
+use taskmanagerlite_core::{
+    connections, launch, modules, open, services, startup, taskmgr, windows_list,
+};
 use tauri::{AppHandle, Manager};
 
 fn current_exe() -> Result<std::path::PathBuf, String> {
@@ -163,4 +165,73 @@ pub(crate) async fn search_online(query: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || open::search_online(&query))
         .await
         .map_err(|e| format!("処理が中断されました: {e}"))?
+}
+
+/// 新しいタスクを実行する（利用者が入力したものを起動するだけで、状態を持たない）。
+#[tauri::command]
+pub(crate) async fn run_task(command: String, admin: bool) -> Result<(), String> {
+    detached(move || launch::run(&command, admin)).await?
+}
+
+/// ウィンドウを出しているプロセスの一覧（読むだけ）。
+#[tauri::command]
+pub(crate) async fn app_windows() -> Result<Vec<AppWindow>, String> {
+    detached(windows_list::list).await
+}
+
+/// そのプロセスのウィンドウに切り替える（ほかのアプリを前に出すだけ）。
+#[tauri::command]
+pub(crate) async fn switch_to_window(pid: u32) -> Result<(), String> {
+    detached(move || windows_list::switch_to(pid)).await?
+}
+
+/// サービスの一覧（読むだけ）。
+#[tauri::command]
+pub(crate) async fn services() -> Result<Vec<ServiceInfo>, String> {
+    detached(services::list).await?
+}
+
+/// サービスを開始・停止・再起動する（OS に頼むだけで、状態を持たない）。
+#[tauri::command]
+pub(crate) async fn control_service(name: String, action: ServiceAction) -> Result<(), String> {
+    detached(move || services::control(&name, action)).await?
+}
+
+/// サービス管理ツールを開く。
+#[tauri::command]
+pub(crate) async fn open_services_tool() -> Result<(), String> {
+    detached(open::open_services_tool).await?
+}
+
+/// ネットワークの接続と待ち受けの一覧（読むだけ）。
+#[tauri::command]
+pub(crate) async fn network_connections() -> Result<Vec<Connection>, String> {
+    detached(connections::list).await?
+}
+
+/// プロセスが読み込んでいるモジュール（読むだけ）。
+#[tauri::command]
+pub(crate) async fn process_modules(pid: u32) -> Result<Vec<ModuleInfo>, String> {
+    detached(move || modules::list(pid)).await?
+}
+
+/// ウィンドウを常に手前に出すかを切り替える。
+#[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri のコマンドはウィンドウを値で受け取る"
+)]
+pub(crate) fn set_always_on_top(window: tauri::WebviewWindow, enabled: bool) -> Result<(), String> {
+    window
+        .set_always_on_top(enabled)
+        .map_err(|e| format!("ウィンドウの設定を変えられません: {e}"))
+}
+
+/// 状態を持たない、止まる処理を専用のスレッドで行う。
+async fn detached<T: Send + 'static>(
+    work: impl FnOnce() -> T + Send + 'static,
+) -> Result<T, String> {
+    tauri::async_runtime::spawn_blocking(work)
+        .await
+        .map_err(|e| format!("処理が中断されました: {e}"))
 }

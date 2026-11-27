@@ -1,0 +1,56 @@
+[
+  {
+    "name": "svc0",
+    "displayName": "サービス 0",
+    "description": "説明",
+    "status": "running",
+    "pid": 100,
+    "startType": "automatic",
+    "group": "netsvcs"
+  },
+  {
+    "name": "svc1",
+    "displayName": "サービス 1",
+    "description": "",
+    "status": "stopped",
+    "pid": null,
+    "startType": "manual",
+    "group": ""
+  },
+  {
+    "name": "svc2",
+    "displayName": "サービス 2",
+    "description": "",
+    "status": "paused",
+    "pid": null,
+    "startType": "disabled",
+    "group": ""
+  },
+  {
+    "name": "svc3",
+    "displayName": "サービス 3",
+    "description": "",
+    "status": "startPending",
+    "pid": null,
+    "startType": "other",
+    "group": ""
+  },
+  {
+    "name": "svc4",
+    "displayName": "サービス 4",
+    "description": "",
+    "status": "stopPending",
+    "pid": null,
+    "startType": "automatic",
+    "group": ""
+  },
+  {
+    "name": "svc5",
+    "displayName": "サービス 5",
+    "description": "",
+    "status": "other",
+    "pid": null,
+    "startType": "manual",
+    "group": ""
+  }
+]

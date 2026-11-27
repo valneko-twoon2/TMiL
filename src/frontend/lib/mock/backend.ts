@@ -11,6 +11,15 @@ import {
   type SystemInfo,
 } from '../model/types';
 import { isKillTarget } from '../model/guards';
+import {
+  appWindows,
+  connections,
+  controlService,
+  createSystemMock,
+  modules,
+  runTask,
+  type SystemMockState,
+} from './system';
 
 const GB = 1024 ** 3;
 const MB = 1024 ** 2;
@@ -44,7 +53,7 @@ function wave(tick: number, phase: number, period: number): number {
   return (Math.sin((tick + phase) / period) + 1) / 2;
 }
 
-export interface MockState {
+export interface MockState extends SystemMockState {
   tick: number;
   killed: Set<number>;
   startup: StartupEntry[];
@@ -59,6 +68,7 @@ export interface MockState {
 
 export function createMockState(): MockState {
   return {
+    ...createSystemMock(),
     tick: 0,
     killed: new Set(),
     replaced: false,
@@ -358,7 +368,35 @@ function controlsOf(state: MockState, pid: number): ProcessControls {
   return state.controls.get(pid) ?? { priority: 'normal', affinity: Array.from({ length: 8 }, (_, i) => i) };
 }
 
+const pidOf = (args: Record<string, unknown>) => (typeof args.pid === 'number' ? args.pid : 0);
+
 const HANDLERS: Record<string, Handler> = {
+  run_task: (state, args) => runTask(state, args.command, args.admin),
+  app_windows: (state) => appWindows(state.killed),
+  switch_to_window: (state, args) => {
+    state.switched.push(pidOf(args));
+    return null;
+  },
+  services: (state) => state.services,
+  control_service: (state, args) =>
+    controlService(
+      state,
+      args.name,
+      args.action === 'stop' || args.action === 'restart' ? args.action : 'start',
+    ),
+  open_services_tool: (state) => {
+    state.servicesToolOpened += 1;
+    return null;
+  },
+  network_connections: (state) => connections(state.killed),
+  process_modules: (state, args) => {
+    const pid = pidOf(args);
+    return modules(pid, processes(state.tick, state.killed).find((p) => p.pid === pid)?.exe);
+  },
+  set_always_on_top: (state, args) => {
+    state.alwaysOnTop = args.enabled === true;
+    return null;
+  },
   snapshot: (state) => {
     const snap = mockSnapshot(state);
     state.tick += 1;

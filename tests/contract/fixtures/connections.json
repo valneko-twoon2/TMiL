@@ -1,0 +1,110 @@
+[
+  {
+    "protocol": "tcp",
+    "localAddress": "192.168.1.2",
+    "localPort": 50000,
+    "remoteAddress": "203.0.113.5",
+    "remotePort": 443,
+    "state": "listen",
+    "pid": 100
+  },
+  {
+    "protocol": "tcp",
+    "localAddress": "192.168.1.2",
+    "localPort": 50001,
+    "remoteAddress": "203.0.113.5",
+    "remotePort": 443,
+    "state": "established",
+    "pid": 100
+  },
+  {
+    "protocol": "tcp",
+    "localAddress": "192.168.1.2",
+    "localPort": 50002,
+    "remoteAddress": "203.0.113.5",
+    "remotePort": 443,
+    "state": "synSent",
+    "pid": 100
+  },
+  {
+    "protocol": "tcp",
+    "localAddress": "192.168.1.2",
+    "localPort": 50003,
+    "remoteAddress": "203.0.113.5",
+    "remotePort": 443,
+    "state": "synReceived",
+    "pid": 100
+  },
+  {
+    "protocol": "tcp",
+    "localAddress": "192.168.1.2",
+    "localPort": 50004,
+    "remoteAddress": "203.0.113.5",
+    "remotePort": 443,
+    "state": "finWait1",
+    "pid": 100
+  },
+  {
+    "protocol": "tcp",
+    "localAddress": "192.168.1.2",
+    "localPort": 50005,
+    "remoteAddress": "203.0.113.5",
+    "remotePort": 443,
+    "state": "finWait2",
+    "pid": 100
+  },
+  {
+    "protocol": "tcp",
+    "localAddress": "192.168.1.2",
+    "localPort": 50006,
+    "remoteAddress": "203.0.113.5",
+    "remotePort": 443,
+    "state": "timeWait",
+    "pid": 100
+  },
+  {
+    "protocol": "tcp",
+    "localAddress": "192.168.1.2",
+    "localPort": 50007,
+    "remoteAddress": "203.0.113.5",
+    "remotePort": 443,
+    "state": "closeWait",
+    "pid": 100
+  },
+  {
+    "protocol": "tcp",
+    "localAddress": "192.168.1.2",
+    "localPort": 50008,
+    "remoteAddress": "203.0.113.5",
+    "remotePort": 443,
+    "state": "lastAck",
+    "pid": 100
+  },
+  {
+    "protocol": "tcp",
+    "localAddress": "192.168.1.2",
+    "localPort": 50009,
+    "remoteAddress": "203.0.113.5",
+    "remotePort": 443,
+    "state": "closing",
+    "pid": 100
+  },
+  {
+    "protocol": "tcp",
+    "localAddress": "192.168.1.2",
+    "localPort": 50010,
+    "remoteAddress": "203.0.113.5",
+    "remotePort": 443,
+    "state": "closed",
+    "pid": 100
+  },
+  {
+    "protocol": "udp",
+    "localAddress": "::",
+    "localPort": 5353,
+    "remoteAddress": "*",
+    "remotePort": 0,
+    "state": null,
+    "pid": null
+  }
+]

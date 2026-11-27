@@ -300,6 +300,115 @@ pub struct ProcessIcon {
     pub company: Option<String>,
 }
 
+/// 画面にウィンドウを出しているプロセス（本家の「アプリ」）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppWindow {
+    pub pid: u32,
+    /// ウィンドウのタイトル（取れなければ空）
+    pub title: String,
+}
+
+/// サービスの状態。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ServiceStatus {
+    Running,
+    Stopped,
+    Paused,
+    StartPending,
+    StopPending,
+    Other,
+}
+
+/// サービスの開始の種類。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ServiceStartType {
+    Automatic,
+    Manual,
+    Disabled,
+    Other,
+}
+
+/// サービス 1 つ分。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ServiceInfo {
+    /// サービス名（操作に使う）
+    pub name: String,
+    /// 表示名（本家の「説明」の列）
+    pub display_name: String,
+    /// 詳しい説明
+    pub description: String,
+    pub status: ServiceStatus,
+    /// 動いているときのプロセス
+    pub pid: Option<u32>,
+    pub start_type: ServiceStartType,
+    /// svchost のグループ（Windows のみ）
+    pub group: String,
+}
+
+/// サービスへの操作。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ServiceAction {
+    Start,
+    Stop,
+    Restart,
+}
+
+/// 通信の種類。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Protocol {
+    Tcp,
+    Udp,
+}
+
+/// TCP の接続の状態。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TcpState {
+    Listen,
+    Established,
+    SynSent,
+    SynReceived,
+    FinWait1,
+    FinWait2,
+    TimeWait,
+    CloseWait,
+    LastAck,
+    Closing,
+    Closed,
+}
+
+/// ネットワークの接続か待ち受け 1 つ分。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Connection {
+    pub protocol: Protocol,
+    pub local_address: String,
+    pub local_port: u16,
+    /// 相手（待ち受けや UDP では `0.0.0.0`・`::`・`*` など）
+    pub remote_address: String,
+    pub remote_port: u16,
+    /// TCP の状態（UDP は `None`）
+    pub state: Option<TcpState>,
+    /// 持ち主のプロセス（分からなければ `None`）
+    pub pid: Option<u32>,
+}
+
+/// プロセスが読み込んでいるモジュール 1 つ分。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModuleInfo {
+    pub name: String,
+    pub path: String,
+    /// ファイルのバージョン（Windows のみ）
+    pub version: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

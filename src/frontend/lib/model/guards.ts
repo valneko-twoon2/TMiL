@@ -1,5 +1,13 @@
 // IPC で受け取った値が契約どおりの形かを実行時に確かめる。
 import {
+  type AppWindow,
+  type Connection,
+  type ModuleInfo,
+  PROTOCOLS,
+  SERVICE_START_TYPES,
+  SERVICE_STATUSES,
+  type ServiceInfo,
+  TCP_STATES,
   DISK_KINDS,
   PROCESS_STATES,
   STARTUP_LOCATIONS,
@@ -186,3 +194,31 @@ export const isProcessControls = shape<ProcessControls>({
 
 /** `null` を返すコマンド用。 */
 export const isNull = (v: unknown): v is null => v === null;
+
+export const isAppWindows = arrayOf(shape<AppWindow>({ pid: isCount, title: isStr }));
+
+export const isServiceInfo = shape<ServiceInfo>({
+  name: isStr,
+  displayName: isStr,
+  description: isStr,
+  status: oneOf(SERVICE_STATUSES),
+  pid: nullable(isCount),
+  startType: oneOf(SERVICE_START_TYPES),
+  group: isStr,
+});
+export const isServices = arrayOf(isServiceInfo);
+
+const isPort = (v: unknown): v is number => isCount(v) && v <= 65535;
+
+export const isConnection = shape<Connection>({
+  protocol: oneOf(PROTOCOLS),
+  localAddress: isStr,
+  localPort: isPort,
+  remoteAddress: isStr,
+  remotePort: isPort,
+  state: nullable(oneOf(TCP_STATES)),
+  pid: nullable(isCount),
+});
+export const isConnections = arrayOf(isConnection);
+
+export const isModules = arrayOf(shape<ModuleInfo>({ name: isStr, path: isStr, version: nullable(isStr) }));

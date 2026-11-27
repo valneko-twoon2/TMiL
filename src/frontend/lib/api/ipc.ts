@@ -1,6 +1,10 @@
 // バックエンドのコマンド呼び出し。受け取った値は契約どおりかを確かめてから返す。
 import { invoke } from '@tauri-apps/api/core';
 import {
+  isAppWindows,
+  isConnections,
+  isModules,
+  isServices,
   isKillResults,
   isNull,
   isProcessControls,
@@ -11,6 +15,11 @@ import {
   isSystemInfo,
 } from '../model/guards';
 import type {
+  AppWindow,
+  Connection,
+  ModuleInfo,
+  ServiceAction,
+  ServiceInfo,
   KillResult,
   KillTarget,
   Priority,
@@ -56,6 +65,15 @@ export interface Api {
   suspendProcesses(targets: KillTarget[]): Promise<KillResult[]>;
   resumeProcesses(targets: KillTarget[]): Promise<KillResult[]>;
   setProcessEfficiency(targets: KillTarget[], enabled: boolean): Promise<KillResult[]>;
+  runTask(command: string, admin: boolean): Promise<void>;
+  appWindows(): Promise<AppWindow[]>;
+  switchToWindow(pid: number): Promise<void>;
+  services(): Promise<ServiceInfo[]>;
+  controlService(name: string, action: ServiceAction): Promise<void>;
+  openServicesTool(): Promise<void>;
+  networkConnections(): Promise<Connection[]>;
+  processModules(pid: number): Promise<ModuleInfo[]>;
+  setAlwaysOnTop(enabled: boolean): Promise<void>;
 }
 
 /** invoke を差し替えられる形で API を作る（テストではモックを渡す）。 */
@@ -100,6 +118,25 @@ export function createApi(call: Invoke): Api {
     resumeProcesses: (targets) => request('resume_processes', isKillResults, { targets }),
     setProcessEfficiency: (targets, enabled) =>
       request('set_process_efficiency', isKillResults, { targets, enabled }),
+    runTask: async (command, admin) => {
+      await request('run_task', isNull, { command, admin });
+    },
+    appWindows: () => request('app_windows', isAppWindows),
+    switchToWindow: async (pid) => {
+      await request('switch_to_window', isNull, { pid });
+    },
+    services: () => request('services', isServices),
+    controlService: async (name, action) => {
+      await request('control_service', isNull, { name, action });
+    },
+    openServicesTool: async () => {
+      await request('open_services_tool', isNull);
+    },
+    networkConnections: () => request('network_connections', isConnections),
+    processModules: (pid) => request('process_modules', isModules, { pid }),
+    setAlwaysOnTop: async (enabled) => {
+      await request('set_always_on_top', isNull, { enabled });
+    },
   };
 }
 

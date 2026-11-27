@@ -123,6 +123,22 @@ fn open_location(path: &str) -> Result<(), String> {
         .map_err(|e| format!("フォルダーを開けません（xdg-open が必要です）: {e}"))
 }
 
+/// サービス管理ツール（services.msc）を開く（Windows のみ）。
+#[cfg(windows)]
+pub fn open_services_tool() -> Result<(), String> {
+    std::process::Command::new("mmc.exe")
+        .arg("services.msc")
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("サービス管理ツールを開けません: {e}"))
+}
+
+/// サービス管理ツールを開く（Windows のみ）。
+#[cfg(not(windows))]
+pub fn open_services_tool() -> Result<(), String> {
+    Err("サービス管理ツールは Windows でだけ開けます。".to_owned())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

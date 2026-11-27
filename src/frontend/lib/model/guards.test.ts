@@ -9,7 +9,15 @@ import {
 } from './guards';
 import { PROCESS_EXTRAS, readFixture } from '../../test/fixtures';
 import { describe, expect, it } from 'vitest';
-import { isKillResult, isNull, isProcessInfo, isReplacementStatus, isStartupEntry } from './guards';
+import {
+  isConnections,
+  isKillResult,
+  isNull,
+  isProcessInfo,
+  isReplacementStatus,
+  isServices,
+  isStartupEntry,
+} from './guards';
 import type { ProcessInfo } from './types';
 
 const process: ProcessInfo = {
@@ -184,6 +192,48 @@ describe('検証関数（型の違い）', () => {
       expect(icon('data:image/gif;base64,AA==')).toBe(false);
       expect(icon('https://example.com/a.png')).toBe(false);
       expect(icon(null)).toBe(true);
+    });
+  });
+});
+
+describe('検証関数（サービス・接続）', () => {
+  const conn = {
+    protocol: 'tcp',
+    localAddress: '0.0.0.0',
+    localPort: 135,
+    remoteAddress: '0.0.0.0',
+    remotePort: 0,
+    state: 'listen',
+    pid: null,
+  };
+
+  describe('boundary', () => {
+    it('ポートは 0〜65535 だけ', () => {
+      expect(isConnections([{ ...conn, localPort: 0 }])).toBe(true);
+      expect(isConnections([{ ...conn, localPort: 65535 }])).toBe(true);
+      expect(isConnections([{ ...conn, localPort: 65536 }])).toBe(false);
+      expect(isConnections([{ ...conn, remotePort: -1 }])).toBe(false);
+    });
+
+    it('知らない状態やプロトコルは受け取らない', () => {
+      expect(isConnections([{ ...conn, state: null }])).toBe(true);
+      expect(isConnections([{ ...conn, state: 'bound' }])).toBe(false);
+      expect(isConnections([{ ...conn, protocol: 'icmp' }])).toBe(false);
+    });
+
+    it('サービスの状態は決まった値だけ', () => {
+      const svc = {
+        name: 'a',
+        displayName: 'A',
+        description: '',
+        status: 'running',
+        pid: 1,
+        startType: 'manual',
+        group: '',
+      };
+      expect(isServices([svc])).toBe(true);
+      expect(isServices([{ ...svc, status: 'Running' }])).toBe(false);
+      expect(isServices([{ ...svc, startType: 'boot' }])).toBe(false);
     });
   });
 });

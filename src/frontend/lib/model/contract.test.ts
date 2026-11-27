@@ -3,6 +3,10 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { toKillTarget } from '../process/columns';
 import {
+  isAppWindows,
+  isConnections,
+  isModules,
+  isServices,
   isKillResults,
   isKillTargets,
   isProcessControls,
@@ -13,6 +17,12 @@ import {
   isSystemInfo,
 } from './guards';
 import {
+  SERVICE_ACTIONS,
+  SERVICE_START_TYPES,
+  SERVICE_STATUSES,
+  TCP_STATES,
+  type Connection,
+  type ServiceInfo,
   DISK_KINDS,
   PRIORITIES,
   PROCESS_STATES,
@@ -39,8 +49,24 @@ describe('バックエンドとの契約', () => {
       ['process-icons', isProcessIcons],
       // 見本は「読めた場合」と「読めなかった場合」の 2 つを並べている
       ['process-controls', (v: unknown) => Array.isArray(v) && v.every(isProcessControls)],
+      ['app-windows', isAppWindows],
+      ['services', isServices],
+      ['connections', isConnections],
+      ['modules', isModules],
     ] as const)('%s を受け取れる', (name, guard) => {
       expect(guard(fixture(name))).toBe(true);
+    });
+
+    it('サービスの状態・開始の種類・操作の種類が両側で一致する', () => {
+      const services = fixture('services') as ServiceInfo[];
+      expect(new Set(services.map((s) => s.status))).toEqual(new Set(SERVICE_STATUSES));
+      expect(new Set(services.map((s) => s.startType))).toEqual(new Set(SERVICE_START_TYPES));
+      expect(fixture('service-actions')).toEqual([...SERVICE_ACTIONS]);
+    });
+
+    it('TCP の状態の種類が両側で一致する', () => {
+      const states = (fixture('connections') as Connection[]).map((c) => c.state).filter((s) => s !== null);
+      expect(new Set(states)).toEqual(new Set(TCP_STATES));
     });
 
     it('優先度の種類と並びが両側で一致する', () => {
