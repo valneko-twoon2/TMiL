@@ -28,6 +28,7 @@
 | `open_services_tool`      | なし                  | `null`              | サービス管理ツールを開く（Windows のみ） |
 | `network_connections`     | なし                  | `Connection[]`      | TCP の接続と、TCP・UDP の待ち受け        |
 | `process_modules`         | `pid`                 | `ModuleInfo[]`      | プロセスが読み込んでいるモジュール       |
+| `find_handles`            | `query`               | `HandleInfo[]`      | ファイルやフォルダーを開いているプロセス |
 | `set_always_on_top`       | `enabled`             | `null`              | ウィンドウを常に手前に出す               |
 
 エラーは日本語の文字列で返します。
@@ -38,7 +39,7 @@
 
 優先度・関係・中断・再開・効率モードは、終了と同じく状態機械が 1 つずつ判断します（TaskManagerLite 自身とその子孫・入れ替わったプロセスは変えない）。Windows の中断・再開・効率モードは Win32 API を PowerShell の `Add-Type`（C#）で呼びます。スクリプトに二重引用符や改行が入るので、`-EncodedCommand` で渡します。
 
-`run_task`・`services`・`control_service`・`network_connections`・`process_modules`・`app_windows`・`switch_to_window` は、利用者の操作をそのまま OS に頼むか読むだけで状態を持たないので、状態機械は通しません。入力（サービス名など）はバックで確かめ、スクリプトに埋め込まずに標準入力や引数で渡します。`search_online` は検索サイトの URL をバックで組み立て、言葉は URL エンコードして渡します。
+`run_task`・`services`・`control_service`・`network_connections`・`process_modules`・`find_handles`・`app_windows`・`switch_to_window` は、利用者の操作をそのまま OS に頼むか読むだけで状態を持たないので、状態機械は通しません。入力（サービス名など）はバックで確かめ、スクリプトに埋め込まずに標準入力や引数で渡します。`search_online` は検索サイトの URL をバックで組み立て、言葉は URL エンコードして渡します。
 
 `kill_processes` は PID と起動時刻（`startTime`）の組を受け取ります。一覧を取ってから PID が別のプロセスに再利用されていたら終了しません。TaskManagerLite 自身とその子孫（WebView）も終了しません。
 
