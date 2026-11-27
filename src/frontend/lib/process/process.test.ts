@@ -244,7 +244,8 @@ describe('columns', () => {
 describe('プロセスの一覧（細部）', () => {
   describe('equivalence', () => {
     it('名前の大文字・小文字を区別せずに絞り込む', () => {
-      const list = [proc(1, 'Chrome.exe'), proc(2, 'code.exe')];
+      // コマンドラインに名前が入っていると、そちらで当たってしまうので空にする
+      const list = [proc(1, 'Chrome.exe', { command: '' }), proc(2, 'code.exe', { command: '' })];
       expect(filterProcesses(list, 'CHROME').map((p) => p.pid)).toEqual([1]);
       expect(filterProcesses(list, 'chrome').map((p) => p.pid)).toEqual([1]);
     });

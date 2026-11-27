@@ -133,6 +133,7 @@ const CONTRACTS: [string, (v: unknown) => boolean][] = [
   ['kill-results', isKillResults],
   ['kill-targets', isKillTargets],
   ['startup-entries', isStartupEntries],
+  ['replacement-status', isReplacementStatus],
   ['process-icons', isProcessIcons],
   ['process-controls', (v) => Array.isArray(v) && v.every(isProcessControls)],
 ];

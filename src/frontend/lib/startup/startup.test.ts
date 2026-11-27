@@ -35,3 +35,32 @@ describe('startup', () => {
     });
   });
 });
+
+describe('filterStartup（細部）', () => {
+  describe('boundary', () => {
+    it('前後の空白は無視し、名前の大文字・小文字は区別しない', () => {
+      const entries: StartupEntry[] = [
+        {
+          id: 'a',
+          name: 'OneDrive',
+          command: '',
+          program: '',
+          location: 'registryUser',
+          enabled: true,
+          canToggle: true,
+        },
+        {
+          id: 'b',
+          name: 'Other',
+          command: '',
+          program: '',
+          location: 'registryUser',
+          enabled: true,
+          canToggle: true,
+        },
+      ];
+      expect(filterStartup(entries, '  onedrive ').map((e) => e.id)).toEqual(['a']);
+      expect(filterStartup(entries, 'ONEDRIVE').map((e) => e.id)).toEqual(['a']);
+    });
+  });
+});

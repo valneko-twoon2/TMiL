@@ -84,3 +84,47 @@ describe('createApi', () => {
     });
   });
 });
+
+describe('createApi（新しいコマンド）', () => {
+  describe('equivalence', () => {
+    it('アイコン・ファイルの場所・優先度・関係・検索に正しい名前と引数を渡す', async () => {
+      const target = { pid: 1, startTime: 10 };
+      const cases: [unknown, (api: ReturnType<typeof createApi>) => Promise<unknown>, string, unknown][] = [
+        [
+          fixture('process-icons'),
+          (api) => api.processIcons(['a.exe']),
+          'process_icons',
+          { exes: ['a.exe'] },
+        ],
+        [null, (api) => api.revealFile('C:\\a.exe'), 'reveal_file', { path: 'C:\\a.exe' }],
+        [
+          fixture('kill-results'),
+          (api) => api.setProcessPriority([target], 'high'),
+          'set_process_priority',
+          { targets: [target], priority: 'high' },
+        ],
+        [
+          fixture('kill-results'),
+          (api) => api.setProcessAffinity([target], [0, 2]),
+          'set_process_affinity',
+          { targets: [target], cpus: [0, 2] },
+        ],
+        [{ priority: 'low', affinity: [0] }, (api) => api.processControls(7), 'process_controls', { pid: 7 }],
+        [null, (api) => api.searchOnline('chrome.exe'), 'search_online', { query: 'chrome.exe' }],
+      ];
+      for (const [value, run, name, args] of cases) {
+        const { api, call } = apiReturning(value);
+        await run(api);
+        expect(call).toHaveBeenCalledWith(name, args);
+      }
+    });
+
+    it('契約と違う応答のエラーには、コマンド名と種類が入る', async () => {
+      const { api } = apiReturning({ wrong: true });
+      const error = await api.processIcons([]).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(ContractError);
+      expect((error as Error).name).toBe('ContractError');
+      expect((error as Error).message).toBe('process_icons の応答が想定と違います');
+    });
+  });
+});

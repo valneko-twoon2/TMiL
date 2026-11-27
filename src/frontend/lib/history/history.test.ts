@@ -90,3 +90,23 @@ describe('recordSnapshot', () => {
     });
   });
 });
+
+describe('recordSnapshot（同じマウントポイント）', () => {
+  describe('boundary', () => {
+    it('マウントポイントが重なるディスクも、別々の履歴に記録する', () => {
+      const snap = snapshotFixture();
+      const disk = snap.disks[0];
+      if (!disk) throw new Error('disk');
+      const twin = {
+        ...snap,
+        disks: [
+          { ...disk, readPerSec: 1 },
+          { ...disk, readPerSec: 2 },
+        ],
+      };
+      const history = recordSnapshot(EMPTY_HISTORY, twin);
+      expect(history.get(historyKey.diskRead(disk.mountPoint))).toEqual([1]);
+      expect(history.get(historyKey.diskRead(`${disk.mountPoint}#1`))).toEqual([2]);
+    });
+  });
+});
