@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PROCESS_EXTRAS } from '../../test/fixtures';
 import type { ProcessInfo } from '../model/types';
 import {
   DEFAULT_DETAIL_COLUMNS,
@@ -31,6 +32,7 @@ function proc(pid: number, name: string, extra: Partial<ProcessInfo> = {}): Proc
     diskWrittenPerSec: 5,
     runTimeSecs: 0,
     startTime: 1000 + pid,
+    ...PROCESS_EXTRAS,
     ...extra,
   };
 }

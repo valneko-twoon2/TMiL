@@ -7,7 +7,7 @@ import {
   isSystemInfo,
   isKillResults,
 } from './guards';
-import { readFixture } from '../../test/fixtures';
+import { PROCESS_EXTRAS, readFixture } from '../../test/fixtures';
 import { describe, expect, it } from 'vitest';
 import { isKillResult, isNull, isProcessInfo, isReplacementStatus, isStartupEntry } from './guards';
 import type { ProcessInfo } from './types';
@@ -26,6 +26,7 @@ const process: ProcessInfo = {
   diskWrittenPerSec: 0,
   runTimeSecs: 0,
   startTime: 0,
+  ...PROCESS_EXTRAS,
 };
 
 describe('guards', () => {
@@ -65,6 +66,19 @@ describe('guards', () => {
       expect(isProcessInfo({ ...process, cpu: 100 })).toBe(true);
       expect(isProcessInfo({ ...process, cpu: -0.1 })).toBe(false);
       expect(isProcessInfo({ ...process, cpu: 100.1 })).toBe(false);
+    });
+
+    it('GPU 使用率は取れなければ null、取れたら 0〜100', () => {
+      expect(isProcessInfo({ ...process, gpu: null })).toBe(true);
+      expect(isProcessInfo({ ...process, gpu: 100 })).toBe(true);
+      expect(isProcessInfo({ ...process, gpu: 100.1 })).toBe(false);
+      expect(isProcessInfo({ ...process, gpu: undefined })).toBe(false);
+    });
+
+    it('ハンドルとスレッドは取れなければ null、取れたら 0 以上の整数', () => {
+      expect(isProcessInfo({ ...process, handles: 0, threads: 0 })).toBe(true);
+      expect(isProcessInfo({ ...process, handles: -1 })).toBe(false);
+      expect(isProcessInfo({ ...process, threads: 1.5 })).toBe(false);
     });
 
     it('件数は 0 以上の整数だけ', () => {

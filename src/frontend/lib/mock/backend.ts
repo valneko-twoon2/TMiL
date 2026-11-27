@@ -121,6 +121,33 @@ function startup(
   };
 }
 
+/** GPU を使うプロセスと、その使用率の目安。 */
+const GPU_USERS: Record<string, number> = { 'dwm.exe': 4, 'chrome.exe': 1.5, 'Code.exe': 0.6 };
+
+/** 累計値や数など、計測ごとに少しずつ増える項目。 */
+function processExtras(seed: ProcessSeed, s: number, i: number, tick: number) {
+  const memory = seed.memoryMb * MB * (1 + i * 0.15);
+  const gpu = GPU_USERS[seed.name];
+  const runTime = 3600 + tick;
+  return {
+    virtualMemory: Math.round(memory * 1.6),
+    // CPU 使用率（全コア = 100）× 8 コア × 1000 ミリ秒
+    cpuTimeMs: Math.round(seed.cpu * 80 * runTime),
+    diskReadTotal: (s + 1) * 40 * MB + i * MB + tick * 64 * 1024,
+    diskWrittenTotal: (s + 1) * 8 * MB + tick * 16 * 1024,
+    handles: seed.name === 'System' ? 5200 : 180 + s * 37 + i * 11,
+    threads: seed.name === 'System' ? 260 : 6 + ((s * 7 + i * 3) % 40),
+    sessionId: seed.user === 'SYSTEM' ? 0 : 1,
+    gpu:
+      gpu === undefined
+        ? seed.name === 'System'
+          ? null
+          : 0
+        : Math.round(gpu * (0.5 + wave(tick, i, 3)) * 10) / 10,
+    gpuMemory: gpu === undefined ? null : Math.round(gpu * 40 * MB),
+  };
+}
+
 function processes(tick: number, killed: ReadonlySet<number>): ProcessInfo[] {
   const list: ProcessInfo[] = [];
   let pid = 1000;
@@ -148,6 +175,7 @@ function processes(tick: number, killed: ReadonlySet<number>): ProcessInfo[] {
           seed.name === 'Code.exe' && i === 0 ? Math.round(300 * 1024 * wave(tick, 1, 2)) : 0,
         runTimeSecs: 3600 + tick,
         startTime: 1_767_222_000 + id,
+        ...processExtras(seed, s, i, tick),
       });
     }
   });
@@ -174,6 +202,7 @@ export function mockSnapshot(state: MockState): Snapshot {
       total: 16 * GB,
       used: Math.round((7.2 + 0.6 * wave(t, 0, 8)) * GB),
       available: Math.round((8.8 - 0.6 * wave(t, 0, 8)) * GB),
+      free: Math.round((2.4 - 0.3 * wave(t, 0, 8)) * GB),
       swapTotal: 4 * GB,
       swapUsed: Math.round(0.5 * GB),
     },
@@ -208,6 +237,8 @@ export function mockSnapshot(state: MockState): Snapshot {
         transmittedPerSec: Math.round(120 * 1024 * wave(t, 1, 3)),
         totalReceived: 12 * GB,
         totalTransmitted: 2 * GB,
+        macAddress: '00:15:5d:01:02:03',
+        addresses: ['192.168.1.20/24', 'fe80::1c2d:3e4f:5a6b:7c8d/64'],
       },
       {
         name: 'Loopback Pseudo-Interface 1',
@@ -215,6 +246,17 @@ export function mockSnapshot(state: MockState): Snapshot {
         transmittedPerSec: 0,
         totalReceived: 0,
         totalTransmitted: 0,
+        macAddress: '',
+        addresses: ['127.0.0.1/8', '::1/128'],
+      },
+    ],
+    gpus: [
+      {
+        name: 'Mock Graphics 3060',
+        vendor: 'NVIDIA',
+        usage: Math.round((6 + 10 * wave(t, 3, 4)) * 10) / 10,
+        memoryTotal: 12 * GB,
+        memoryUsed: Math.round((2.1 + 0.2 * wave(t, 1, 6)) * GB),
       },
     ],
     processes: procs,

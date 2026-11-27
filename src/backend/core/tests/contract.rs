@@ -13,9 +13,9 @@ mod contract {
 
     use serde::Serialize;
     use taskmanagerlite_core::model::{
-        CpuStats, DiskKind, DiskStats, KillResult, KillTarget, MemoryStats, NetworkStats, Priority,
-        ProcessControls, ProcessIcon, ProcessInfo, ProcessState, ReplacementStatus, Snapshot,
-        StartupEntry, StartupLocation, SystemInfo,
+        CpuStats, DiskKind, DiskStats, GpuStats, KillResult, KillTarget, MemoryStats, NetworkStats,
+        Priority, ProcessControls, ProcessIcon, ProcessInfo, ProcessState, ReplacementStatus,
+        Snapshot, StartupEntry, StartupLocation, SystemInfo,
     };
 
     fn fixtures_dir() -> PathBuf {
@@ -65,6 +65,16 @@ mod contract {
             disk_written_per_sec: 0,
             run_time_secs: 3600,
             start_time: 1_767_222_000,
+            virtual_memory: 4_194_304,
+            cpu_time_ms: 45_000,
+            disk_read_total: 10_485_760,
+            disk_written_total: 1_048_576,
+            // 取れる場合と取れない場合の両方を見本に入れる
+            handles: (pid == 100).then_some(120),
+            threads: (pid == 100).then_some(8),
+            session_id: (pid != 1).then_some(1),
+            gpu: (pid == 100).then_some(3.5),
+            gpu_memory: (pid == 100).then_some(67_108_864),
         }
     }
 
@@ -97,6 +107,7 @@ mod contract {
                 total: 17_179_869_184,
                 used: 8_589_934_592,
                 available: 8_589_934_592,
+                free: 4_294_967_296,
                 swap_total: 4_294_967_296,
                 swap_used: 0,
             },
@@ -111,7 +122,25 @@ mod contract {
                 transmitted_per_sec: 200,
                 total_received: 1_000_000,
                 total_transmitted: 200_000,
+                mac_address: "00:11:22:33:44:55".to_owned(),
+                addresses: vec!["192.168.1.2/24".to_owned(), "fe80::1/64".to_owned()],
             }],
+            gpus: vec![
+                GpuStats {
+                    name: "Example GPU".to_owned(),
+                    vendor: "Example".to_owned(),
+                    usage: Some(12.5),
+                    memory_total: Some(8_589_934_592),
+                    memory_used: Some(1_073_741_824),
+                },
+                GpuStats {
+                    name: "Basic Display".to_owned(),
+                    vendor: String::new(),
+                    usage: None,
+                    memory_total: None,
+                    memory_used: None,
+                },
+            ],
             processes: vec![
                 process(1, None, "init", ProcessState::Sleeping),
                 process(100, Some(1), "app", ProcessState::Running),

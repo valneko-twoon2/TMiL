@@ -14,6 +14,7 @@
     "total": 17179869184,
     "used": 8589934592,
     "available": 8589934592,
+    "free": 4294967296,
     "swapTotal": 4294967296,
     "swapUsed": 0
   },
@@ -58,7 +59,28 @@
       "receivedPerSec": 1000,
       "transmittedPerSec": 200,
       "totalReceived": 1000000,
-      "totalTransmitted": 200000
+      "totalTransmitted": 200000,
+      "macAddress": "00:11:22:33:44:55",
+      "addresses": [
+        "192.168.1.2/24",
+        "fe80::1/64"
+      ]
+    }
+  ],
+  "gpus": [
+    {
+      "name": "Example GPU",
+      "vendor": "Example",
+      "usage": 12.5,
+      "memoryTotal": 8589934592,
+      "memoryUsed": 1073741824
+    },
+    {
+      "name": "Basic Display",
+      "vendor": "",
+      "usage": null,
+      "memoryTotal": null,
+      "memoryUsed": null
     }
   ],
   "processes": [
@@ -75,7 +97,16 @@
       "diskReadPerSec": 2048,
       "diskWrittenPerSec": 0,
       "runTimeSecs": 3600,
-      "startTime": 1767222000
+      "startTime": 1767222000,
+      "virtualMemory": 4194304,
+      "cpuTimeMs": 45000,
+      "diskReadTotal": 10485760,
+      "diskWrittenTotal": 1048576,
+      "handles": null,
+      "threads": null,
+      "sessionId": null,
+      "gpu": null,
+      "gpuMemory": null
     },
     {
       "pid": 100,
@@ -90,7 +121,16 @@
       "diskReadPerSec": 2048,
       "diskWrittenPerSec": 0,
       "runTimeSecs": 3600,
-      "startTime": 1767222000
+      "startTime": 1767222000,
+      "virtualMemory": 4194304,
+      "cpuTimeMs": 45000,
+      "diskReadTotal": 10485760,
+      "diskWrittenTotal": 1048576,
+      "handles": 120,
+      "threads": 8,
+      "sessionId": 1,
+      "gpu": 3.5,
+      "gpuMemory": 67108864
     },
     {
       "pid": 101,
@@ -105,7 +145,16 @@
       "diskReadPerSec": 2048,
       "diskWrittenPerSec": 0,
       "runTimeSecs": 3600,
-      "startTime": 1767222000
+      "startTime": 1767222000,
+      "virtualMemory": 4194304,
+      "cpuTimeMs": 45000,
+      "diskReadTotal": 10485760,
+      "diskWrittenTotal": 1048576,
+      "handles": null,
+      "threads": null,
+      "sessionId": 1,
+      "gpu": null,
+      "gpuMemory": null
     },
     {
       "pid": 102,
@@ -120,7 +169,16 @@
       "diskReadPerSec": 2048,
       "diskWrittenPerSec": 0,
       "runTimeSecs": 3600,
-      "startTime": 1767222000
+      "startTime": 1767222000,
+      "virtualMemory": 4194304,
+      "cpuTimeMs": 45000,
+      "diskReadTotal": 10485760,
+      "diskWrittenTotal": 1048576,
+      "handles": null,
+      "threads": null,
+      "sessionId": 1,
+      "gpu": null,
+      "gpuMemory": null
     },
     {
       "pid": 103,
@@ -135,7 +193,16 @@
       "diskReadPerSec": 2048,
       "diskWrittenPerSec": 0,
       "runTimeSecs": 3600,
-      "startTime": 1767222000
+      "startTime": 1767222000,
+      "virtualMemory": 4194304,
+      "cpuTimeMs": 45000,
+      "diskReadTotal": 10485760,
+      "diskWrittenTotal": 1048576,
+      "handles": null,
+      "threads": null,
+      "sessionId": 1,
+      "gpu": null,
+      "gpuMemory": null
     }
   ]
 }

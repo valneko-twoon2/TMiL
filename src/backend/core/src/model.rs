@@ -13,6 +13,7 @@ pub struct Snapshot {
     pub memory: MemoryStats,
     pub disks: Vec<DiskStats>,
     pub networks: Vec<NetworkStats>,
+    pub gpus: Vec<GpuStats>,
     pub processes: Vec<ProcessInfo>,
 }
 
@@ -37,6 +38,8 @@ pub struct MemoryStats {
     pub total: u64,
     pub used: u64,
     pub available: u64,
+    /// どこにも使われていない量（Windows では取れないので `available` と同じ）
+    pub free: u64,
     pub swap_total: u64,
     pub swap_used: u64,
 }
@@ -74,6 +77,23 @@ pub struct NetworkStats {
     pub transmitted_per_sec: u64,
     pub total_received: u64,
     pub total_transmitted: u64,
+    /// MAC アドレス（`00:00:00:00:00:00` の形。取れなければ空）
+    pub mac_address: String,
+    /// IP アドレスと接頭辞の長さ（例: `192.168.1.2/24`）
+    pub addresses: Vec<String>,
+}
+
+/// GPU 1 つ分の状態。取れない値は `None`。
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GpuStats {
+    pub name: String,
+    pub vendor: String,
+    /// 使用率（0〜100）
+    pub usage: Option<f32>,
+    /// 専用メモリの合計と使用量（バイト）
+    pub memory_total: Option<u64>,
+    pub memory_used: Option<u64>,
 }
 
 /// プロセスの状態。
@@ -111,6 +131,22 @@ pub struct ProcessInfo {
     pub run_time_secs: u64,
     /// 起動した時刻（UNIX 秒）。終了するときに同じプロセスかを確かめるのに使う
     pub start_time: u64,
+    /// 仮想メモリ（Windows ではコミット サイズ）
+    pub virtual_memory: u64,
+    /// 起動してから使った CPU 時間の合計（ミリ秒。コアごとの時間を足したもの）
+    pub cpu_time_ms: u64,
+    /// 起動してから読み書きしたバイト数の合計（Windows ではディスク以外の I/O も含む）
+    pub disk_read_total: u64,
+    pub disk_written_total: u64,
+    /// ハンドルの数（Linux では開いているファイルの数）
+    pub handles: Option<u32>,
+    /// スレッドの数（Linux のみ）
+    pub threads: Option<u32>,
+    /// セッション ID（Linux ではセッションの先頭のプロセスの PID）
+    pub session_id: Option<u32>,
+    /// GPU 使用率（0〜100）と GPU メモリ（バイト）
+    pub gpu: Option<f32>,
+    pub gpu_memory: Option<u64>,
 }
 
 /// 終了するプロセスの指定。PID が別のプロセスに再利用されていないかを起動時刻で確かめる。

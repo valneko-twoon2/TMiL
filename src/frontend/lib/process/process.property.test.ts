@@ -1,6 +1,7 @@
 // プロセスの一覧まわりの純粋関数に、どんな入力でも成り立つ性質があるかを fast-check で確かめる。
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import { processExtrasArb } from '../../test/fixtures';
 import type { ProcessInfo } from '../model/types';
 import {
   DETAIL_COLUMNS,
@@ -26,6 +27,7 @@ const processArb: fc.Arbitrary<ProcessInfo> = fc.record({
   diskWrittenPerSec: fc.nat({ max: 1000 }),
   runTimeSecs: fc.nat(),
   startTime: fc.nat(),
+  ...processExtrasArb,
 });
 
 /** PID が重ならない一覧（実際の一覧と同じ）。 */

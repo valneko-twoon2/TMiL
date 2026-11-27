@@ -1,6 +1,7 @@
 // fast-check でランダムな入力を大量に与え、落ちないことと性質が保たれることを確かめる。
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import { processExtrasArb } from '../test/fixtures';
 import { linePoints, niceMax } from './chart/chart';
 import { formatBits, formatBytes, formatPercent, formatUptime } from './format/format';
 import { heatLevel } from './format/heat';
@@ -30,6 +31,7 @@ const processArb: fc.Arbitrary<ProcessInfo> = fc.record({
   diskWrittenPerSec: fc.nat(),
   runTimeSecs: fc.nat(),
   startTime: fc.nat(),
+  ...processExtrasArb,
 });
 
 describe('ランダム入力', () => {

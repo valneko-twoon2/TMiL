@@ -7,6 +7,7 @@ export interface Snapshot {
   memory: MemoryStats;
   disks: DiskStats[];
   networks: NetworkStats[];
+  gpus: GpuStats[];
   processes: ProcessInfo[];
 }
 
@@ -22,6 +23,8 @@ export interface MemoryStats {
   total: number;
   used: number;
   available: number;
+  /** どこにも使われていない量（Windows では available と同じ） */
+  free: number;
   swapTotal: number;
   swapUsed: number;
 }
@@ -47,6 +50,19 @@ export interface NetworkStats {
   transmittedPerSec: number;
   totalReceived: number;
   totalTransmitted: number;
+  /** MAC アドレス（取れなければ空） */
+  macAddress: string;
+  /** IP アドレスと接頭辞の長さ（例: 192.168.1.2/24） */
+  addresses: string[];
+}
+
+/** GPU 1 つ分の状態。取れない値は null。 */
+export interface GpuStats {
+  name: string;
+  vendor: string;
+  usage: number | null;
+  memoryTotal: number | null;
+  memoryUsed: number | null;
 }
 
 export const PROCESS_STATES = ['running', 'sleeping', 'stopped', 'zombie', 'other'] as const;
@@ -67,6 +83,21 @@ export interface ProcessInfo {
   runTimeSecs: number;
   /** 起動した時刻（UNIX 秒）。終了するときに同じプロセスかを確かめる */
   startTime: number;
+  /** 仮想メモリ（Windows ではコミット サイズ） */
+  virtualMemory: number;
+  /** 起動してから使った CPU 時間の合計（ミリ秒） */
+  cpuTimeMs: number;
+  /** 起動してから読み書きしたバイト数の合計 */
+  diskReadTotal: number;
+  diskWrittenTotal: number;
+  /** ハンドルの数（Linux では開いているファイルの数） */
+  handles: number | null;
+  /** スレッドの数（Linux のみ） */
+  threads: number | null;
+  sessionId: number | null;
+  /** GPU 使用率（0〜100）と GPU メモリ（バイト） */
+  gpu: number | null;
+  gpuMemory: number | null;
 }
 
 /** 終了するプロセスの指定。 */

@@ -8,15 +8,21 @@ use sysinfo::{
     ProcessStatus, ProcessesToUpdate, RefreshKind, System, UpdateKind, Users,
 };
 
+use crate::gpu::GpuSampler;
 use crate::machine::ObservedProcess;
 use crate::metrics::{clamp_percent, normalize_cpu, per_second, truncate_chars};
 use crate::model::{
     CpuStats, DiskKind, DiskStats, MemoryStats, NetworkStats, ProcessInfo, ProcessState, Snapshot,
     SystemInfo,
 };
+use crate::procfs;
 
 /// コマンドラインを画面に送るときの最大文字数。
 const COMMAND_MAX_CHARS: usize = 1024;
+
+/// プロセスごとの GPU 使用率を取り直す間隔。取るのに時間がかかる（Windows で 20ms ほど）ので、
+/// 毎回は取らず、間は前の値を使う。
+const PROCESS_GPU_INTERVAL: Duration = Duration::from_secs(3);
 
 /// 初期化に失敗したときのエラー。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -41,7 +47,10 @@ pub struct Collector {
     disks: Disks,
     networks: Networks,
     users: Users,
+    gpus: GpuSampler,
     last_refresh: Option<Instant>,
+    /// プロセスごとの GPU 使用率を最後に取った時刻
+    last_process_gpu: Option<Instant>,
     /// このプロセスと、その子孫（WebView など）は終了させない
     protected_root: Option<u32>,
 }
@@ -64,7 +73,9 @@ impl Collector {
             disks,
             networks,
             users,
+            gpus: GpuSampler::start(),
             last_refresh: None,
+            last_process_gpu: None,
             protected_root: Some(std::process::id()),
         })
     }
@@ -76,7 +87,11 @@ impl Collector {
             .last_refresh
             .map_or(Duration::ZERO, |last| now.duration_since(last));
         self.last_refresh = Some(now);
-        self.refresh();
+        let with_gpu = is_due(self.last_process_gpu, now, PROCESS_GPU_INTERVAL);
+        if with_gpu {
+            self.last_process_gpu = Some(now);
+        }
+        self.refresh(with_gpu);
 
         let logical_cores = self.system.cpus().len();
         let processes = self.processes(elapsed, logical_cores);
@@ -86,6 +101,7 @@ impl Collector {
             memory: self.memory_stats(),
             disks: self.disk_stats(elapsed),
             networks: self.network_stats(elapsed),
+            gpus: self.gpus.sample(),
             processes,
         }
     }
@@ -149,21 +165,22 @@ impl Collector {
         self
     }
 
-    fn refresh(&mut self) {
+    fn refresh(&mut self, with_gpu: bool) {
+        let mut kind = ProcessRefreshKind::nothing()
+            .with_cpu()
+            .with_memory()
+            .with_disk_usage()
+            .with_user(UpdateKind::OnlyIfNotSet)
+            .with_exe(UpdateKind::OnlyIfNotSet)
+            .with_cmd(UpdateKind::OnlyIfNotSet);
+        if with_gpu {
+            kind = kind.with_gpu_usage().with_gpu_memory();
+        }
         self.system
             .refresh_cpu_specifics(CpuRefreshKind::nothing().with_usage().with_frequency());
         self.system.refresh_memory();
-        self.system.refresh_processes_specifics(
-            ProcessesToUpdate::All,
-            true,
-            ProcessRefreshKind::nothing()
-                .with_cpu()
-                .with_memory()
-                .with_disk_usage()
-                .with_user(UpdateKind::OnlyIfNotSet)
-                .with_exe(UpdateKind::OnlyIfNotSet)
-                .with_cmd(UpdateKind::OnlyIfNotSet),
-        );
+        self.system
+            .refresh_processes_specifics(ProcessesToUpdate::All, true, kind);
         self.disks.refresh_specifics(
             true,
             DiskRefreshKind::nothing().with_storage().with_io_usage(),
@@ -199,6 +216,15 @@ impl Collector {
                     disk_written_per_sec: per_second(usage.written_bytes, elapsed),
                     run_time_secs: p.run_time(),
                     start_time: p.start_time(),
+                    virtual_memory: p.virtual_memory(),
+                    cpu_time_ms: p.accumulated_cpu_time(),
+                    disk_read_total: usage.total_read_bytes,
+                    disk_written_total: usage.total_written_bytes,
+                    handles: p.open_files().map(saturate_u32),
+                    threads: procfs::thread_count(p.pid().as_u32()),
+                    session_id: p.session_id().map(Pid::as_u32),
+                    gpu: p.gpu_usage().map(clamp_percent),
+                    gpu_memory: p.gpu_memory(),
                 }
             })
             .collect()
@@ -220,6 +246,7 @@ impl Collector {
             total: self.system.total_memory(),
             used: self.system.used_memory(),
             available: self.system.available_memory(),
+            free: self.system.free_memory(),
             swap_total: self.system.total_swap(),
             swap_used: self.system.used_swap(),
         }
@@ -255,11 +282,39 @@ impl Collector {
                 transmitted_per_sec: per_second(data.transmitted(), elapsed),
                 total_received: data.total_received(),
                 total_transmitted: data.total_transmitted(),
+                mac_address: mac_text(data.mac_address().0),
+                addresses: data
+                    .ip_networks()
+                    .iter()
+                    .map(|n| format!("{}/{}", n.addr, n.prefix))
+                    .collect(),
             })
             .collect();
         list.sort_by(|a, b| a.name.cmp(&b.name));
         list
     }
+}
+
+/// 前回から `interval` 以上たったか（まだ一度もしていなければ真）。
+pub fn is_due(last: Option<Instant>, now: Instant, interval: Duration) -> bool {
+    last.is_none_or(|at| now.saturating_duration_since(at) >= interval)
+}
+
+/// 数を u32 に収める（大きすぎる値は上限にする）。
+pub fn saturate_u32(n: usize) -> u32 {
+    u32::try_from(n).unwrap_or(u32::MAX)
+}
+
+/// MAC アドレスを `aa:bb:cc:dd:ee:ff` の形にする。すべて 0 なら空（取れていない）。
+pub fn mac_text(bytes: [u8; 6]) -> String {
+    if bytes == [0; 6] {
+        return String::new();
+    }
+    bytes
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect::<Vec<_>>()
+        .join(":")
 }
 
 /// `pid` が `root` 自身か、その子孫かを親をたどって調べる。親子関係がループしていても止まる。
@@ -365,6 +420,19 @@ mod tests {
         }
 
         #[test]
+        fn mac_address_is_lowercase_hex_with_colons() {
+            assert_eq!(
+                mac_text([0x00, 0x1a, 0x2B, 0xff, 0x09, 0x10]),
+                "00:1a:2b:ff:09:10"
+            );
+        }
+
+        #[test]
+        fn small_counts_are_kept() {
+            assert_eq!(saturate_u32(120), 120);
+        }
+
+        #[test]
         fn join_command_uses_spaces() {
             let args = [OsString::from("app.exe"), OsString::from("--flag")];
             assert_eq!(join_command(&args), "app.exe --flag");
@@ -424,6 +492,33 @@ mod tests {
         use super::*;
 
         #[test]
+        fn due_exactly_at_interval_and_not_before() {
+            let start = Instant::now();
+            let second = Duration::from_secs(1);
+            assert!(is_due(None, start, second));
+            assert!(!is_due(Some(start), start, second));
+            assert!(!is_due(
+                Some(start),
+                start + Duration::from_millis(999),
+                second
+            ));
+            assert!(is_due(Some(start), start + second, second));
+        }
+
+        #[test]
+        fn all_zero_mac_address_is_empty() {
+            assert_eq!(mac_text([0; 6]), "");
+            assert_eq!(mac_text([0, 0, 0, 0, 0, 1]), "00:00:00:00:00:01");
+        }
+
+        #[test]
+        fn huge_counts_saturate() {
+            assert_eq!(saturate_u32(0), 0);
+            assert_eq!(saturate_u32(u32::MAX as usize), u32::MAX);
+            assert_eq!(saturate_u32(usize::MAX), u32::MAX);
+        }
+
+        #[test]
         fn join_command_empty() {
             assert_eq!(join_command(&[]), "");
         }
@@ -473,6 +568,23 @@ mod tests {
                     .all(|p| (0.0..=100.0).contains(&p.cpu))
             );
             assert!(snap.memory.used <= snap.memory.total);
+            assert!(snap.memory.free <= snap.memory.total);
+            assert!(
+                snap.gpus
+                    .iter()
+                    .all(|g| g.usage.is_none_or(|u| (0.0..=100.0).contains(&u)))
+            );
+            assert!(
+                snap.processes
+                    .iter()
+                    .all(|p| p.gpu.is_none_or(|u| (0.0..=100.0).contains(&u)))
+            );
+            assert!(
+                snap.networks
+                    .iter()
+                    .flat_map(|n| &n.addresses)
+                    .all(|a| a.contains('/'))
+            );
             assert!(snap.memory.total > 0);
             assert!(snap.disks.iter().all(|d| d.available <= d.total));
             assert!(snap.timestamp_ms > 0);
@@ -500,6 +612,23 @@ mod tests {
             let _ = child.wait();
             assert!(me.protected);
             assert!(kid.protected, "子プロセスも守る");
+        }
+
+        #[test]
+        fn own_process_reports_cumulative_values() {
+            let mut c = collector();
+            let snap = c.snapshot();
+            let me = snap
+                .processes
+                .iter()
+                .find(|p| p.pid == std::process::id())
+                .unwrap();
+            assert!(me.virtual_memory > 0);
+            assert!(
+                me.handles.is_some_and(|h| h > 0),
+                "ハンドル（開いているファイル）が取れていない"
+            );
+            assert_eq!(me.threads.is_some(), cfg!(target_os = "linux"));
         }
 
         #[test]

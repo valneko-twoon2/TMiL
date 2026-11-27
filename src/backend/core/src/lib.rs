@@ -2,6 +2,7 @@
 
 pub mod backend;
 pub mod collector;
+pub mod gpu;
 pub mod icons;
 pub mod machine;
 pub mod metrics;
@@ -9,6 +10,7 @@ pub mod model;
 pub mod open;
 pub mod powershell;
 pub mod process_control;
+pub mod procfs;
 pub mod startup;
 pub mod taskmgr;
 

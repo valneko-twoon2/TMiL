@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PROCESS_EXTRAS } from '../../test/fixtures';
 import type { ProcessInfo } from '../model/types';
 import { processTree } from './tree';
 
@@ -17,6 +18,7 @@ function proc(pid: number, parentPid: number | null): ProcessInfo {
     diskWrittenPerSec: 0,
     runTimeSecs: 0,
     startTime: 1000 + pid,
+    ...PROCESS_EXTRAS,
   };
 }
 

@@ -5,6 +5,7 @@ import {
   STARTUP_LOCATIONS,
   type CpuStats,
   type DiskStats,
+  type GpuStats,
   type KillResult,
   type KillTarget,
   type MemoryStats,
@@ -59,6 +60,7 @@ export const isMemoryStats = shape<MemoryStats>({
   total: isCount,
   used: isCount,
   available: isCount,
+  free: isCount,
   swapTotal: isCount,
   swapUsed: isCount,
 });
@@ -81,6 +83,16 @@ export const isNetworkStats = shape<NetworkStats>({
   transmittedPerSec: isCount,
   totalReceived: isCount,
   totalTransmitted: isCount,
+  macAddress: isStr,
+  addresses: arrayOf(isStr),
+});
+
+export const isGpuStats = shape<GpuStats>({
+  name: isStr,
+  vendor: isStr,
+  usage: nullable(isPercent),
+  memoryTotal: nullable(isCount),
+  memoryUsed: nullable(isCount),
 });
 
 export const isProcessInfo = shape<ProcessInfo>({
@@ -97,6 +109,15 @@ export const isProcessInfo = shape<ProcessInfo>({
   diskWrittenPerSec: isCount,
   runTimeSecs: isCount,
   startTime: isCount,
+  virtualMemory: isCount,
+  cpuTimeMs: isCount,
+  diskReadTotal: isCount,
+  diskWrittenTotal: isCount,
+  handles: nullable(isCount),
+  threads: nullable(isCount),
+  sessionId: nullable(isCount),
+  gpu: nullable(isPercent),
+  gpuMemory: nullable(isCount),
 });
 
 export const isSnapshot = shape<Snapshot>({
@@ -105,6 +126,7 @@ export const isSnapshot = shape<Snapshot>({
   memory: isMemoryStats,
   disks: arrayOf(isDiskStats),
   networks: arrayOf(isNetworkStats),
+  gpus: arrayOf(isGpuStats),
   processes: arrayOf(isProcessInfo),
 });
 

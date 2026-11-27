@@ -33,8 +33,8 @@ describe('buildResources', () => {
     it('ループバックと通信実績の無いインターフェースは出さない', () => {
       const nets = visibleNetworks([
         ...snapshot.networks,
-        { name: 'lo', receivedPerSec: 9, transmittedPerSec: 9, totalReceived: 9, totalTransmitted: 9 },
-        { name: 'wlan0', receivedPerSec: 0, transmittedPerSec: 0, totalReceived: 0, totalTransmitted: 0 },
+        network('lo', { receivedPerSec: 9, transmittedPerSec: 9, totalReceived: 9, totalTransmitted: 9 }),
+        network('wlan0'),
       ]);
       expect(nets.map((n) => n.name)).toEqual(['eth0']);
     });
@@ -83,7 +83,7 @@ describe('visibleNetworks', () => {
     it('lo で始まる普通のアダプターは出す', () => {
       const base = { receivedPerSec: 1, transmittedPerSec: 1, totalReceived: 1, totalTransmitted: 1 };
       const names = ['Local Area Connection', 'lowpan0', 'lo', 'lo0', 'Loopback Pseudo-Interface 1'];
-      const shown = visibleNetworks(names.map((name) => ({ ...base, name }))).map((n) => n.name);
+      const shown = visibleNetworks(names.map((name) => network(name, base))).map((n) => n.name);
       expect(shown).toEqual(['Local Area Connection', 'lowpan0']);
     });
   });
@@ -117,6 +117,8 @@ const network = (name: string, extra: Partial<NetworkStats> = {}): NetworkStats 
   transmittedPerSec: 0,
   totalReceived: 0,
   totalTransmitted: 0,
+  macAddress: '',
+  addresses: [],
   ...extra,
 });
 
