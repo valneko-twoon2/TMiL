@@ -6,12 +6,15 @@
     label: string;
     /** 幅を変えた。`null` は最初の幅に戻す。`done` はつかみ終えたか（保存してよいか） */
     onresize: (width: number | null, done: boolean) => void;
+    /** つまみを置く側。左側なら、左へ動かすと広がる（右に置いた横の欄など） */
+    edge?: 'left' | 'right';
   }
 
-  const { width, label, onresize }: Props = $props();
+  const { width, label, onresize, edge = 'right' }: Props = $props();
 
   const KEY_STEP = 10;
   let start: { x: number; width: number } | null = null;
+  const sign = $derived(edge === 'left' ? -1 : 1);
 
   function onpointerdown(event: PointerEvent) {
     if (event.button !== 0) return;
@@ -22,19 +25,19 @@
   }
 
   function onpointermove(event: PointerEvent) {
-    if (start) onresize(start.width + event.clientX - start.x, false);
+    if (start) onresize(start.width + sign * (event.clientX - start.x), false);
   }
 
   function onpointerup(event: PointerEvent) {
     if (!start) return;
-    onresize(start.width + event.clientX - start.x, true);
+    onresize(start.width + sign * (event.clientX - start.x), true);
     start = null;
   }
 
   function onkeydown(event: KeyboardEvent) {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();
-    onresize(width + (event.key === 'ArrowRight' ? KEY_STEP : -KEY_STEP), true);
+    onresize(width + sign * (event.key === 'ArrowRight' ? KEY_STEP : -KEY_STEP), true);
   }
 </script>
 
@@ -42,6 +45,7 @@
 <button
   type="button"
   class="resize"
+  class:left={edge === 'left'}
   aria-label="{label} の幅を変える"
   title="ドラッグで幅を変更（ダブルクリックで元に戻す）"
   {onpointerdown}
@@ -88,5 +92,13 @@
   }
   .resize:focus-visible {
     outline: none;
+  }
+  .resize.left {
+    right: auto;
+    left: 0;
+  }
+  .resize.left::after {
+    right: auto;
+    left: 0;
   }
 </style>

@@ -188,6 +188,31 @@ test.describe('リソース モニター', () => {
     await expect(handles).toContainText('見つかりません');
   });
 
+  test('右のグラフの欄は左の端をドラッグして広げられ、次回も残る', async ({ page }) => {
+    await open(page, 'リソース モニター');
+    const graphs = page.getByRole('complementary', { name: 'グラフ' });
+    const before = (await graphs.boundingBox())?.width ?? 0;
+    const handle = page.getByRole('button', { name: 'グラフの欄 の幅を変える' });
+    const box = await handle.boundingBox();
+    if (!box) throw new Error('つかむ場所がありません');
+    await page.mouse.move(box.x + box.width / 2, box.y + 40);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 - 100, box.y + 40, { steps: 4 });
+    await page.mouse.up();
+    const after = (await graphs.boundingBox())?.width ?? 0;
+    expect(after - before).toBeGreaterThan(80);
+
+    await page.reload();
+    await page
+      .getByRole('navigation')
+      .getByRole('button', { name: 'リソース モニター', exact: true })
+      .click();
+    expect((await graphs.boundingBox())?.width ?? 0).toBeCloseTo(after, 0);
+
+    await handle.dblclick();
+    expect((await graphs.boundingBox())?.width ?? 0).toBeCloseTo(before, 0);
+  });
+
   test('プロセスを右クリックして中断と再開ができる', async ({ page }) => {
     await open(page, 'リソース モニター');
     const row = page.getByTestId('resmon-cpu').locator('tbody tr', { hasText: 'Discord.exe' }).first();

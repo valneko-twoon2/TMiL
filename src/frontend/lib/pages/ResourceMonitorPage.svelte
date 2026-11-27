@@ -6,6 +6,7 @@
   import LineChart from '../components/LineChart.svelte';
   import PageHeader from '../components/PageHeader.svelte';
   import Panel from '../components/Panel.svelte';
+  import ResizeHandle from '../components/ResizeHandle.svelte';
   import { niceMax } from '../chart/chart';
   import { formatBits, formatBytes, formatFrequency, formatPercent, formatRate } from '../format/format';
   import { shareOf } from '../format/heat';
@@ -38,6 +39,7 @@
   } from '../resmon/resmon';
   import { SERVICE_COLUMNS, serviceCommands } from '../services/services';
   import type { IconStore } from '../state/icons.svelte';
+  import { ColumnSizer } from '../state/columnSizer.svelte';
   import type { ContextMenus } from '../state/menus.svelte';
   import type { Monitor } from '../state/monitor.svelte';
   import type { ProcessActions } from '../state/processActions.svelte';
@@ -60,6 +62,10 @@
   /** 接続の一覧とサービスの一覧を読み直す間隔 */
   const CONNECTIONS_MS = 2000;
   const SERVICES_MS = 10000;
+  /** 右のグラフの欄の幅（px）。つまみで変えられ、設定に残る */
+  const GRAPHS_WIDTH = { initial: 260, min: 180, max: 640 };
+  const sizer = untrack(() => new ColumnSizer(settings, 'resmon', { graphs: GRAPHS_WIDTH.initial }));
+  const graphsWidth = $derived(Math.min(GRAPHS_WIDTH.max, Math.max(GRAPHS_WIDTH.min, sizer.width('graphs'))));
 
   let tab = $state<ResmonTab>('overview');
   let selected = $state<string | null>(null);
@@ -315,7 +321,7 @@
   </div>
 {/snippet}
 
-<div class="layout">
+<div class="layout" style:grid-template-columns="minmax(0, 1fr) {graphsWidth}px">
   <div class="panels">
     {#if tab === 'overview'}
       <Panel
@@ -537,79 +543,92 @@
     {/if}
   </div>
 
-  <aside class="graphs" aria-label="グラフ">
-    {#if tab === 'overview' || tab === 'cpu'}
-      {@render graph(
-        'CPU',
-        formatPercent(snapshot?.cpu.usage ?? 0, 0),
-        get(historyKey.cpu),
-        100,
-        RESOURCE_COLORS.cpu,
-        checked.size > 0 ? resmon.selectedHistory : null,
-      )}
-    {/if}
-    {#if tab === 'cpu'}
-      {#each (snapshot?.cpu.perCore ?? []).map((usage, i) => ({ usage, i })) as core (core.i)}
+  <div class="side">
+    <ResizeHandle
+      width={graphsWidth}
+      label="グラフの欄"
+      edge="left"
+      onresize={(width: number | null, done: boolean) => {
+        sizer.resize('graphs', width, done);
+      }}
+    />
+    <aside class="graphs" aria-label="グラフ">
+      {#if tab === 'overview' || tab === 'cpu'}
         {@render graph(
-          `CPU ${String(core.i)}`,
-          formatPercent(core.usage, 0),
-          get(historyKey.core(core.i)),
+          'CPU',
+          formatPercent(snapshot?.cpu.usage ?? 0, 0),
+          get(historyKey.cpu),
           100,
           RESOURCE_COLORS.cpu,
+          checked.size > 0 ? resmon.selectedHistory : null,
+        )}
+      {/if}
+      {#if tab === 'cpu'}
+        {#each (snapshot?.cpu.perCore ?? []).map((usage, i) => ({ usage, i })) as core (core.i)}
+          {@render graph(
+            `CPU ${String(core.i)}`,
+            formatPercent(core.usage, 0),
+            get(historyKey.core(core.i)),
+            100,
+            RESOURCE_COLORS.cpu,
+            null,
+          )}
+        {/each}
+      {/if}
+      {#if tab === 'overview' || tab === 'disk'}
+        {@render graph(
+          'ディスク',
+          formatRate(diskRate),
+          diskSeries,
+          niceMax(diskSeries, 1024),
+          RESOURCE_COLORS.disk,
           null,
         )}
-      {/each}
-    {/if}
-    {#if tab === 'overview' || tab === 'disk'}
-      {@render graph(
-        'ディスク',
-        formatRate(diskRate),
-        diskSeries,
-        niceMax(diskSeries, 1024),
-        RESOURCE_COLORS.disk,
-        null,
-      )}
-    {/if}
-    {#if tab === 'disk'}
-      {#each diskKeys(snapshot?.disks ?? []) as key (key)}
-        {@const series = sumSeries([get(historyKey.diskRead(key)), get(historyKey.diskWrite(key))])}
-        {@render graph(key, '', series, niceMax(series, 1024), RESOURCE_COLORS.disk, null)}
-      {/each}
-    {/if}
-    {#if tab === 'overview' || tab === 'network'}
-      {@render graph(
-        'ネットワーク',
-        formatBits(networkRate),
-        networkSeries,
-        niceMax(networkSeries, 1024),
-        RESOURCE_COLORS.network,
-        null,
-      )}
-    {/if}
-    {#if tab === 'network'}
-      {#each visibleNetworks(snapshot?.networks ?? []) as n (n.name)}
-        {@const series = sumSeries([get(historyKey.netReceive(n.name)), get(historyKey.netTransmit(n.name))])}
+      {/if}
+      {#if tab === 'disk'}
+        {#each diskKeys(snapshot?.disks ?? []) as key (key)}
+          {@const series = sumSeries([get(historyKey.diskRead(key)), get(historyKey.diskWrite(key))])}
+          {@render graph(key, '', series, niceMax(series, 1024), RESOURCE_COLORS.disk, null)}
+        {/each}
+      {/if}
+      {#if tab === 'overview' || tab === 'network'}
         {@render graph(
-          n.name,
-          formatBits(n.receivedPerSec + n.transmittedPerSec),
-          series,
-          niceMax(series, 1024),
+          'ネットワーク',
+          formatBits(networkRate),
+          networkSeries,
+          niceMax(networkSeries, 1024),
           RESOURCE_COLORS.network,
           null,
         )}
-      {/each}
-    {/if}
-    {#if tab === 'overview' || tab === 'memory'}
-      {@render graph(
-        'メモリ',
-        formatPercent(memoryShare, 0),
-        get(historyKey.memory),
-        100,
-        RESOURCE_COLORS.memory,
-        null,
-      )}
-    {/if}
-  </aside>
+      {/if}
+      {#if tab === 'network'}
+        {#each visibleNetworks(snapshot?.networks ?? []) as n (n.name)}
+          {@const series = sumSeries([
+            get(historyKey.netReceive(n.name)),
+            get(historyKey.netTransmit(n.name)),
+          ])}
+          {@render graph(
+            n.name,
+            formatBits(n.receivedPerSec + n.transmittedPerSec),
+            series,
+            niceMax(series, 1024),
+            RESOURCE_COLORS.network,
+            null,
+          )}
+        {/each}
+      {/if}
+      {#if tab === 'overview' || tab === 'memory'}
+        {@render graph(
+          'メモリ',
+          formatPercent(memoryShare, 0),
+          get(historyKey.memory),
+          100,
+          RESOURCE_COLORS.memory,
+          null,
+        )}
+      {/if}
+    </aside>
+  </div>
 </div>
 
 <style>
@@ -651,7 +670,6 @@
   }
   .layout {
     display: grid;
-    grid-template-columns: 1fr 260px;
     flex: 1;
     min-height: 0;
   }
@@ -662,11 +680,18 @@
     min-width: 0;
     overflow-y: auto;
   }
+  .side {
+    position: relative;
+    display: flex;
+    min-height: 0;
+  }
   .graphs {
     display: flex;
+    flex: 1;
+    min-width: 0;
     flex-direction: column;
     gap: 8px;
-    padding: 0 20px 16px 0;
+    padding: 0 20px 16px 10px;
     overflow-y: auto;
   }
   .graph {
