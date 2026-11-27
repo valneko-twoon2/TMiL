@@ -271,6 +271,11 @@ fn run_tool(program: &str, args: &[String]) -> Result<(), String> {
     }
 }
 
+#[cfg(not(windows))]
+fn run_tool_best_effort(program: &str, args: &[String]) {
+    let _ = run_tool(program, args);
+}
+
 /// 優先度を変える（nice 値を下げるには管理者権限が必要）。
 #[cfg(not(windows))]
 pub fn set_priority(pid: u32, priority: Priority) -> Result<(), String> {
@@ -305,7 +310,7 @@ pub fn resume(pid: u32) -> Result<(), String> {
 pub fn set_efficiency(pid: u32, on: bool) -> Result<(), String> {
     let (priority, chrt) = linux_efficiency(pid, on);
     set_priority(pid, priority)?;
-    let _ = run_tool("chrt", &chrt);
+    run_tool_best_effort("chrt", &chrt);
     Ok(())
 }
 
