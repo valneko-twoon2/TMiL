@@ -43,6 +43,18 @@ export function sortRows<T>(
   return sortBy(rows, sort, (row) => column.value(row));
 }
 
+/** 並べ替える。`pinned` に当たる行は、並び順に関係なく上にまとめる（リソース モニターのチェックした行）。 */
+export function sortRowsPinned<T>(
+  rows: readonly T[],
+  columns: readonly TableColumn<T>[],
+  sort: SortState<string>,
+  pinned?: (row: T) => boolean,
+): T[] {
+  const sorted = sortRows(rows, columns, sort);
+  if (!pinned) return sorted;
+  return [...sorted.filter((row) => pinned(row)), ...sorted.filter((row) => !pinned(row))];
+}
+
 /** 列の最初の幅の一覧（ColumnSizer に渡す）。 */
 export function defaultWidths<T>(columns: readonly TableColumn<T>[]): Record<string, number> {
   return Object.fromEntries(columns.flatMap((c) => (c.width === undefined ? [] : [[c.key, c.width]])));

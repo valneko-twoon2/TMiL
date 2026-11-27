@@ -9,7 +9,7 @@
     cellText,
     defaultWidths,
     numericKeys,
-    sortRows,
+    sortRowsPinned,
     type TableColumn,
   } from '../table/table';
   import ProcessIcon from './ProcessIcon.svelte';
@@ -69,7 +69,8 @@
   const sizer = untrack(() => new ColumnSizer(settings, table, defaultWidths(columns)));
 
   const current = $derived(activeSort(columns, sort));
-  const sorted = $derived(sortRows(rows, columns, current));
+  // チェックした行は上にまとめる（本家のリソース モニターと同じ）
+  const sorted = $derived(sortRowsPinned(rows, columns, current, checked));
   const numeric = $derived(numericKeys(columns));
   const keys = $derived(columns.map((c) => c.key));
   const checkWidth = $derived(checked ? 32 : 0);

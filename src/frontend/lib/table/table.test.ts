@@ -1,6 +1,14 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { activeSort, cellText, defaultWidths, numericKeys, sortRows, type TableColumn } from './table';
+import {
+  activeSort,
+  cellText,
+  defaultWidths,
+  numericKeys,
+  sortRows,
+  sortRowsPinned,
+  type TableColumn,
+} from './table';
 
 interface Row {
   name: string;
@@ -45,6 +53,21 @@ describe('共通の表', () => {
         'a',
         'b',
       ]);
+    });
+
+    it('上にまとめる行は、並び順に関係なく先に出す', () => {
+      const rows = [
+        { name: 'a', size: 1 },
+        { name: 'b', size: 2 },
+        { name: 'c', size: 3 },
+      ];
+      const sort = { key: 'size', direction: 'desc' as const };
+      expect(sortRowsPinned(rows, COLUMNS, sort, (r) => r.name === 'a').map((r) => r.name)).toEqual([
+        'a',
+        'c',
+        'b',
+      ]);
+      expect(sortRowsPinned(rows, COLUMNS, sort).map((r) => r.name)).toEqual(['c', 'b', 'a']);
     });
 
     it('無くなった列で並べていたら、最初の列の昇順に戻す', () => {
