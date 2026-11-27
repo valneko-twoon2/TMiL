@@ -257,6 +257,20 @@ test.describe('パフォーマンス', () => {
     await expect(page.getByLabel('論理プロセッサごとのグラフ')).toBeVisible();
   });
 
+  test('概要表示では、グラフでなく色付きの丸で並び、詳細は出ない。もう一度で戻る', async ({ page }) => {
+    await open(page, 'パフォーマンス');
+    const list = page.getByRole('list', { name: 'リソース' });
+    await expect(list.getByRole('img').first()).toBeVisible();
+    await list.click({ button: 'right' });
+    await page.getByRole('menuitemcheckbox', { name: '概要表示(S)' }).click();
+    await expect(list.getByRole('img')).toHaveCount(0);
+    await expect(list.locator('i.dot').first()).toBeVisible();
+    await expect(page.getByRole('region', { name: 'CPU の詳細' })).toHaveCount(0);
+    await list.click({ button: 'right' });
+    await page.getByRole('menuitemcheckbox', { name: '概要表示(S)' }).click();
+    await expect(page.getByRole('region', { name: 'CPU の詳細' })).toBeVisible();
+  });
+
   test('リソース モニターを開ける', async ({ page }) => {
     await open(page, 'パフォーマンス');
     await page.getByRole('button', { name: 'リソース モニターを開く' }).click();

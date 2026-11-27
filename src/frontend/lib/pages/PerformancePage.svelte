@@ -91,16 +91,20 @@
           aria-pressed={current?.id === r.id}
           onclick={() => (selectedId = r.id)}
         >
-          <span class="mini">
-            <LineChart
-              series={r.series}
-              max={r.max}
-              width={70}
-              height={44}
-              grid={false}
-              label="{r.title} の推移"
-            />
-          </span>
+          {#if summary}
+            <i class="dot" style:background={RESOURCE_COLORS[r.kind]}></i>
+          {:else}
+            <span class="mini">
+              <LineChart
+                series={r.series}
+                max={r.max}
+                width={70}
+                height={44}
+                grid={false}
+                label="{r.title} の推移"
+              />
+            </span>
+          {/if}
           <span class="card-text">
             <span class="card-title">{r.title}</span>
             <span class="card-summary">{r.summary}</span>
@@ -180,7 +184,17 @@
 
 <style>
   .layout.summary {
-    grid-template-columns: 250px;
+    grid-template-columns: minmax(0, 360px);
+  }
+  .dot {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    margin: 0 4px;
+    border-radius: 50%;
+  }
+  .summary .card-summary {
+    white-space: normal;
   }
   .cores {
     display: grid;
