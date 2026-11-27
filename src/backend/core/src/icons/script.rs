@@ -1,29 +1,46 @@
-//! Windows でアイコンを取り出す PowerShell スクリプトと、その出力の読み方（どの OS でもテストできる）。
+//! Windows でアイコンと説明を取り出す PowerShell スクリプトと、その出力の読み方（どの OS でもテストできる）。
 
+use super::ExeDetails;
 use crate::base64;
 
-/// 標準入力から実行ファイルの場所を 1 行ずつ読み、アイコンの PNG を Base64 で 1 行ずつ書く。
-/// 取り出せなかった行は空にする（行の数は入力と同じ）。
+/// 標準入力から実行ファイルの場所を 1 行ずつ読み、
+/// 「アイコンの PNG（Base64）・ファイルの説明・会社名」をタブ区切りで 1 行ずつ書く。
+/// 取り出せなかった項目は空にする（行の数は入力と同じ）。
 /// `-Command` の引数として渡すので、二重引用符は使わない（引数の区切りと混ざるため）。
 pub const SCRIPT: &str = "$ErrorActionPreference = 'SilentlyContinue'; \
 [Console]::InputEncoding = [Text.UTF8Encoding]::new($false); \
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false); \
 Add-Type -AssemblyName System.Drawing; \
+$tab = [string][char]9; \
 foreach ($line in [Console]::In.ReadToEnd().Split([char]10)) { \
-  $data = ''; \
+  $path = $line.Trim(); $data = ''; $description = ''; $company = ''; \
   try { \
-    $icon = [System.Drawing.Icon]::ExtractAssociatedIcon($line.Trim()); \
+    $icon = [System.Drawing.Icon]::ExtractAssociatedIcon($path); \
     if ($icon) { \
       $stream = [IO.MemoryStream]::new(); \
       $icon.ToBitmap().Save($stream, [System.Drawing.Imaging.ImageFormat]::Png); \
       $data = [Convert]::ToBase64String($stream.ToArray()) \
     } \
   } catch {} \
-  [Console]::Out.WriteLine($data) \
+  try { \
+    $info = [Diagnostics.FileVersionInfo]::GetVersionInfo($path); \
+    $description = (-split [string]$info.FileDescription) -join ' '; \
+    $company = (-split [string]$info.CompanyName) -join ' ' \
+  } catch {} \
+  [Console]::Out.WriteLine($data + $tab + $description + $tab + $company) \
 }";
 
-/// スクリプトの出力を data URL にする。行の数が合わなければ `None`（どれがどれか分からない）。
-pub fn parse_output(text: &str, expected: usize) -> Option<Vec<Option<String>>> {
-    let lines: Vec<&str> = text.lines().collect();
+/// 空でなければその文字。
+fn text(field: Option<&str>) -> Option<String> {
+    field
+        .map(str::trim)
+        .filter(|t| !t.is_empty())
+        .map(str::to_owned)
+}
+
+/// スクリプトの出力を読む。行の数が合わなければ `None`（どれがどれか分からない）。
+pub fn parse_output(output: &str, expected: usize) -> Option<Vec<ExeDetails>> {
+    let lines: Vec<&str> = output.lines().collect();
     if lines.len() != expected {
         return None;
     }
@@ -31,8 +48,14 @@ pub fn parse_output(text: &str, expected: usize) -> Option<Vec<Option<String>>> 
         lines
             .into_iter()
             .map(|line| {
-                let data = line.trim();
-                base64::is_valid(data).then(|| format!("data:image/png;base64,{data}"))
+                // タブは項目の区切りなので、行の前後の空白は改行の名残だけを落とす
+                let mut fields = line.trim_end_matches('\r').split('\t');
+                let data = fields.next().unwrap_or_default().trim();
+                ExeDetails {
+                    icon: base64::is_valid(data).then(|| format!("data:image/png;base64,{data}")),
+                    description: text(fields.next()),
+                    company: text(fields.next()),
+                }
             })
             .collect(),
     )
@@ -42,32 +65,53 @@ pub fn parse_output(text: &str, expected: usize) -> Option<Vec<Option<String>>> 
 mod tests {
     use super::*;
 
+    fn icon(data: &str) -> String {
+        format!("data:image/png;base64,{data}")
+    }
+
     mod equivalence {
         use super::*;
 
         #[test]
-        fn each_line_becomes_png_data_url_or_none() {
-            let out = parse_output("Zm9v\r\n\r\nYmFy\r\n", 3);
+        fn each_line_has_icon_description_and_company() {
+            let out = parse_output("Zm9v\tGoogle Chrome\tGoogle LLC\r\n\t\t\r\nYmFy\t\t\r\n", 3);
             assert_eq!(
                 out,
                 Some(vec![
-                    Some("data:image/png;base64,Zm9v".to_owned()),
-                    None,
-                    Some("data:image/png;base64,YmFy".to_owned()),
+                    ExeDetails {
+                        icon: Some(icon("Zm9v")),
+                        description: Some("Google Chrome".to_owned()),
+                        company: Some("Google LLC".to_owned()),
+                    },
+                    ExeDetails::default(),
+                    ExeDetails {
+                        icon: Some(icon("YmFy")),
+                        ..ExeDetails::default()
+                    },
                 ])
             );
+        }
+
+        // 先頭の項目が空でも、ほかの項目がずれない
+        #[test]
+        fn missing_icon_does_not_shift_other_fields() {
+            let out = parse_output("\tメモ帳\tMicrosoft Corporation\n", 1).unwrap();
+            assert_eq!(out.first().unwrap().icon, None);
+            assert_eq!(out.first().unwrap().description.as_deref(), Some("メモ帳"));
         }
 
         // 二重引用符があると -Command の引数の区切りと混ざり、スクリプトが壊れる
         #[test]
         fn script_has_no_double_quotes() {
             assert!(!SCRIPT.contains('"'));
+            assert!(crate::powershell::is_safe_script(SCRIPT));
         }
 
         #[test]
-        fn script_reads_paths_from_stdin_as_utf8() {
+        fn script_reads_paths_and_writes_text_as_utf8() {
             assert!(SCRIPT.contains("[Console]::In.ReadToEnd()"));
-            assert!(SCRIPT.contains("UTF8Encoding"));
+            assert!(SCRIPT.contains("InputEncoding = [Text.UTF8Encoding]"));
+            assert!(SCRIPT.contains("OutputEncoding = [Text.UTF8Encoding]"));
         }
     }
 
@@ -87,7 +131,17 @@ mod tests {
 
         #[test]
         fn non_base64_output_is_ignored() {
-            assert_eq!(parse_output("警告: 何か\n", 1), Some(vec![None]));
+            assert_eq!(
+                parse_output("警告: 何か\n", 1),
+                Some(vec![ExeDetails::default()])
+            );
+        }
+
+        #[test]
+        fn blank_description_is_none() {
+            let out = parse_output("Zm9v\t   \t\n", 1).unwrap();
+            assert_eq!(out.first().unwrap().description, None);
+            assert_eq!(out.first().unwrap().company, None);
         }
     }
 }

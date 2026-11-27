@@ -30,7 +30,10 @@ const ICON = 'data:image/png;base64,iVBORw0KGgo=';
 /** 渡した実行ファイルにだけアイコンがある状態（ほかは決まった絵になる）。 */
 async function iconStore(exe: string | undefined): Promise<IconStore> {
   const store = new IconStore({
-    processIcons: (exes) => Promise.resolve(exes.map((e) => ({ exe: e, icon: e === exe ? ICON : null }))),
+    processIcons: (exes) =>
+      Promise.resolve(
+        exes.map((e) => ({ exe: e, icon: e === exe ? ICON : null, description: null, company: null })),
+      ),
   });
   if (exe) await store.request([exe]);
   return store;

@@ -301,6 +301,23 @@ export function mockIcon(exe: string): string | null {
   return `data:image/svg+xml;base64,${btoa(svg)}`;
 }
 
+/** 実行ファイルの説明と発行元（本家の一覧のように、分かるものは説明で表示させる）。 */
+const FILE_INFO: Record<string, { description: string; company: string }> = {
+  'explorer.exe': { description: 'エクスプローラー', company: 'Microsoft Corporation' },
+  'chrome.exe': { description: 'Google Chrome', company: 'Google LLC' },
+  'Code.exe': { description: 'Visual Studio Code', company: 'Microsoft Corporation' },
+  'Discord.exe': { description: 'Discord', company: 'Discord Inc.' },
+  'OneDrive.exe': { description: 'Microsoft OneDrive', company: 'Microsoft Corporation' },
+  'MsMpEng.exe': { description: 'Antimalware Service Executable', company: 'Microsoft Corporation' },
+  'svchost.exe': { description: 'Windows サービスのホスト プロセス', company: 'Microsoft Corporation' },
+  'dwm.exe': { description: 'デスクトップ ウィンドウ マネージャー', company: 'Microsoft Corporation' },
+};
+
+export function mockFileInfo(exe: string): { description: string | null; company: string | null } {
+  const info = FILE_INFO[exe.split(/[\\/]/).pop() ?? ''];
+  return { description: info?.description ?? null, company: info?.company ?? null };
+}
+
 type Handler = (state: MockState, args: Record<string, unknown>) => unknown;
 
 function setStartupEnabled(state: MockState, args: Record<string, unknown>): null {
@@ -359,7 +376,7 @@ const HANDLERS: Record<string, Handler> = {
   process_icons: (_state, args) =>
     (Array.isArray(args.exes) ? args.exes : [])
       .filter((e): e is string => typeof e === 'string')
-      .map((exe) => ({ exe, icon: mockIcon(exe) })),
+      .map((exe) => ({ exe, icon: mockIcon(exe), ...mockFileInfo(exe) })),
   reveal_file: revealFile,
   set_process_priority: (state, args) =>
     control(state, args, { priority: PRIORITIES.find((p) => p === args.priority) ?? 'normal' }),

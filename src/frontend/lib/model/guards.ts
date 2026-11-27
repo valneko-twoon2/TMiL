@@ -171,7 +171,12 @@ export const isReplacementStatus = shape<ReplacementStatus>({
 const isImageDataUrl = (v: unknown): v is string =>
   typeof v === 'string' && /^data:image\/(png|svg\+xml);base64,[A-Za-z0-9+/]+=*$/.test(v);
 
-export const isProcessIcon = shape<ProcessIcon>({ exe: isStr, icon: nullable(isImageDataUrl) });
+export const isProcessIcon = shape<ProcessIcon>({
+  exe: isStr,
+  icon: nullable(isImageDataUrl),
+  description: nullable(isStr),
+  company: nullable(isStr),
+});
 export const isProcessIcons = arrayOf(isProcessIcon);
 
 export const isProcessControls = shape<ProcessControls>({

@@ -33,7 +33,12 @@ describe('IconStore', () => {
     it('問い合わせた結果を覚え、同じものは二度聞かない', async () => {
       const { api, processIcons } = fakeApi((exes) =>
         Promise.resolve(
-          exes.map((exe) => ({ exe, icon: exe === 'a' ? 'data:image/png;base64,AA==' : null })),
+          exes.map((exe) => ({
+            exe,
+            icon: exe === 'a' ? 'data:image/png;base64,AA==' : null,
+            description: exe === 'a' ? 'アプリ A' : null,
+            company: exe === 'a' ? '会社 A' : null,
+          })),
         ),
       );
       const store = new IconStore(api);
@@ -41,6 +46,10 @@ describe('IconStore', () => {
       await store.request(['a', 'b']);
       expect(store.get('a')).toBe('data:image/png;base64,AA==');
       expect(store.get('b')).toBeNull();
+      expect(store.description('a')).toBe('アプリ A');
+      expect(store.company('a')).toBe('会社 A');
+      expect(store.description('b')).toBe('');
+      expect(store.description('unknown')).toBe('');
       await store.request(['a', 'b']);
       expect(processIcons).toHaveBeenCalledTimes(1);
     });
@@ -56,7 +65,7 @@ describe('IconStore', () => {
       const store = new IconStore(api);
       const first = store.request(['a']);
       await store.request(['a']);
-      resolve([{ exe: 'a', icon: null }]);
+      resolve([{ exe: 'a', icon: null, description: null, company: null }]);
       await first;
       expect(processIcons).toHaveBeenCalledTimes(1);
     });

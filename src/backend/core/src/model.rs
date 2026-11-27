@@ -286,7 +286,7 @@ pub struct ReplacementStatus {
     pub other: Option<String>,
 }
 
-/// プロセスのアイコン。
+/// 実行ファイルのアイコンと説明。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcessIcon {
@@ -294,6 +294,10 @@ pub struct ProcessIcon {
     pub exe: String,
     /// 画像の data URL。見つからなければ `None`
     pub icon: Option<String>,
+    /// 説明（Windows はファイルの説明、Linux は `.desktop` の名前）
+    pub description: Option<String>,
+    /// 発行元（Windows の会社名。Linux では取れない）
+    pub company: Option<String>,
 }
 
 #[cfg(test)]

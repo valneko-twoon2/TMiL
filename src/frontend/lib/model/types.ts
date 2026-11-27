@@ -152,10 +152,14 @@ export interface ProcessControls {
   affinity: number[] | null;
 }
 
-/** プロセスのアイコン。icon は画像の data URL（見つからなければ null）。 */
+/** 実行ファイルのアイコンと説明。icon は画像の data URL（見つからなければ null）。 */
 export interface ProcessIcon {
   exe: string;
   icon: string | null;
+  /** 説明（Windows はファイルの説明、Linux は .desktop の名前） */
+  description: string | null;
+  /** 発行元（Windows の会社名） */
+  company: string | null;
 }
 
 export interface ReplacementStatus {

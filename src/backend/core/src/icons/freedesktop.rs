@@ -1,9 +1,11 @@
 //! Linux: `.desktop` ファイルの `Icon` から、アイコンテーマ（hicolor）や pixmaps の画像を探す。
+//! 表示名は同じ `.desktop` の `Name`（言語に合うものがあればそちら）を使う。
 //! ファイルを読むだけなので、場所を差し替えてどの OS でもテストできる。
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+use super::ExeDetails;
 use crate::base64;
 
 /// 画像として読み込む大きさの上限。
@@ -112,6 +114,58 @@ pub fn exec_program(exec: &str) -> Option<String> {
 
 /// プログラム名 → アイコン名 の対応を作る（前のフォルダーを優先）。
 pub fn build_index(applications: &[PathBuf]) -> HashMap<String, String> {
+    index_by(applications, |keys| {
+        keys.get("Icon")
+            .filter(|i| !i.is_empty())
+            .map(|i| (*i).to_owned())
+    })
+}
+
+/// 言語の指定（`ja_JP.UTF-8` など）から、`Name` の後ろに付く言語の候補を、合う順に並べる。
+pub fn locale_candidates(lang: &str) -> Vec<String> {
+    let base = lang.split(['.', '@']).next().unwrap_or_default();
+    let short = base.split('_').next().unwrap_or_default();
+    let mut list = Vec::new();
+    for candidate in [base, short] {
+        if !candidate.is_empty() && !list.iter().any(|c| c == candidate) {
+            list.push(candidate.to_owned());
+        }
+    }
+    list
+}
+
+/// プログラム名 → 表示名（`Name`。言語に合う `Name[ja]` などがあればそちら）の対応を作る。
+pub fn build_name_index(applications: &[PathBuf], lang: &str) -> HashMap<String, String> {
+    let locales = locale_candidates(lang);
+    index_by(applications, |keys| {
+        locales
+            .iter()
+            .find_map(|l| keys.get(format!("Name[{l}]").as_str()))
+            .or_else(|| keys.get("Name"))
+            .filter(|n| !n.is_empty())
+            .map(|n| (*n).to_owned())
+    })
+}
+
+/// 実行ファイルの場所ごとに表示名を探す（渡した順に同じ数を返す）。
+pub fn names_in(exes: &[String], dirs: &SearchDirs, lang: &str) -> Vec<Option<String>> {
+    let index = build_name_index(&dirs.applications, lang);
+    exes.iter()
+        .map(|exe| {
+            let program = base_name(exe);
+            index
+                .get(program)
+                .or_else(|| index.get(&program.to_lowercase()))
+                .cloned()
+        })
+        .collect()
+}
+
+/// `.desktop` から値を 1 つ選び、プログラム名 → 値 の対応を作る（前のフォルダーを優先）。
+fn index_by(
+    applications: &[PathBuf],
+    pick: impl Fn(&HashMap<&str, &str>) -> Option<String>,
+) -> HashMap<String, String> {
     let mut index = HashMap::new();
     for dir in applications {
         let Ok(entries) = std::fs::read_dir(dir) else {
@@ -128,7 +182,7 @@ pub fn build_index(applications: &[PathBuf]) -> HashMap<String, String> {
                 continue;
             };
             let keys = desktop_keys(&content);
-            let Some(icon) = keys.get("Icon").filter(|i| !i.is_empty()) else {
+            let Some(value) = pick(&keys) else {
                 continue;
             };
             let programs = [
@@ -137,7 +191,7 @@ pub fn build_index(applications: &[PathBuf]) -> HashMap<String, String> {
                 keys.get("StartupWMClass").map(|c| c.to_lowercase()),
             ];
             for program in programs.into_iter().flatten() {
-                index.entry(program).or_insert_with(|| (*icon).to_owned());
+                index.entry(program).or_insert_with(|| value.clone());
             }
         }
     }
@@ -201,14 +255,31 @@ pub fn load_in(exes: &[String], dirs: &SearchDirs) -> Vec<Option<String>> {
         .collect()
 }
 
-/// この環境の XDG の場所で探す。
-pub fn load(exes: &[String]) -> Vec<Option<String>> {
+/// アイコンと表示名をまとめて探す（渡した順に同じ数を返す。発行元は Linux では分からない）。
+pub fn details_in(exes: &[String], dirs: &SearchDirs, lang: &str) -> Vec<ExeDetails> {
+    load_in(exes, dirs)
+        .into_iter()
+        .zip(names_in(exes, dirs, lang))
+        .map(|(icon, description)| ExeDetails {
+            icon,
+            description,
+            company: None,
+        })
+        .collect()
+}
+
+/// この環境の XDG の場所と言語で探す。
+pub fn load(exes: &[String]) -> Vec<ExeDetails> {
     let dirs = SearchDirs::from_env(
         std::env::var("XDG_DATA_HOME").ok().as_deref(),
         std::env::var("XDG_DATA_DIRS").ok().as_deref(),
         std::env::var("HOME").ok().as_deref(),
     );
-    load_in(exes, &dirs)
+    let lang = ["LC_ALL", "LC_MESSAGES", "LANG"]
+        .into_iter()
+        .find_map(|k| std::env::var(k).ok().filter(|v| !v.is_empty()))
+        .unwrap_or_default();
+    details_in(exes, &dirs, &lang)
 }
 
 #[cfg(test)]
@@ -320,6 +391,45 @@ mod tests {
         }
 
         #[test]
+        fn name_follows_language_and_falls_back_to_plain_name() {
+            let tmp = TempDir::new("icons-names");
+            let root = tmp.path();
+            write(
+                &root.join("system/applications/firefox.desktop"),
+                "[Desktop Entry]
+Exec=firefox %u
+Name=Firefox Web Browser
+Name[ja]=Firefox ウェブ・ブラウザ
+Icon=firefox
+"
+                .as_bytes(),
+            );
+            let exes = ["/usr/lib/firefox/firefox".to_owned()];
+            assert_eq!(
+                names_in(&exes, &dirs(root), "ja_JP.UTF-8"),
+                vec![Some("Firefox ウェブ・ブラウザ".to_owned())]
+            );
+            assert_eq!(
+                names_in(&exes, &dirs(root), "fr_FR.UTF-8"),
+                vec![Some("Firefox Web Browser".to_owned())]
+            );
+            let details = details_in(&exes, &dirs(root), "en_US");
+            assert_eq!(details.first().unwrap().company, None);
+        }
+
+        #[test]
+        fn locale_candidates_go_from_specific_to_general() {
+            assert_eq!(
+                locale_candidates("ja_JP.UTF-8"),
+                vec!["ja_JP".to_owned(), "ja".to_owned()]
+            );
+            assert_eq!(
+                locale_candidates("sr_RS@latin"),
+                vec!["sr_RS".to_owned(), "sr".to_owned()]
+            );
+        }
+
+        #[test]
         fn env_dirs_follow_xdg() {
             let d = SearchDirs::from_env(Some("/h/data"), Some("/a:/b"), Some("/home/u"));
             assert_eq!(
@@ -394,7 +504,35 @@ mod tests {
         #[test]
         fn load_returns_one_result_per_exe() {
             let exes = vec![String::new(), "/taskmanagerlite/no/such/app".to_owned()];
-            assert_eq!(load(&exes), vec![None, None]);
+            assert_eq!(
+                load(&exes),
+                vec![ExeDetails::default(), ExeDetails::default()]
+            );
+        }
+
+        #[test]
+        fn locale_without_region_or_encoding() {
+            assert_eq!(locale_candidates("ja"), vec!["ja".to_owned()]);
+            assert_eq!(locale_candidates(""), Vec::<String>::new());
+            assert_eq!(locale_candidates("C.UTF-8"), vec!["C".to_owned()]);
+        }
+
+        #[test]
+        fn entry_without_name_has_no_description() {
+            let tmp = TempDir::new("icons-noname");
+            let root = tmp.path();
+            write(
+                &root.join("system/applications/d.desktop"),
+                b"[Desktop Entry]
+Exec=dee
+Name=
+Icon=d
+",
+            );
+            assert_eq!(
+                names_in(&["/usr/bin/dee".to_owned()], &dirs(root), "ja_JP"),
+                vec![None]
+            );
         }
 
         #[test]

@@ -172,7 +172,8 @@ describe('検証関数（型の違い）', () => {
   });
 
   describe('boundary', () => {
-    const icon = (url: unknown) => isProcessIcons([{ exe: 'a', icon: url }]);
+    const icon = (url: unknown) =>
+      isProcessIcons([{ exe: 'a', icon: url, description: null, company: null }]);
 
     it('画像は PNG・SVG の data URL だけ。前後に余計なものがあれば受け取らない', () => {
       expect(icon('data:image/png;base64,AAAA')).toBe(true);

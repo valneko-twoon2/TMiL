@@ -252,10 +252,14 @@ mod contract {
                 ProcessIcon {
                     exe: r"C:\Windows\explorer.exe".to_owned(),
                     icon: Some("data:image/png;base64,iVBORw0KGgo=".to_owned()),
+                    description: Some("エクスプローラー".to_owned()),
+                    company: Some("Microsoft Corporation".to_owned()),
                 },
                 ProcessIcon {
                     exe: "/usr/bin/unknown".to_owned(),
                     icon: None,
+                    description: None,
+                    company: None,
                 },
             ],
         );

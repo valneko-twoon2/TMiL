@@ -1,4 +1,4 @@
-//! プロセスのアイコン。実行ファイルの場所から、画面に出す画像（data URL）を作る。
+//! プロセスのアイコンと説明。実行ファイルの場所から、画面に出す画像（data URL）と説明・発行元を取る。
 //!
 //! 状態を持たない読み取りなので状態機械は通さない（スタートアップ一覧と同じ扱い）。
 //! 取り出しは重いので、一度調べた結果は [`IconCache`] が覚えておく。
@@ -18,10 +18,19 @@ use crate::model::ProcessIcon;
 /// 1 回の問い合わせで調べる数の上限（画面に出る分には足りる）。
 pub const MAX_PER_REQUEST: usize = 256;
 
-/// 調べた結果の覚え書き。実行ファイルの場所 → data URL（見つからなければ `None`）。
+/// 1 つの実行ファイルについて分かったこと。
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ExeDetails {
+    /// 画像の data URL
+    pub icon: Option<String>,
+    pub description: Option<String>,
+    pub company: Option<String>,
+}
+
+/// 調べた結果の覚え書き。実行ファイルの場所 → 分かったこと。
 #[derive(Debug, Default)]
 pub struct IconCache {
-    known: Mutex<HashMap<String, Option<String>>>,
+    known: Mutex<HashMap<String, ExeDetails>>,
 }
 
 /// 問い合わせとして受け付ける実行ファイルの場所か。
@@ -40,7 +49,7 @@ impl IconCache {
     pub fn icons(
         &self,
         exes: &[String],
-        load: impl FnOnce(&[String]) -> Vec<Option<String>>,
+        load: impl FnOnce(&[String]) -> Vec<ExeDetails>,
     ) -> Vec<ProcessIcon> {
         let mut requested: Vec<String> = Vec::new();
         for exe in exes {
@@ -61,7 +70,7 @@ impl IconCache {
             let mut loaded = load(&missing);
             // 数が合わないときは、どれがどれか分からないので全部「無し」として扱う
             if loaded.len() != missing.len() {
-                loaded = vec![None; missing.len()];
+                loaded = vec![ExeDetails::default(); missing.len()];
             }
             let mut known = self.lock();
             known.extend(missing.into_iter().zip(loaded));
@@ -71,13 +80,18 @@ impl IconCache {
         requested
             .into_iter()
             .map(|exe| {
-                let icon = known.get(&exe).cloned().flatten();
-                ProcessIcon { exe, icon }
+                let details = known.get(&exe).cloned().unwrap_or_default();
+                ProcessIcon {
+                    exe,
+                    icon: details.icon,
+                    description: details.description,
+                    company: details.company,
+                }
             })
             .collect()
     }
 
-    fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<String, Option<String>>> {
+    fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<String, ExeDetails>> {
         // 覚え書きが壊れても読み直せば済むので、毒されたロックもそのまま使う
         self.known
             .lock()
@@ -85,15 +99,15 @@ impl IconCache {
     }
 }
 
-/// この OS の方法でアイコンを取り出す（渡した順に同じ数を返す）。
+/// この OS の方法でアイコンと説明を取り出す（渡した順に同じ数を返す）。
 #[cfg(windows)]
-pub fn load(exes: &[String]) -> Vec<Option<String>> {
+pub fn load(exes: &[String]) -> Vec<ExeDetails> {
     windows::load(exes)
 }
 
-/// この OS の方法でアイコンを取り出す（渡した順に同じ数を返す）。
+/// この OS の方法でアイコンと説明を取り出す（渡した順に同じ数を返す）。
 #[cfg(not(windows))]
-pub fn load(exes: &[String]) -> Vec<Option<String>> {
+pub fn load(exes: &[String]) -> Vec<ExeDetails> {
     freedesktop::load(exes)
 }
 
@@ -106,8 +120,16 @@ mod tests {
         items.iter().map(|s| (*s).to_owned()).collect()
     }
 
-    fn fake(prefix: &str) -> impl Fn(&[String]) -> Vec<Option<String>> + '_ {
-        move |exes| exes.iter().map(|e| Some(format!("{prefix}{e}"))).collect()
+    fn fake(prefix: &str) -> impl Fn(&[String]) -> Vec<ExeDetails> + '_ {
+        move |exes| {
+            exes.iter()
+                .map(|e| ExeDetails {
+                    icon: Some(format!("{prefix}{e}")),
+                    description: Some(format!("説明 {e}")),
+                    company: None,
+                })
+                .collect()
+        }
     }
 
     mod equivalence {
@@ -122,11 +144,15 @@ mod tests {
                 vec![
                     ProcessIcon {
                         exe: "b".to_owned(),
-                        icon: Some("x:b".to_owned())
+                        icon: Some("x:b".to_owned()),
+                        description: Some("説明 b".to_owned()),
+                        company: None,
                     },
                     ProcessIcon {
                         exe: "a".to_owned(),
-                        icon: Some("x:a".to_owned())
+                        icon: Some("x:a".to_owned()),
+                        description: Some("説明 a".to_owned()),
+                        company: None,
                     },
                 ]
             );
@@ -151,7 +177,9 @@ mod tests {
         #[test]
         fn remembers_missing_icons_too() {
             let cache = IconCache::new();
-            cache.icons(&strings(&["a"]), |exes| vec![None; exes.len()]);
+            cache.icons(&strings(&["a"]), |exes| {
+                vec![ExeDetails::default(); exes.len()]
+            });
             let mut called = false;
             let icons = cache.icons(&strings(&["a"]), |_| {
                 called = true;
@@ -198,8 +226,17 @@ mod tests {
         #[test]
         fn wrong_number_of_results_means_no_icons() {
             let cache = IconCache::new();
-            let icons = cache.icons(&strings(&["a", "b"]), |_| vec![Some("x".to_owned())]);
-            assert!(icons.iter().all(|i| i.icon.is_none()));
+            let icons = cache.icons(&strings(&["a", "b"]), |_| {
+                vec![ExeDetails {
+                    icon: Some("x".to_owned()),
+                    ..ExeDetails::default()
+                }]
+            });
+            assert!(
+                icons
+                    .iter()
+                    .all(|i| i.icon.is_none() && i.description.is_none())
+            );
         }
     }
 
@@ -209,22 +246,31 @@ mod tests {
         use super::*;
 
         #[test]
-        fn real_executable_has_png_icon_and_missing_file_has_none() {
+        fn real_executable_has_png_icon_and_description_and_missing_file_has_none() {
             let windir = std::env::var("WINDIR").unwrap_or_else(|_| r"C:\Windows".to_owned());
             let exes = vec![
                 format!(r"{windir}\explorer.exe"),
                 format!(r"{windir}\taskmanagerlite-no-such-file.exe"),
             ];
-            let icons = load(&exes);
-            assert_eq!(icons.len(), 2);
+            let details = load(&exes);
+            assert_eq!(details.len(), 2);
+            let explorer = details.first().unwrap();
             assert!(
-                icons
-                    .first()
-                    .and_then(Option::as_deref)
+                explorer
+                    .icon
+                    .as_deref()
                     .is_some_and(|i| i.starts_with("data:image/png;base64,iVBOR")),
-                "{icons:?}"
+                "{details:?}"
             );
-            assert_eq!(icons.get(1), Some(&None));
+            assert!(explorer.description.is_some(), "{details:?}");
+            assert!(
+                explorer
+                    .company
+                    .as_deref()
+                    .is_some_and(|c| c.contains("Microsoft")),
+                "{details:?}"
+            );
+            assert_eq!(details.get(1), Some(&ExeDetails::default()));
         }
     }
 
