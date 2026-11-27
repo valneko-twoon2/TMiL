@@ -1,9 +1,5 @@
-//! フロントエンドへ渡すデータの型。JSON のキーは camelCase にそろえる。
-//! 形を変えたら `tests/contract/fixtures` の契約も更新すること。
-
 use serde::{Deserialize, Serialize};
 
-/// 1 回の計測結果。
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Snapshot {
@@ -17,7 +13,6 @@ pub struct Snapshot {
     pub processes: Vec<ProcessInfo>,
 }
 
-/// CPU 全体の状態。
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CpuStats {
@@ -25,7 +20,6 @@ pub struct CpuStats {
     pub usage: f32,
     /// 論理コアごとの使用率（0〜100）
     pub per_core: Vec<f32>,
-    /// 現在のクロック（MHz）
     pub frequency_mhz: u64,
     pub process_count: usize,
     pub uptime_secs: u64,
@@ -44,7 +38,6 @@ pub struct MemoryStats {
     pub swap_used: u64,
 }
 
-/// ディスクの種類。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum DiskKind {
@@ -53,7 +46,6 @@ pub enum DiskKind {
     Unknown,
 }
 
-/// ディスク 1 台分の状態。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiskStats {
@@ -68,7 +60,6 @@ pub struct DiskStats {
     pub written_per_sec: u64,
 }
 
-/// ネットワークインターフェース 1 つ分の状態。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkStats {
@@ -83,7 +74,6 @@ pub struct NetworkStats {
     pub addresses: Vec<String>,
 }
 
-/// GPU 1 つ分の状態。取れない値は `None`。
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GpuStats {
@@ -96,7 +86,6 @@ pub struct GpuStats {
     pub memory_used: Option<u64>,
 }
 
-/// プロセスの状態。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ProcessState {
@@ -107,7 +96,6 @@ pub enum ProcessState {
     Other,
 }
 
-/// プロセス 1 つ分の情報。
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcessInfo {
@@ -127,7 +115,6 @@ pub struct ProcessInfo {
     pub memory: u64,
     pub disk_read_per_sec: u64,
     pub disk_written_per_sec: u64,
-    /// 起動してからの秒数
     pub run_time_secs: u64,
     /// 起動した時刻（UNIX 秒）。終了するときに同じプロセスかを確かめるのに使う
     pub start_time: u64,
@@ -163,7 +150,6 @@ pub struct KillTarget {
     pub start_time: u64,
 }
 
-/// プロセスの優先度（Windows の優先度クラスに合わせた 6 段階）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Priority {
@@ -186,7 +172,6 @@ impl Priority {
     ];
 }
 
-/// プロセスの今の優先度と、動かしてよい CPU（取れなければ `None`）。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcessControls {
@@ -195,7 +180,6 @@ pub struct ProcessControls {
     pub affinity: Option<Vec<u32>>,
 }
 
-/// 変化しないシステム情報。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SystemInfo {
@@ -208,7 +192,6 @@ pub struct SystemInfo {
     pub logical_cores: usize,
 }
 
-/// プロセス終了の結果。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KillResult {
@@ -217,7 +200,6 @@ pub struct KillResult {
     pub error: Option<String>,
 }
 
-/// スタートアップ項目の登録場所。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum StartupLocation {
@@ -225,9 +207,7 @@ pub enum StartupLocation {
     RegistryUser,
     /// HKLM の Run キー
     RegistryMachine,
-    /// ユーザーのスタートアップフォルダー
     FolderUser,
-    /// 全ユーザー共通のスタートアップフォルダー
     FolderCommon,
     /// `~/.config/autostart`
     AutostartUser,
@@ -248,7 +228,6 @@ impl StartupLocation {
         }
     }
 
-    /// `key` の逆変換。
     pub fn from_key(key: &str) -> Option<Self> {
         [
             Self::RegistryUser,
@@ -263,7 +242,6 @@ impl StartupLocation {
     }
 }
 
-/// スタートアップ項目。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StartupEntry {
@@ -276,7 +254,6 @@ pub struct StartupEntry {
     pub program: String,
     pub location: StartupLocation,
     pub enabled: bool,
-    /// この画面から有効・無効を切り替えられるか
     pub can_toggle: bool,
 }
 
@@ -286,13 +263,11 @@ pub struct StartupEntry {
 pub struct ReplacementStatus {
     /// この OS で使えるか（Windows のみ）
     pub supported: bool,
-    /// TaskManagerLite に置き換わっているか
     pub replaced: bool,
     /// 別のアプリに置き換わっている場合、その設定値
     pub other: Option<String>,
 }
 
-/// 実行ファイルのアイコンと説明。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcessIcon {
@@ -306,7 +281,6 @@ pub struct ProcessIcon {
     pub company: Option<String>,
 }
 
-/// 画面にウィンドウを出しているプロセス（本家の「アプリ」）。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppWindow {
@@ -315,7 +289,6 @@ pub struct AppWindow {
     pub title: String,
 }
 
-/// サービスの状態。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ServiceStatus {
@@ -327,7 +300,6 @@ pub enum ServiceStatus {
     Other,
 }
 
-/// サービスの開始の種類。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ServiceStartType {
@@ -337,15 +309,12 @@ pub enum ServiceStartType {
     Other,
 }
 
-/// サービス 1 つ分。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ServiceInfo {
     /// サービス名（操作に使う）
     pub name: String,
-    /// 表示名（本家の「説明」の列）
     pub display_name: String,
-    /// 詳しい説明
     pub description: String,
     pub status: ServiceStatus,
     /// 動いているときのプロセス
@@ -355,7 +324,6 @@ pub struct ServiceInfo {
     pub group: String,
 }
 
-/// サービスへの操作。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ServiceAction {
@@ -364,7 +332,6 @@ pub enum ServiceAction {
     Restart,
 }
 
-/// 通信の種類。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Protocol {
@@ -372,7 +339,6 @@ pub enum Protocol {
     Udp,
 }
 
-/// TCP の接続の状態。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum TcpState {
@@ -389,7 +355,6 @@ pub enum TcpState {
     Closed,
 }
 
-/// ネットワークの接続か待ち受け 1 つ分。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Connection {
@@ -401,11 +366,9 @@ pub struct Connection {
     pub remote_port: u16,
     /// TCP の状態（UDP は `None`）
     pub state: Option<TcpState>,
-    /// 持ち主のプロセス（分からなければ `None`）
     pub pid: Option<u32>,
 }
 
-/// プロセスが読み込んでいるモジュール 1 つ分。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModuleInfo {
@@ -415,7 +378,6 @@ pub struct ModuleInfo {
     pub version: Option<String>,
 }
 
-/// ファイルなどを開いているプロセス 1 つ分（リソース モニターの「関連付けられたハンドル」）。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HandleInfo {

@@ -1,5 +1,3 @@
-/* 全体の色とテーブルなど共通の見た目。Windows 11 のタスク マネージャーに寄せる。 */
-
 :root {
   color-scheme: light dark;
   --bg: #f3f3f3;
@@ -11,7 +9,6 @@
   --hover: rgb(0 0 0 / 0.04);
   --selected: rgb(0 103 192 / 0.1);
   --accent: #0067c0;
-  /* 強調色の上の文字（ライトは濃い青に白、ダークは水色に黒） */
   --on-accent: #ffffff;
   --danger: #c42b1c;
   --danger-bg: #fde7e9;
@@ -93,7 +90,6 @@ select:focus-visible {
   outline-offset: -2px;
 }
 
-/* ページ右上のコマンドボタン */
 .command {
   display: inline-flex;
   align-items: center;
@@ -120,7 +116,6 @@ select:focus-visible {
   background: var(--bg);
 }
 
-/* 一覧表 */
 .table-wrap {
   flex: 1;
   min-height: 0;

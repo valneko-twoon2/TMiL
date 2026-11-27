@@ -1,7 +1,3 @@
-<script lang="ts" module>
-  // スニペットの中では props の名前と重なるため、操作は関数を通して呼ぶ
-</script>
-
 <script lang="ts">
   import { untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
@@ -16,7 +12,6 @@
 
   interface Props {
     actions: ProcessActions;
-    /** 計測の間隔（使用状況のグラフの長さの表示に使う） */
     intervalMs?: number;
   }
 
@@ -24,11 +19,8 @@
   const MB = 1024 ** 2;
 
   const dialog = $derived(actions.dialog);
-  /** 関係の設定で選んでいる CPU */
   const chosen = new SvelteSet<number>();
 
-  // 今の設定を読み終えたら、選んでいる CPU をそれに合わせる
-  // （ダイアログが変わったときだけ動かし、選んでいる CPU の変化では動かさない）
   $effect(() => {
     const current = dialog;
     untrack(() => {

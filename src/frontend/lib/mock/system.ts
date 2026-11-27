@@ -1,4 +1,3 @@
-// 偽バックエンドのうち、サービス・接続・モジュール・ハンドル・ウィンドウ・新しいタスクの部分。値は決まったものだけを返す。
 import type {
   AppWindow,
   Connection,
@@ -9,14 +8,10 @@ import type {
   ServiceInfo,
 } from '../model/types';
 
-/** この部分が持つ状態。 */
 export interface SystemMockState {
   services: ServiceInfo[];
-  /** 「新しいタスクの実行」で起動したもの */
   launched: { command: string; admin: boolean }[];
-  /** 切り替えたウィンドウの PID */
   switched: number[];
-  /** サービス管理ツールを開いた回数 */
   servicesToolOpened: number;
   alwaysOnTop: boolean;
 }
@@ -54,7 +49,6 @@ export function createSystemMock(): SystemMockState {
   };
 }
 
-/** サービスを操作する。無効のものは開始できない。 */
 export function controlService(state: SystemMockState, name: unknown, action: ServiceAction): null {
   const target = state.services.find((s) => s.name === name);
   if (!target) throw new Error(`サービスの名前が正しくありません: ${String(name)}`);
@@ -62,7 +56,6 @@ export function controlService(state: SystemMockState, name: unknown, action: Se
     throw new Error('サービスを操作できませんでした。このサービスは無効になっています。');
   }
   const running = action !== 'stop';
-  // 動かすときの PID は、名前から決まる値にする（VRT で毎回同じになるように）
   const pid = running ? (target.pid ?? 2000 + target.name.length * 4) : null;
   state.services = state.services.map((s) =>
     s.name === name ? { ...s, status: running ? 'running' : 'stopped', pid } : s,
@@ -70,7 +63,6 @@ export function controlService(state: SystemMockState, name: unknown, action: Se
   return null;
 }
 
-/** ウィンドウを出しているプロセス（終了したものは除く）。 */
 export function appWindows(killed: ReadonlySet<number>): AppWindow[] {
   const windows: AppWindow[] = [
     { pid: 1008, title: 'エクスプローラー' },
@@ -99,7 +91,6 @@ function tcp(
   };
 }
 
-/** 接続と待ち受け（終了したプロセスのものは除く）。 */
 export function connections(killed: ReadonlySet<number>): Connection[] {
   const list: Connection[] = [
     tcp(1056, ['0.0.0.0', 135], ['0.0.0.0', 0], 'listen'),
@@ -142,7 +133,6 @@ const COMMON_MODULES = [
   'GDI32.dll',
 ];
 
-/** プロセスのモジュール。System（PID 4）は読めない扱い。 */
 export function modules(pid: number, exe: string | undefined): ModuleInfo[] {
   if (pid === 4 || exe === undefined) {
     throw new Error(
@@ -160,7 +150,6 @@ export function modules(pid: number, exe: string | undefined): ModuleInfo[] {
   ];
 }
 
-/** ハンドルの検索。「nosuch」を含む場所は見つからない扱い。見つかれば先頭の 2 つのプロセスが開いている。 */
 export function handles(query: unknown, list: readonly Pick<ProcessInfo, 'pid'>[]): HandleInfo[] {
   const text = typeof query === 'string' ? query.trim() : '';
   if (text === '') return [];
@@ -170,7 +159,6 @@ export function handles(query: unknown, list: readonly Pick<ProcessInfo, 'pid'>[
   return list.slice(0, 2).map((p) => ({ pid: p.pid, path: text }));
 }
 
-/** 新しいタスクの実行。「nosuch」で始まるものは見つからない扱い。 */
 export function runTask(state: SystemMockState, command: unknown, admin: unknown): null {
   const text = typeof command === 'string' ? command.trim() : '';
   if (text === '') {

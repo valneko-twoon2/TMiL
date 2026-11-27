@@ -1,16 +1,13 @@
 <script lang="ts" module>
-  /** 中身の高さ（px）。中の表はこの高さでスクロールする */
   export const PANEL_HEIGHT = 210;
 </script>
 
 <script lang="ts">
-  // 見出しを押すと開閉できるまとまり（リソース モニターの表に使う）。
   import type { Snippet } from 'svelte';
   import Icon from './Icon.svelte';
 
   interface Props {
     title: string;
-    /** 見出しの右に出す要約（使用率など） */
     summary?: string;
     children: Snippet;
     testid?: string;

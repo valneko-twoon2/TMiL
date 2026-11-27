@@ -1,5 +1,3 @@
-//! Windows のタスク マネージャーを TaskManagerLite に置き換える設定。
-//!
 //! タスクバーの右クリックメニューに独自の項目は足せないため、Process Explorer と同じく
 //! Image File Execution Options の `Debugger` 値で `taskmgr.exe` の起動先を差し替える。
 //! これでメニューの「タスク マネージャー」や Ctrl+Shift+Esc から TaskManagerLite が開く。
@@ -9,11 +7,9 @@ use std::path::Path;
 
 use crate::model::ReplacementStatus;
 
-/// 置き換え設定を書き込むレジストリキー（HKLM）。
 pub const IFEO_KEY: &str =
     r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\taskmgr.exe";
 
-/// `Debugger` に書き込む値。
 pub fn debugger_value(exe: &Path) -> String {
     format!("\"{}\"", exe.display())
 }
@@ -22,7 +18,6 @@ fn normalize(value: &str) -> String {
     value.trim().trim_matches('"').to_lowercase()
 }
 
-/// 現在の `Debugger` 値から状態を判定する。
 pub fn evaluate(current: Option<&str>, exe: &Path) -> ReplacementStatus {
     let current = current.map(str::trim).filter(|v| !v.is_empty());
     let replaced = current.is_some_and(|v| normalize(v) == normalize(&debugger_value(exe)));
@@ -90,7 +85,6 @@ pub fn unquote_windows_arg(text: &str) -> Option<String> {
     Some(out)
 }
 
-/// `reg.exe` に渡す引数。
 pub fn reg_args(enable: bool, exe: &Path) -> Vec<String> {
     let key = format!(r"HKLM\{IFEO_KEY}");
     if enable {
@@ -116,7 +110,6 @@ pub fn reg_args(enable: bool, exe: &Path) -> Vec<String> {
     }
 }
 
-/// `reg.exe` を管理者として起動する PowerShell スクリプト。終了コードを引き継ぐ。
 pub fn elevate_script(args: &[String]) -> String {
     let line = args
         .iter()
@@ -130,15 +123,12 @@ pub fn elevate_script(args: &[String]) -> String {
     )
 }
 
-/// 現在の状態を返す。
 #[cfg(windows)]
 pub fn status(exe: &Path) -> ReplacementStatus {
     let current = crate::startup::win_registry::read_machine_string(IFEO_KEY, "Debugger");
     evaluate(current.as_deref(), exe)
 }
 
-/// 管理者として reg.exe を動かし、置き換えを有効・無効にする（UAC の確認が出る）。
-/// 成功したかどうかの最終判断は、書き込み後の状態を見て状態機械が行う。
 #[cfg(windows)]
 pub fn elevate(exe: &Path, enable: bool) -> Result<(), String> {
     let script = elevate_script(&reg_args(enable, exe));
@@ -154,7 +144,6 @@ pub fn elevate(exe: &Path, enable: bool) -> Result<(), String> {
     Ok(())
 }
 
-/// Windows 以外では使えない。
 #[cfg(not(windows))]
 pub fn status(_exe: &Path) -> ReplacementStatus {
     ReplacementStatus {
@@ -164,7 +153,6 @@ pub fn status(_exe: &Path) -> ReplacementStatus {
     }
 }
 
-/// Windows 以外では使えない。
 #[cfg(not(windows))]
 pub fn elevate(_exe: &Path, _enable: bool) -> Result<(), String> {
     Err("この機能は Windows でのみ使えます。".to_owned())

@@ -1,4 +1,3 @@
-// 「新しいタスクの実行」のダイアログの状態。どのページの見出しからも開けるよう、App が context で配る。
 import { getContext, setContext } from 'svelte';
 import type { Api } from '../api/ipc';
 
@@ -26,7 +25,6 @@ export class RunTask {
     this.error = null;
   }
 
-  /** 入力を起動する。うまくいけば閉じ、失敗したら理由をダイアログに出したままにする。 */
   async submit(): Promise<void> {
     if (this.busy) return;
     this.busy = true;
@@ -44,12 +42,10 @@ export class RunTask {
   }
 }
 
-/** App から配る。 */
 export function provideRunTask(runTask: RunTask): void {
   setContext(KEY, runTask);
 }
 
-/** ページの見出しで受け取る（配られていなければ undefined）。 */
 export function useRunTask(): RunTask | undefined {
   return getContext<RunTask | undefined>(KEY);
 }

@@ -1,4 +1,3 @@
-// リソース モニターの状態: 選んだプロセス（チェック）、平均 CPU、接続の一覧、ハンドルの検索、モジュール。
 import { SvelteSet } from 'svelte/reactivity';
 import type { Api } from '../api/ipc';
 import type { Connection, HandleInfo, ModuleInfo, ProcessInfo, Snapshot } from '../model/types';
@@ -19,18 +18,15 @@ export interface ProcessModules {
 }
 
 export class ResourceMonitorState {
-  /** チェックしたプロセス（ほかの表をこれで絞り込む） */
   readonly checked = new SvelteSet<number>();
   connections = $state.raw<Connection[]>([]);
   connectionsError = $state<string | null>(null);
   modules = $state.raw<ProcessModules[]>([]);
-  /** ハンドルの検索結果と、検索した文字 */
   handles = $state.raw<HandleInfo[]>([]);
   handlesError = $state<string | null>(null);
   handlesQuery = $state('');
   searchingHandles = $state(false);
   #handleSearch = 0;
-  /** 選んだプロセスの CPU 使用率の合計の推移 */
   selectedHistory = $state.raw<number[]>([]);
   #samples = $state.raw<CpuSamples>(NO_SAMPLES);
   readonly #api: Pick<Api, 'networkConnections' | 'processModules' | 'findHandles'>;
@@ -42,7 +38,6 @@ export class ResourceMonitorState {
 
   record(snapshot: Snapshot): void {
     this.#samples = recordCpu(this.#samples, snapshot);
-    // 終了したプロセスはチェックから外す
     for (const pid of goneProcesses(this.checked, snapshot)) this.checked.delete(pid);
     this.selectedHistory =
       this.checked.size === 0 ? [] : pushSelectedTotal(this.selectedHistory, snapshot, this.checked);
@@ -58,7 +53,6 @@ export class ResourceMonitorState {
     this.selectedHistory = [];
   }
 
-  /** 接続の一覧を読み直す（読み込み中なら待つだけ）。 */
   refreshConnections(): Promise<void> {
     this.#loadingConnections ??= this.#fetchConnections().finally(() => {
       this.#loadingConnections = null;
@@ -75,7 +69,6 @@ export class ResourceMonitorState {
     }
   }
 
-  /** ファイルやフォルダーを開いているプロセスを探す（後から始めた検索の結果だけを残す）。 */
   async searchHandles(query: string): Promise<void> {
     const q = query.trim();
     const id = ++this.#handleSearch;
@@ -101,7 +94,6 @@ export class ResourceMonitorState {
     }
   }
 
-  /** チェックしたプロセスのモジュールを読む。 */
   async loadModules(processes: readonly ProcessInfo[]): Promise<void> {
     const loaded = await Promise.all(
       processes.map(async (p): Promise<ProcessModules> => {

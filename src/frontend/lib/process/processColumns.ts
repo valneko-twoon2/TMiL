@@ -1,4 +1,3 @@
-// プロセス タブの列（見出しの右クリックで選べる）と、種類（アプリ・バックグラウンド・Windows プロセス）の分け方。
 import { formatBytes, formatPercent, formatRate } from '../format/format';
 import { heatLevel, rateLevel, shareOf } from '../format/heat';
 import { processStatusBadge } from '../format/labels';
@@ -8,7 +7,6 @@ import { displayName, type ProcessGroup } from './process';
 export type ProcessKind = 'app' | 'background' | 'system';
 export const PROCESS_KINDS: readonly ProcessKind[] = ['app', 'background', 'system'];
 
-/** 種類の名前。本家の Windows では「Windows プロセス」、Linux では OS のプロセスとして出す。 */
 export function kindLabel(kind: ProcessKind, windows: boolean): string {
   if (kind === 'app') return 'アプリ';
   if (kind === 'background') return 'バックグラウンド プロセス';
@@ -17,13 +15,11 @@ export function kindLabel(kind: ProcessKind, windows: boolean): string {
 
 const WINDOWS_DIR = /^[a-z]:\\windows\\/i;
 
-/** OS のプロセスか（Windows: 実行ファイルが Windows フォルダーにあるか不明なもの。Linux: root か不明なもの）。 */
 export function isSystemProcess(p: ProcessInfo, windows: boolean): boolean {
   if (p.exe === '') return true;
   return windows ? WINDOWS_DIR.test(p.exe) : p.user === 'root';
 }
 
-/** まとめた行の種類。ウィンドウを出しているものがあればアプリ、全部 OS のものなら OS のプロセス。 */
 export function processKind(
   group: ProcessGroup,
   windowPids: ReadonlySet<number>,
@@ -39,7 +35,6 @@ export interface KindSection {
   groups: ProcessGroup[];
 }
 
-/** 種類ごとに分ける（本家と同じ順。空の種類は出さない）。中の順は渡した順のまま。 */
 export function sectionsOf(
   groups: readonly ProcessGroup[],
   kindOf: (group: ProcessGroup) => ProcessKind,
@@ -49,7 +44,6 @@ export function sectionsOf(
   );
 }
 
-/** プロセス タブで選べる列（この順に並ぶ）。名前は外せない。 */
 export const PROCESS_COLUMNS = [
   { key: 'name', label: '名前', numeric: false },
   { key: 'type', label: '種類', numeric: false },
@@ -68,7 +62,6 @@ export const PROCESS_COLUMNS = [
   { key: 'isolation', label: '分離', numeric: false },
 ] as const;
 
-/** 電力消費の目安（本家と同じ 5 段階）。 */
 export const POWER_LEVELS = ['非常に低い', '低い', '中', '高い', '非常に高い'] as const;
 const MB_PER_SEC = 1024 ** 2;
 
@@ -97,7 +90,6 @@ export function processColumnLabel(column: ProcessColumn): string {
   return PROCESS_COLUMNS.find((c) => c.key === column)?.label ?? column;
 }
 
-/** 保存されていた列を読む。知らない列や重複は除き、名前は必ず入れ、決まった順に並べる。 */
 export function normalizeProcessColumns(value: unknown): ProcessColumn[] {
   if (!Array.isArray(value)) return [...DEFAULT_PROCESS_COLUMNS];
   const wanted = new Set<unknown>(value);
@@ -105,7 +97,6 @@ export function normalizeProcessColumns(value: unknown): ProcessColumn[] {
   return PROCESS_COLUMNS.map((c) => c.key).filter((key) => wanted.has(key));
 }
 
-/** 列の表示・非表示を切り替える。名前の列は外せない。 */
 export function toggleProcessColumn(
   visible: readonly ProcessColumn[],
   column: ProcessColumn,
@@ -115,7 +106,6 @@ export function toggleProcessColumn(
   return normalizeProcessColumns(next);
 }
 
-/** 行の文字や色を決めるのに使う、プロセスの外の情報。 */
 export interface ProcessCellContext {
   kind: (group: ProcessGroup) => ProcessKind;
   windows: boolean;
@@ -123,7 +113,6 @@ export interface ProcessCellContext {
   company: (exe: string) => string;
   marks: (p: ProcessInfo) => { efficient: boolean; suspended: boolean; growing?: boolean };
   memoryTotal: number;
-  /** 直近の CPU 使用率の平均（電源の使用率の傾向に使う）。分からなければ今の値 */
   averageCpu?: (p: ProcessInfo) => number;
 }
 
@@ -135,7 +124,6 @@ const gpuOf = (g: ProcessGroup) =>
     g.children.reduce((sum, c) => sum + (c.gpu ?? 0), 0),
   );
 const hasGpu = (g: ProcessGroup) => g.children.some((c) => c.gpu !== null);
-/** いちばん GPU を使っている子の GPU エンジン。 */
 const engineOf = (g: ProcessGroup): string =>
   g.children
     .filter((c) => c.gpuEngine !== null)
@@ -143,7 +131,6 @@ const engineOf = (g: ProcessGroup): string =>
       (best, c) => (best === null || (c.gpu ?? 0) > (best.gpu ?? 0) ? c : best),
       null,
     )?.gpuEngine ?? '';
-/** 全部が AppContainer なら「AppContainer」。 */
 const isolationOf = (g: ProcessGroup): string =>
   g.children.length > 0 && g.children.every((c) => c.appContainer) ? 'AppContainer' : '';
 const powerOf = (g: ProcessGroup) => powerLevel(g.cpu, gpuOf(g), g.diskPerSec);
@@ -154,14 +141,12 @@ const trendOf = (g: ProcessGroup, ctx: Pick<ProcessCellContext, 'averageCpu'>) =
     0,
   );
 
-/** まとめた行の名前（説明があれば説明。本家のように「Google Chrome」などと出す）。 */
 export function groupName(g: ProcessGroup, ctx: Pick<ProcessCellContext, 'description'>): string {
   const exe = g.children[0]?.exe ?? '';
   const text = ctx.description(exe);
   return text === '' ? g.name : text;
 }
 
-/** まとめた行の状態（全部が中断・効率モードならそれを出す。メモリ増加中は 1 つでもあれば出す）。 */
 export function groupStatus(g: ProcessGroup, ctx: Pick<ProcessCellContext, 'marks'>): string {
   const first = g.children[0];
   if (!first) return '';
@@ -174,7 +159,6 @@ export function groupStatus(g: ProcessGroup, ctx: Pick<ProcessCellContext, 'mark
   });
 }
 
-/** まとめた行の、並べ替えに使う値。 */
 export function groupValue(g: ProcessGroup, column: ProcessColumn, ctx: ProcessCellContext): string | number {
   const one = single(g);
   const values: Record<ProcessColumn, () => string | number> = {
@@ -197,7 +181,6 @@ export function groupValue(g: ProcessGroup, column: ProcessColumn, ctx: ProcessC
   return values[column]();
 }
 
-/** まとめた行のセルに出す文字。 */
 export function groupText(g: ProcessGroup, column: ProcessColumn, ctx: ProcessCellContext): string {
   const one = single(g);
   const numbers: Partial<Record<ProcessColumn, () => string>> = {
@@ -212,7 +195,6 @@ export function groupText(g: ProcessGroup, column: ProcessColumn, ctx: ProcessCe
   return numbers[column]?.() ?? String(groupValue(g, column, ctx));
 }
 
-/** 1 つのプロセスの行のセルに出す文字（まとめた行を開いたときの中身）。 */
 export function childText(p: ProcessInfo, column: ProcessColumn, ctx: ProcessCellContext): string {
   const g: ProcessGroup = {
     key: p.name.toLowerCase(),
@@ -227,7 +209,6 @@ export function childText(p: ProcessInfo, column: ProcessColumn, ctx: ProcessCel
   return groupText(g, column, ctx);
 }
 
-/** 使用量の色の濃さ（数値の列だけ）。 */
 export function heatOf(
   column: ProcessColumn,
   usage: { cpu: number; memory: number; disk: number; gpu: number },
@@ -240,17 +221,14 @@ export function heatOf(
   return 0;
 }
 
-/** まとめた行の使用量（色を決めるのに使う）。 */
 export function groupUsage(g: ProcessGroup): { cpu: number; memory: number; disk: number; gpu: number } {
   return { cpu: g.cpu, memory: g.memory, disk: g.diskPerSec, gpu: gpuOf(g) };
 }
 
-/** 1 つのプロセスの使用量。 */
 export function processUsage(p: ProcessInfo): { cpu: number; memory: number; disk: number; gpu: number } {
   return { cpu: p.cpu, memory: p.memory, disk: p.diskReadPerSec + p.diskWrittenPerSec, gpu: p.gpu ?? 0 };
 }
 
-/** 表に出す区切り。種類分けしないときは、種類の無い 1 つの区切りにする。 */
 export interface TableSection {
   kind: ProcessKind | null;
   groups: ProcessGroup[];
@@ -264,10 +242,6 @@ export function tableSections(
   return grouped ? sectionsOf(groups, kindOf) : [{ kind: null, groups }];
 }
 
-/**
- * 先頭から `limit` 個のまとまりだけを残す（少しずつ描くため）。見出しの数は元のまま `count` に残す。
- * まとまりが 1 つも残らない区分は除く。
- */
 export function limitSections(
   sections: readonly TableSection[],
   limit: number,

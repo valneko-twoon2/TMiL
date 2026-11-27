@@ -1,15 +1,11 @@
-//! 画像の data URL や PowerShell に渡すスクリプトに使う Base64（RFC 4648、パディングあり）。依存を増やさないよう自前で持つ。
-
 const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 fn symbol(index: u32) -> char {
-    // index は 6 ビット（0〜63）に切り詰めてから引くので、範囲外にならない
     ALPHABET
         .get((index & 0x3f) as usize)
         .map_or('=', |&b| char::from(b))
 }
 
-/// バイト列を Base64 の文字列にする。
 pub fn encode(bytes: &[u8]) -> String {
     let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
     for chunk in bytes.chunks(3) {
@@ -25,7 +21,6 @@ pub fn encode(bytes: &[u8]) -> String {
     out
 }
 
-/// Base64 として正しい文字列か（PowerShell の出力を確かめる用）。
 pub fn is_valid(text: &str) -> bool {
     !text.is_empty()
         && text.len().is_multiple_of(4)

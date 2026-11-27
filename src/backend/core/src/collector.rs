@@ -1,5 +1,3 @@
-//! sysinfo を使ってシステムの状態を集める。
-
 use std::fmt;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -19,14 +17,12 @@ use crate::model::{
 use crate::process_flags::FlagsSampler;
 use crate::procfs;
 
-/// コマンドラインを画面に送るときの最大文字数。
 const COMMAND_MAX_CHARS: usize = 1024;
 
 /// プロセスごとの GPU 使用率を取り直す間隔。取るのに時間がかかる（Windows で 20ms ほど）ので、
 /// 毎回は取らず、間は前の値を使う。
 const PROCESS_GPU_INTERVAL: Duration = Duration::from_secs(3);
 
-/// 初期化に失敗したときのエラー。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CollectorError(String);
 
@@ -51,13 +47,9 @@ pub struct Collector {
     users: Users,
     gpus: GpuSampler,
     last_refresh: Option<Instant>,
-    /// プロセスごとの GPU 使用率を最後に取った時刻
     last_process_gpu: Option<Instant>,
-    /// このプロセスと、その子孫（WebView など）は終了させない
     protected_root: Option<u32>,
-    /// 開けないプロセスの場所とアカウント（裏で聞いて補う）
     identity: IdentityLookup,
-    /// 効率モード・分離・GPU エンジン（裏で聞き続ける）
     flags: FlagsSampler,
 }
 
@@ -88,7 +80,6 @@ impl Collector {
         })
     }
 
-    /// 最新の状態を取得する。
     pub fn snapshot(&mut self) -> Snapshot {
         let now = Instant::now();
         let elapsed = self
@@ -115,7 +106,6 @@ impl Collector {
         }
     }
 
-    /// 変化しないシステム情報。
     pub fn system_info(&self) -> SystemInfo {
         SystemInfo {
             os_name: System::name().unwrap_or_default(),
@@ -149,7 +139,6 @@ impl Collector {
             .map(Pid::as_u32)
     }
 
-    /// 今その PID で動いているプロセスの様子。終了してよいかは状態機械が決める。
     pub fn observe(&self, pid: u32) -> Option<ObservedProcess> {
         let process = self.system.process(Pid::from_u32(pid))?;
         Some(ObservedProcess {
@@ -197,7 +186,6 @@ impl Collector {
         self.networks.refresh(true);
     }
 
-    /// 場所が取れなかったプロセス（開けないもの）を、裏で聞くよう頼む。
     fn update_identity(&mut self, now: Instant) {
         let processes = self.system.processes();
         let alive = processes.keys().map(|p| p.as_u32()).collect();
@@ -218,7 +206,6 @@ impl Collector {
                 let usage = p.disk_usage();
                 let flags = self.flags.get(p.pid().as_u32());
                 let name = p.name().to_string_lossy().into_owned();
-                // 開けないプロセスは、裏で聞いた値で補う（PID が使い回されていれば使わない）
                 let identity = self
                     .identity
                     .get(p.pid().as_u32())
@@ -327,12 +314,10 @@ impl Collector {
     }
 }
 
-/// 前回から `interval` 以上たったか（まだ一度もしていなければ真）。
 pub fn is_due(last: Option<Instant>, now: Instant, interval: Duration) -> bool {
     last.is_none_or(|at| now.saturating_duration_since(at) >= interval)
 }
 
-/// 数を u32 に収める（大きすぎる値は上限にする）。
 pub fn saturate_u32(n: usize) -> u32 {
     u32::try_from(n).unwrap_or(u32::MAX)
 }
@@ -364,7 +349,6 @@ pub fn is_self_or_descendant(pid: u32, root: u32, parent_of: impl Fn(u32) -> Opt
     false
 }
 
-/// sysinfo のプロセス状態を画面用の区分にまとめる。
 pub fn map_status(status: ProcessStatus) -> ProcessState {
     match status {
         ProcessStatus::Run | ProcessStatus::Waking => ProcessState::Running,
@@ -378,7 +362,6 @@ pub fn map_status(status: ProcessStatus) -> ProcessState {
     }
 }
 
-/// sysinfo のディスク種別を画面用に変換する。
 pub fn map_disk_kind(kind: sysinfo::DiskKind) -> DiskKind {
     match kind {
         sysinfo::DiskKind::SSD => DiskKind::Ssd,
@@ -387,7 +370,6 @@ pub fn map_disk_kind(kind: sysinfo::DiskKind) -> DiskKind {
     }
 }
 
-/// コマンドライン引数を空白区切りで 1 行にする。
 pub fn join_command(args: &[std::ffi::OsString]) -> String {
     args.iter()
         .map(|a| a.to_string_lossy())
@@ -395,7 +377,6 @@ pub fn join_command(args: &[std::ffi::OsString]) -> String {
         .join(" ")
 }
 
-/// 時刻を UNIX エポックからのミリ秒にする。エポックより前は 0。
 pub fn unix_millis(time: SystemTime) -> u64 {
     time.duration_since(UNIX_EPOCH)
         .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))

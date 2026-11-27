@@ -27,7 +27,6 @@
   );
   const rows = $derived(filterUsage(history.rows, query));
 
-  // 記録だけにあるアプリ（もう動いていないもの）のアイコンも取りに行く
   $effect(() => {
     void icons.request(history.rows.map((a) => a.exe));
   });

@@ -16,7 +16,6 @@
     menus: ContextMenus;
     processActions: ProcessActions;
     query: string;
-    /** 詳細タブの「サービスに移動」で来たときの PID（そのプロセスのサービスだけを出す） */
     focusPid?: number | null;
     ongotodetails?: (pid: number) => void;
   }
@@ -31,11 +30,9 @@
     ongotodetails,
   }: Props = $props();
 
-  /** サービスの一覧は計測結果に入っていないので、開いている間だけ読み直す */
   const RELOAD_MS = 5000;
 
   let selected = $state<string | null>(null);
-  // 来たときの PID で絞り込み、「すべて表示」で外す
   let onlyPid = $derived(focusPid);
 
   const rows = $derived(

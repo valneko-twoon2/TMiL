@@ -1,6 +1,3 @@
-//! スタートアップ アプリの一覧と有効・無効の切り替え。
-//! Windows はレジストリとスタートアップフォルダー、Linux は XDG autostart を見る。
-
 pub mod approval;
 pub mod command;
 pub mod desktop;
@@ -13,16 +10,11 @@ use std::fmt;
 
 use crate::model::{StartupEntry, StartupLocation};
 
-/// スタートアップ操作のエラー。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StartupError {
-    /// ID の形式が正しくない
     InvalidId,
-    /// 項目が見つからない
     NotFound,
-    /// この画面からは切り替えられない（管理者権限が必要など）
     NotToggleable,
-    /// 読み書きに失敗した
     Io(String),
 }
 
@@ -70,7 +62,6 @@ fn xdg_dirs() -> (std::path::PathBuf, Vec<std::path::PathBuf>) {
     )
 }
 
-/// この OS のスタートアップ項目を一覧にする。
 pub fn list() -> Vec<StartupEntry> {
     #[cfg(windows)]
     {
@@ -83,7 +74,6 @@ pub fn list() -> Vec<StartupEntry> {
     }
 }
 
-/// ID で指定した項目の有効・無効を切り替える。
 pub fn set_enabled(id: &str, enabled: bool) -> Result<(), StartupError> {
     let (location, name) = parse_id(id)?;
     #[cfg(windows)]

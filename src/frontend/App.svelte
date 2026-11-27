@@ -64,14 +64,11 @@
 
   provideRunTask(untrack(() => runTask));
 
-  // 起動時だけ既定のページを使う（設定を変えても今の画面は動かさない）
   let page = $state<Page>(untrack(() => settings.value.startPage));
   let navExpanded = $state(false);
   let query = $state('');
   let search = $state<HTMLInputElement | null>(null);
-  /** 詳細タブで選んでおくプロセス（ほかのタブから移ってきたとき） */
   let detailsFocus = $state<number | null>(null);
-  /** サービス タブで絞り込む PID（詳細タブの「サービスに移動」） */
   let servicesFocus = $state<number | null>(null);
 
   const SEARCHABLE: readonly Page[] = ['processes', 'details', 'startup', 'users', 'services', 'history'];
@@ -84,7 +81,6 @@
   }
 
   function gotoDetails(pid: number) {
-    // 検索で隠れないよう、絞り込みを外してから移る
     query = '';
     detailsFocus = pid;
     page = 'details';
@@ -96,13 +92,11 @@
     page = 'services';
   }
 
-  // 一覧に出てきた実行ファイルのアイコンを取りに行く（覚えているものは聞かない）
   $effect(() => {
     const processes = monitor.snapshot?.processes;
     if (processes) void icons.request(processes.map((p) => p.exe));
   });
 
-  // 計測結果が届くたびに、アプリの履歴・リソース モニターの平均・プロセスごとの推移を進める
   $effect(() => {
     const snapshot = monitor.snapshot;
     if (!snapshot) return;
@@ -113,7 +107,6 @@
     });
   });
 
-  // 間隔の値が変わったときだけ再設定する（テーマなど他の設定の変更では動かさない）
   const interval = $derived(intervalOf(settings.value.refresh));
 
   $effect(() => {
@@ -173,7 +166,6 @@
 
 <div class="app">
   <header class="titlebar">
-    <!-- アプリ名は OS のタイトル バーに出るので、ここには出さない -->
     <div class="spacer"></div>
     <label class="search" class:disabled={!searchable}>
       <Icon name="search" size={14} />

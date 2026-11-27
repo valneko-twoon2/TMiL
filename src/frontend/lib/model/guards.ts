@@ -1,4 +1,3 @@
-// IPC で受け取った値が契約どおりの形かを実行時に確かめる。
 import {
   type AppWindow,
   type Connection,
@@ -167,7 +166,6 @@ export const PROCESS_ROW_FIELDS = [
   'appContainer',
 ] as const satisfies readonly (keyof ProcessRowValues)[];
 
-/** プロセスの配列を読む。並びや値が契約と違えば null。 */
 export function decodeProcessRow(row: unknown): ProcessRowValues | null {
   if (!Array.isArray(row) || row.length !== PROCESS_ROW_FIELDS.length) return null;
   const values: Record<string, unknown> = {};
@@ -177,7 +175,6 @@ export function decodeProcessRow(row: unknown): ProcessRowValues | null {
   return isProcessRowValues(values) ? values : null;
 }
 
-/** プロセスを項目名の無い配列にする（モックのバックエンドが送るときに使う）。 */
 export function encodeProcessRow(p: ProcessRowValues): unknown[] {
   return PROCESS_ROW_FIELDS.map((field) => p[field]);
 }
@@ -250,7 +247,6 @@ export const isReplacementStatus = shape<ReplacementStatus>({
   other: nullable(isStr),
 });
 
-/** 画像の data URL だけを受け付ける（img に入れるので、それ以外の URL は通さない）。 */
 const isImageDataUrl = (v: unknown): v is string =>
   typeof v === 'string' && /^data:image\/(png|svg\+xml);base64,[A-Za-z0-9+/]+=*$/.test(v);
 
@@ -267,7 +263,6 @@ export const isProcessControls = shape<ProcessControls>({
   affinity: nullable(arrayOf(isCount)),
 });
 
-/** `null` を返すコマンド用。 */
 export const isNull = (v: unknown): v is null => v === null;
 
 export const isAppWindows = arrayOf(shape<AppWindow>({ pid: isCount, title: isStr }));

@@ -1,4 +1,3 @@
-// グラフ用の履歴（直近 N 回分の値）。
 import type { DiskStats, Snapshot } from '../model/types';
 import { shareOf } from '../format/heat';
 
@@ -6,10 +5,8 @@ export const HISTORY_CAPACITY = 60;
 
 export type HistoryMap = ReadonlyMap<string, readonly number[]>;
 
-/** 空の履歴（読み取り専用として扱う）。 */
 export const EMPTY_HISTORY: HistoryMap = new Map();
 
-/** 末尾に値を足し、容量を超えた分を先頭から捨てる（元の配列は変えない）。 */
 export function pushValue(values: readonly number[], value: number, capacity = HISTORY_CAPACITY): number[] {
   if (capacity <= 0) return [];
   const next = [...values, Number.isFinite(value) ? value : 0];
@@ -29,7 +26,6 @@ export function diskKeys(disks: readonly DiskStats[]): string[] {
   });
 }
 
-/** 履歴のキー。 */
 export const historyKey = {
   cpu: 'cpu',
   memory: 'memory',
@@ -42,7 +38,6 @@ export const historyKey = {
   gpuMemory: (index: number) => `gpu:${String(index)}:memory`,
 } as const;
 
-/** 計測結果を 1 回分記録した新しい履歴を返す。消えたディスクなどの履歴は捨てる。 */
 export function recordSnapshot(
   history: HistoryMap,
   snapshot: Snapshot,

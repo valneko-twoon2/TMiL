@@ -1,6 +1,3 @@
-//! トレイアイコンとウィンドウの表示切り替え。
-//! 表示・非表示・終了は状態機械に伝え、返ってきた判断のとおりに画面へ知らせる。
-
 use taskmanagerlite_core::backend::Backend;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -12,7 +9,6 @@ pub(crate) const VISIBILITY_EVENT: &str = "window-visibility";
 const MENU_OPEN: &str = "open";
 const MENU_QUIT: &str = "quit";
 
-/// トレイアイコンを作る。
 pub(crate) fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, MENU_OPEN, "TaskManagerLite を開く", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, MENU_QUIT, "終了", true, None::<&str>)?;
@@ -44,10 +40,8 @@ pub(crate) fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     Ok(())
 }
 
-/// メインウィンドウを前面に出す。
 pub(crate) fn show_main_window<R: Runtime>(app: &AppHandle<R>) {
     if let Some(window) = app.get_webview_window("main") {
-        // 表示の切り替えに失敗しても次の操作で再試行できるので、結果は捨てる
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();
@@ -57,7 +51,6 @@ pub(crate) fn show_main_window<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
-/// ウィンドウを隠してトレイに常駐させる。
 pub(crate) fn hide_window<R: Runtime>(window: &Window<R>) {
     let _ = window.hide();
     if window
@@ -70,7 +63,6 @@ pub(crate) fn hide_window<R: Runtime>(window: &Window<R>) {
     }
 }
 
-/// 終了する。状態機械が「終了してよい」と判断したときだけ終える。
 fn request_quit<R: Runtime>(app: &AppHandle<R>) {
     if app.state::<Backend>().quit().unwrap_or(true) {
         app.exit(0);

@@ -1,5 +1,3 @@
-// SVG の折れ線グラフ用の座標計算。
-
 /** グラフの上限値を切りのよい数（1, 2, 5 × 10^n）に丸める。最低でも minimum。 */
 export function niceMax(values: readonly number[], minimum = 1): number {
   const peak = Math.max(minimum, ...values.filter((v) => Number.isFinite(v)));
@@ -36,7 +34,6 @@ export function linePoints(
     .join(' ');
 }
 
-/** 折れ線の下を塗る多角形の points。 */
 export function areaPoints(line: string, width: number, height: number): string {
   if (line === '') return '';
   const first = line.split(' ')[0]?.split(',')[0] ?? '0';

@@ -9,10 +9,8 @@ use sysinfo::Gpus;
 use crate::metrics::clamp_percent;
 use crate::model::GpuStats;
 
-/// 結果を待つ長さ。これを過ぎたら GPU は無いものとして扱う（計測全体を止めないため）。
 const REPLY_TIMEOUT: Duration = Duration::from_secs(2);
 
-/// GPU を計測するスレッドへの窓口。
 #[derive(Debug)]
 pub struct GpuSampler {
     requests: Sender<Sender<Vec<GpuStats>>>,
@@ -22,12 +20,10 @@ impl GpuSampler {
     /// 計測用のスレッドを起こす。起こせなかったときは、いつも空の結果を返す。
     pub fn start() -> Self {
         let (requests, inbox) = mpsc::channel::<Sender<Vec<GpuStats>>>();
-        // スレッドを起こせなければ inbox が捨てられ、sample は空を返す
         let _ = std::thread::Builder::new()
             .name("gpu".to_owned())
             .spawn(move || {
                 let mut gpus = Gpus::new_with_refreshed_list().ok();
-                // 窓口（GpuSampler）が捨てられると受け取りが終わり、スレッドも終わる
                 for reply in inbox {
                     let stats = gpus.as_mut().map_or_else(Vec::new, |g| {
                         g.refresh(true);
@@ -39,7 +35,6 @@ impl GpuSampler {
         Self { requests }
     }
 
-    /// 今の GPU の状態。取れなければ空。
     pub fn sample(&self) -> Vec<GpuStats> {
         let (reply, answer) = mpsc::channel();
         if self.requests.send(reply).is_err() {

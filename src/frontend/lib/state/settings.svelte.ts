@@ -1,4 +1,3 @@
-// 設定の保持と保存（localStorage）。
 import { parseSettings, SETTINGS_STORAGE_KEY, type Settings } from '../settings/settings';
 
 export class SettingsStore {

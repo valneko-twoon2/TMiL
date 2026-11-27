@@ -1,26 +1,13 @@
-//! ファイルを開いているプロセスを探す（リソース モニターの「関連付けられたハンドル」）。
-//!
-//! 読むだけで状態を持たないので状態機械は通さない。
-//! - Windows: Restart Manager（`RmGetList`）に、ファイルか、フォルダーの中のファイルを渡して聞く。
-//!   場所は標準入力で渡す（スクリプトに埋め込まない）
-//! - Linux: `/proc/<pid>/fd` のリンク先を、入れた文字を含むかで探す（大文字小文字は区別しない）
-
 use crate::model::HandleInfo;
 
-/// 結果の数の上限。
 pub const MAX_HANDLES: usize = 2000;
 
-/// Windows: フォルダーの中から調べるファイルの数の上限。
 pub const MAX_FILES: usize = 5000;
 
-/// Windows: これ以下のファイル数なら、ファイルごとに聞いてどのファイルかも出す。
-/// 多いときはまとめて 1 回で聞き、場所には入れた場所を出す（ファイルごとだと遅いため）。
 pub const PER_FILE_LIMIT: usize = 100;
 
-/// 入れた場所が見つからないときにスクリプトが書く印。
 const NOT_FOUND: &str = "TASKMANAGERLITE_NOT_FOUND";
 
-/// 探す文字を整える（前後の空白と引用符を取る）。
 pub fn normalize_query(query: &str) -> String {
     query.trim().trim_matches('"').trim().to_owned()
 }
@@ -104,7 +91,6 @@ if ($files.Count -le {PER_FILE_LIMIT}) {{
     )
 }
 
-/// 結果の行を足す（同じ組は 1 つにし、上限で止める）。
 fn push_unique(list: &mut Vec<HandleInfo>, pid: u32, path: &str) {
     if list.len() < MAX_HANDLES && !list.iter().any(|h| h.pid == pid && h.path == path) {
         list.push(HandleInfo {
@@ -114,7 +100,6 @@ fn push_unique(list: &mut Vec<HandleInfo>, pid: u32, path: &str) {
     }
 }
 
-/// Windows のスクリプトの出力を読む。
 pub fn parse_windows(output: &str) -> Vec<HandleInfo> {
     let mut list = Vec::new();
     for line in output.lines() {
@@ -130,7 +115,6 @@ pub fn parse_windows(output: &str) -> Vec<HandleInfo> {
     list
 }
 
-/// Windows のスクリプトが失敗したときの文言。
 pub fn failure_message(error: &str, query: &str) -> String {
     if error.contains(NOT_FOUND) {
         format!("'{query}' が見つかりません。ファイルかフォルダーの場所を入れてください。")
@@ -162,7 +146,6 @@ pub fn select<'a>(
     list
 }
 
-/// 入れた場所を開いているプロセス。
 #[cfg(windows)]
 pub fn find(query: &str) -> Result<Vec<HandleInfo>, String> {
     let query = normalize_query(query);
@@ -174,7 +157,6 @@ pub fn find(query: &str) -> Result<Vec<HandleInfo>, String> {
         .map_err(|e| failure_message(&e, &query))
 }
 
-/// 入れた文字を含むものを開いているプロセス。
 #[cfg(not(windows))]
 pub fn find(query: &str) -> Result<Vec<HandleInfo>, String> {
     let query = normalize_query(query);
@@ -187,7 +169,6 @@ pub fn find(query: &str) -> Result<Vec<HandleInfo>, String> {
         let Some(pid) = dir.file_name().to_str().and_then(|s| s.parse::<u32>().ok()) else {
             continue;
         };
-        // 権限の無いプロセスは読めないので飛ばす
         let Ok(fds) = std::fs::read_dir(dir.path().join("fd")) else {
             continue;
         };

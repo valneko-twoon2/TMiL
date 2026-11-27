@@ -1,12 +1,3 @@
-//! 「新しいタスクの実行」。入力されたコマンドを、OS の「ファイル名を指定して実行」と同じように起動する。
-//!
-//! 利用者が自分で入力したものを起動するだけで、状態を持たないので状態機械は通さない。
-//! - Windows: PowerShell の `Start-Process`（関連付けや App Paths も使える。管理者なら `-Verb RunAs`）
-//! - Linux: `sh -c` で起動し、終わりを待たない（管理者なら `pkexec`）
-//!
-//! 入力はスクリプトに埋め込まず、標準入力や引数として渡す。
-
-/// 入力の長さの上限。
 const MAX_COMMAND_CHARS: usize = 2048;
 
 /// 入力を「起動するもの」と「引数」に分ける。空や改行などの制御文字を含むものは受け付けない。
@@ -53,7 +44,6 @@ Start-Process @options"
     )
 }
 
-/// 起動できなかったときに出す文。
 pub fn failure_message(program: &str, admin: bool) -> String {
     if admin {
         format!(
@@ -66,7 +56,6 @@ pub fn failure_message(program: &str, admin: bool) -> String {
     }
 }
 
-/// Linux: 起動するものが見つかるかを確かめてから、終わりを待たずに起動するスクリプト。
 /// 入力は `$0`（コマンド全体）と `$1`（起動するもの）で受け取り、スクリプトには埋め込まない。
 pub fn linux_script(admin: bool) -> &'static str {
     if admin {
@@ -77,7 +66,6 @@ nohup pkexec sh -c \"$0\" >/dev/null 2>&1 &"
     }
 }
 
-/// 入力されたコマンドを起動する。
 #[cfg(windows)]
 pub fn run(command: &str, admin: bool) -> Result<(), String> {
     let (program, arguments) = parse_command(command)?;
@@ -86,7 +74,6 @@ pub fn run(command: &str, admin: bool) -> Result<(), String> {
         .map_err(|_| failure_message(&program, admin))
 }
 
-/// 入力されたコマンドを起動する。
 #[cfg(not(windows))]
 pub fn run(command: &str, admin: bool) -> Result<(), String> {
     let (program, _) = parse_command(command)?;

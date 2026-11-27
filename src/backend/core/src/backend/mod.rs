@@ -1,12 +1,3 @@
-//! 状態機械（[`machine`](crate::machine)）と実際の処理をつなぐ殻。
-//!
-//! 判断はすべて状態機械に任せ、ここでは出来事を伝えて、返ってきた [`Effect`] のとおりに
-//! 計測・プロセスへの操作（終了・優先度・関係・中断・再開・効率モード）・管理者としての切り替えを行うだけにする。
-//!
-//! ロックの順番は「collector → machine」に固定する（machine を持ったまま collector を待たない）。
-//! 計測や UAC の確認の間は machine のロックを手放すので、その間の依頼は状態機械が
-//! 「直前の結果を返す」「処理中」と判断する。
-
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard};
 use std::time::{Duration, Instant};
@@ -29,7 +20,6 @@ fn lock<T>(m: &Mutex<T>) -> Result<MutexGuard<'_, T>, String> {
     m.lock().map_err(|_| POISONED.to_owned())
 }
 
-/// 置き換えの状態を状態機械の言葉に直す。
 pub fn registry_of(status: &ReplacementStatus) -> Registry {
     if status.replaced {
         Registry::Replaced
@@ -40,12 +30,10 @@ pub fn registry_of(status: &ReplacementStatus) -> Registry {
     }
 }
 
-/// 状態機械に「計測が古いか」を伝えるための判定。
 pub fn is_stale(last_sample: Option<Instant>, now: Instant) -> bool {
     last_sample.is_none_or(|at| now.saturating_duration_since(at) >= MIN_SAMPLE_INTERVAL)
 }
 
-/// バックエンド全体。Tauri からはこれだけを使う。
 #[derive(Debug)]
 pub struct Backend {
     machine: Mutex<Machine>,
@@ -66,7 +54,6 @@ impl Backend {
         }
     }
 
-    /// 今の状態（テストと調査用）。
     pub fn state(&self) -> Result<State, String> {
         Ok(lock(&self.machine)?.state())
     }
@@ -82,7 +69,6 @@ impl Backend {
             .ok_or_else(|| "まだ計測結果がありません。".to_owned())
     }
 
-    /// 最新の計測結果。計測するか直前の結果を返すかは状態機械が決める。
     pub fn snapshot(&self) -> Result<Snapshot, String> {
         let stale = is_stale(
             lock(&self.cache)?.as_ref().map(|(at, _)| *at),
@@ -90,7 +76,6 @@ impl Backend {
         );
         match self.dispatch(&Event::SnapshotRequested { stale })? {
             Some(Effect::Sample) => {
-                // machine のロックは手放してから計測する
                 let sampled = lock(&self.collector).map(|mut c| c.snapshot());
                 let saved = sampled.as_ref().is_ok_and(|snap| {
                     lock(&self.cache).is_ok_and(|mut cache| {
@@ -98,7 +83,6 @@ impl Backend {
                         true
                     })
                 });
-                // 計測や保存に失敗しても「計測中」は必ず終わらせ、成否を伝える
                 self.dispatch(&Event::SampleFinished { ok: saved })?;
                 sampled
             }
@@ -108,7 +92,6 @@ impl Backend {
         }
     }
 
-    /// 直前の計測結果から、頼まれたプロセスのほぼ変わらない項目（場所・コマンドライン・ユーザー）を返す。
     pub fn process_details(&self, pids: &[u32]) -> Result<Vec<ProcessDetails>, String> {
         Ok(lock(&self.cache)?
             .as_ref()
@@ -116,13 +99,10 @@ impl Backend {
             .unwrap_or_default())
     }
 
-    /// 変化しないシステム情報。
     pub fn system_info(&self) -> Result<SystemInfo, String> {
         Ok(lock(&self.collector)?.system_info())
     }
 
-    /// プロセスを終了する。終了してよいかは 1 つずつ状態機械が決める。
-    /// 終了できたプロセスは直前の結果からも除き、次の計測を待たずに一覧から消えるようにする。
     pub fn kill(&self, targets: &[KillTarget]) -> Result<Vec<KillResult>, String> {
         let results = self.act(targets, ProcessAction::Kill, |_, _| {
             Err("内部エラー: 終了は collector で行います。".to_owned())
@@ -137,7 +117,6 @@ impl Backend {
         Ok(results)
     }
 
-    /// プロセスの優先度を変える。変えてよいかは 1 つずつ状態機械が決める。
     pub fn set_priority(
         &self,
         targets: &[KillTarget],
@@ -148,7 +127,6 @@ impl Backend {
         })
     }
 
-    /// プロセスの関係（動かしてよい CPU）を変える。変えてよいかは 1 つずつ状態機械が決める。
     pub fn set_affinity(
         &self,
         targets: &[KillTarget],
@@ -160,21 +138,18 @@ impl Backend {
         })
     }
 
-    /// プロセスを中断する。中断してよいかは 1 つずつ状態機械が決める。
     pub fn suspend(&self, targets: &[KillTarget]) -> Result<Vec<KillResult>, String> {
         self.act(targets, ProcessAction::Suspend, |pid, _| {
             process_control::suspend(pid)
         })
     }
 
-    /// 中断したプロセスを再開する。
     pub fn resume(&self, targets: &[KillTarget]) -> Result<Vec<KillResult>, String> {
         self.act(targets, ProcessAction::Resume, |pid, _| {
             process_control::resume(pid)
         })
     }
 
-    /// 効率モードを入れる・外す。
     pub fn set_efficiency(
         &self,
         targets: &[KillTarget],
@@ -185,9 +160,6 @@ impl Backend {
         })
     }
 
-    /// 1 つずつ状態機械に聞いてから操作する。
-    /// 終了は collector のロックを持ったまま行う。ほかの操作（PowerShell などで時間がかかる）は
-    /// 計測を止めないよう、判断を済ませてロックを手放してから `apply` で行う。
     fn act(
         &self,
         targets: &[KillTarget],
@@ -239,7 +211,6 @@ impl Backend {
             .collect())
     }
 
-    /// 今の優先度と関係（読むだけなので状態機械は通さない）。
     pub fn controls(pid: u32) -> ProcessControls {
         process_control::controls(pid)
     }
@@ -268,14 +239,12 @@ impl Backend {
         ))
     }
 
-    /// 置き換えの状態を確かめ、状態機械にも伝える。
     pub fn replacement_status(
         &self,
         observe: impl FnOnce() -> ReplacementStatus,
     ) -> Result<ReplacementStatus, String> {
         let status = observe();
         if status.supported {
-            // 切り替え中なら状態機械は受け付けない（結果は ElevationFinished で伝わる）
             self.dispatch(&Event::ReplacementObserved(registry_of(&status)))?;
         }
         Ok(status)
@@ -289,7 +258,6 @@ impl Backend {
         elevate: impl FnOnce(bool) -> Result<(), String>,
         observe: impl Fn() -> ReplacementStatus,
     ) -> Result<ReplacementStatus, String> {
-        // 別のアプリが置き換えていないかを、頼む直前に確かめる（状態機械が判断する）
         self.dispatch(&Event::ReplacementObserved(registry_of(&observe())))?;
         match self.dispatch(&Event::ReplacementRequested { enable })? {
             Some(Effect::StartElevation { .. }) => {}
@@ -309,7 +277,6 @@ impl Backend {
     }
 }
 
-/// 置き換えの切り替えを、この実行ファイルについて行う（Windows のみ）。
 pub fn set_replacement_for_exe(
     backend: &Backend,
     exe: &Path,

@@ -1,4 +1,3 @@
-// ユーザーごとにプロセスをまとめる（純粋関数）。ユーザーのページに使う。
 import { formatBytes, formatPercent, formatRate } from '../format/format';
 import { heatLevel, rateLevel, shareOf } from '../format/heat';
 import type { ProcessInfo } from '../model/types';
@@ -17,7 +16,6 @@ export interface UserRow {
   gpu: number;
 }
 
-/** ユーザー名が分からないプロセスの行の名前。 */
 export const UNKNOWN_USER = '（不明）';
 
 /** ユーザーごとにまとめる。CPU と GPU は 100 を超えない。 */
@@ -53,14 +51,12 @@ export function groupByUser(processes: readonly ProcessInfo[]): UserRow[] {
   return [...users.values()];
 }
 
-/** ユーザー名で絞り込む（大文字小文字は区別しない）。 */
 export function filterUsers(rows: readonly UserRow[], query: string): UserRow[] {
   const q = query.trim().toLowerCase();
   if (q === '') return [...rows];
   return rows.filter((r) => r.name.toLowerCase().includes(q));
 }
 
-/** ユーザーの表の列。 */
 export function userColumns(memoryTotal: number): TableColumn<UserRow>[] {
   return [
     { key: 'name', label: 'ユーザー', width: 220, value: (u) => u.name },

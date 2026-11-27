@@ -1,5 +1,3 @@
-// 画面に出す値の整形。
-
 const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'] as const;
 
 /** バイト数を 1024 単位で表す（例: 1536 → "1.5 KB"）。 */
@@ -15,7 +13,6 @@ export function formatBytes(bytes: number, digits = 1): string {
   return `${text} ${BYTE_UNITS[unit] ?? 'B'}`;
 }
 
-/** 毎秒のバイト数（例: "1.5 MB/秒"）。 */
 export function formatRate(bytesPerSec: number): string {
   return `${formatBytes(bytesPerSec)}/秒`;
 }

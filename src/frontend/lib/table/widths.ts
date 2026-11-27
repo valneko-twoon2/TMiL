@@ -1,16 +1,11 @@
-// 表の列の幅（純粋関数）。幅は「表.列」をキーにして設定に保存する。
-
 export const MIN_COLUMN_WIDTH = 40;
 export const MAX_COLUMN_WIDTH = 1200;
-/** 保存する数の上限（壊れた設定で膨らまないように）。 */
 const MAX_ENTRIES = 100;
 const KEY_PATTERN = /^[a-z]+\.[A-Za-z0-9]+$/;
 
 export type ColumnWidths = Record<string, number>;
-/** 表の名前（英小文字だけ。保存するときの鍵の前半になる）。 */
 export type TableName = string;
 
-/** 最初の幅（ここに無い表は、列の定義に書いた幅を使う）。 */
 export const DEFAULT_WIDTHS: Record<string, Record<string, number> | undefined> = {
   processes: {
     name: 300,
@@ -60,13 +55,11 @@ export const DEFAULT_WIDTHS: Record<string, Record<string, number> | undefined> 
 
 const FALLBACK_WIDTH = 120;
 
-/** 幅を許す範囲に収める（小数は丸める）。 */
 export function clampWidth(width: number): number {
   if (!Number.isFinite(width)) return MIN_COLUMN_WIDTH;
   return Math.round(Math.min(MAX_COLUMN_WIDTH, Math.max(MIN_COLUMN_WIDTH, width)));
 }
 
-/** 列の幅。保存されていなければ最初の幅（表ごとの既定 → `fallback` の順）。 */
 export function widthOf(
   widths: ColumnWidths,
   table: TableName,
@@ -88,7 +81,6 @@ export function withWidth(
   return width === null ? rest : { ...rest, [key]: clampWidth(width) };
 }
 
-/** 保存されていた値を読む。形の違うものは捨てる。 */
 export function parseWidths(value: unknown): ColumnWidths {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
   const entries = Object.entries(value as Record<string, unknown>)

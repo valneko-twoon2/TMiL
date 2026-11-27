@@ -9,7 +9,6 @@
   }
 
   const { title, actions }: Props = $props();
-  // 本家と同じく、どのページにも「新しいタスクを実行する」を置く（App が配っているときだけ）
   const runTask = useRunTask();
 </script>
 

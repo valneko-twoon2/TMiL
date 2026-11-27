@@ -1,22 +1,15 @@
-//! Linux: `.desktop` ファイルの `Icon` から、アイコンテーマ（hicolor）や pixmaps の画像を探す。
-//! 表示名は同じ `.desktop` の `Name`（言語に合うものがあればそちら）を使う。
-//! ファイルを読むだけなので、場所を差し替えてどの OS でもテストできる。
-
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use super::ExeDetails;
 use crate::base64;
 
-/// 画像として読み込む大きさの上限。
 const MAX_IMAGE_BYTES: u64 = 512 * 1024;
-/// 探す大きさの順（画面では 16px で出すので、小さめで綺麗なものを先に）。
 const SIZES: [&str; 7] = [
     "32x32", "48x48", "24x24", "64x64", "128x128", "256x256", "scalable",
 ];
 const EXTENSIONS: [&str; 2] = ["png", "svg"];
 
-/// アイコンを探す場所。
 #[derive(Debug, Clone, Default)]
 pub struct SearchDirs {
     /// `.desktop` を探すフォルダー（前にあるものを優先）
@@ -28,7 +21,6 @@ pub struct SearchDirs {
 }
 
 impl SearchDirs {
-    /// XDG の環境変数から決める。
     pub fn from_env(data_home: Option<&str>, data_dirs: Option<&str>, home: Option<&str>) -> Self {
         let mut bases: Vec<PathBuf> = Vec::new();
         match (data_home.filter(|s| !s.is_empty()), home) {
@@ -54,7 +46,6 @@ impl SearchDirs {
     }
 }
 
-/// `[Desktop Entry]` のキーを読む。
 fn desktop_keys(content: &str) -> HashMap<&str, &str> {
     let mut keys = HashMap::new();
     let mut in_main = false;
@@ -77,7 +68,6 @@ fn base_name(path: &str) -> &str {
     path.rsplit('/').next().unwrap_or(path)
 }
 
-/// `Exec` を引数に分ける。引用符の中の空白では区切らない。
 fn split_exec(exec: &str) -> Vec<String> {
     let mut tokens = Vec::new();
     let mut current = String::new();
@@ -100,7 +90,6 @@ fn split_exec(exec: &str) -> Vec<String> {
     tokens
 }
 
-/// `Exec` から起動するプログラムの名前を取り出す。`env` や変数の指定は飛ばす。
 /// `flatpak` などの起動役は、どのアプリか分からないので `None`。
 pub fn exec_program(exec: &str) -> Option<String> {
     let tokens = split_exec(exec);
@@ -161,7 +150,6 @@ pub fn names_in(exes: &[String], dirs: &SearchDirs, lang: &str) -> Vec<Option<St
         .collect()
 }
 
-/// `.desktop` から値を 1 つ選び、プログラム名 → 値 の対応を作る（前のフォルダーを優先）。
 fn index_by(
     applications: &[PathBuf],
     pick: impl Fn(&HashMap<&str, &str>) -> Option<String>,
@@ -198,13 +186,11 @@ fn index_by(
     index
 }
 
-/// アイコン名から画像ファイルを探す。絶対パスならそのまま使う。
 pub fn find_image(name: &str, dirs: &SearchDirs) -> Option<PathBuf> {
     if name.starts_with('/') {
         let path = PathBuf::from(name);
         return path.is_file().then_some(path);
     }
-    // 名前にフォルダーの区切りがあるものは、探す場所の外を指しうるので使わない
     if name.contains(['/', '\\']) || name.starts_with('.') {
         return None;
     }
@@ -268,7 +254,6 @@ pub fn details_in(exes: &[String], dirs: &SearchDirs, lang: &str) -> Vec<ExeDeta
         .collect()
 }
 
-/// この環境の XDG の場所と言語で探す。
 pub fn load(exes: &[String]) -> Vec<ExeDetails> {
     let dirs = SearchDirs::from_env(
         std::env::var("XDG_DATA_HOME").ok().as_deref(),

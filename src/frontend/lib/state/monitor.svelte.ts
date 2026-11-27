@@ -1,5 +1,3 @@
-// 計測結果を定期的に取りに行く。ウィンドウが隠れている間は止める。
-// 取得は同時に 1 つだけにする（重なると転送量や CPU 使用率の計算が乱れるため）。
 import type { Api } from '../api/ipc';
 import { EMPTY_HISTORY, recordSnapshot, type HistoryMap } from '../history/history';
 import type { Snapshot, SystemInfo } from '../model/types';
@@ -22,7 +20,6 @@ export class Monitor {
     this.#api = api;
   }
 
-  /** 1 回取得する。取得中なら、その結果を待つだけにする。 */
   refresh(): Promise<void> {
     this.#inFlight ??= this.#fetch().finally(() => {
       this.#inFlight = null;
@@ -33,7 +30,6 @@ export class Monitor {
   async #fetch(): Promise<void> {
     try {
       const snapshot = await this.#api.snapshot();
-      // バックエンドが直前の結果を返したときは、同じ点を履歴に足さない
       if (snapshot.timestampMs !== this.snapshot?.timestampMs) {
         this.history = recordSnapshot(this.history, snapshot);
       }
@@ -59,7 +55,6 @@ export class Monitor {
     this.#reschedule();
   }
 
-  /** ウィンドウの表示状態を伝える。 */
   setVisible(visible: boolean): void {
     if (this.#visible === visible) return;
     this.#visible = visible;

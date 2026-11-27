@@ -1,9 +1,3 @@
-//! バックエンドの状態機械。
-//!
-//! 画面の表示・終了・計測・タスク マネージャーの置き換え・プロセス終了の「判断」をここに集める。
-//! 状態は純粋関数 [`step`] だけで変わり、実際の処理（計測やプロセス終了）は [`Effect`] として
-//! 呼び出し側（`backend.rs`）が実行する。
-//!
 //! TLA+ の `tests/formal/BackendMachine.tla` の `Step` と 1 対 1 に対応する。
 //! 変えたときの手順は docs/architecture/02-state-machine.md を参照。
 
@@ -14,14 +8,12 @@ use crate::model::{KillTarget, Priority};
 #[cfg(test)]
 pub(crate) mod tla;
 
-/// ウィンドウの表示状態。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Window {
     Visible,
     Hidden,
 }
 
-/// アプリの生死。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Life {
     Running,
@@ -33,9 +25,7 @@ pub enum Life {
 pub enum Registry {
     /// まだ確かめていない
     Unknown,
-    /// 置き換えていない
     NotReplaced,
-    /// TaskManagerLite に置き換わっている
     Replaced,
     /// 別のアプリに置き換わっている
     Other,
@@ -60,7 +50,6 @@ impl Pending {
     }
 }
 
-/// 状態機械の状態。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct State {
     pub window: Window,
@@ -74,7 +63,6 @@ pub struct State {
 }
 
 impl State {
-    /// 起動直後の状態。
     pub const INITIAL: Self = Self {
         window: Window::Visible,
         life: Life::Running,
@@ -91,7 +79,6 @@ impl Default for State {
     }
 }
 
-/// 終了しようとしているプロセスの、今の様子。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ObservedProcess {
     /// 今その PID で動いているプロセスの起動時刻
@@ -100,7 +87,6 @@ pub struct ObservedProcess {
     pub protected: bool,
 }
 
-/// プロセスへの操作。どれも「頼まれたプロセスのままか」「守るべきプロセスでないか」を同じ基準で確かめる。
 /// 判断は操作の種類によらない（TLA+ ではまとめて終了として扱い、Rust のテストで種類によらないことを確かめる）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProcessAction {
@@ -108,15 +94,11 @@ pub enum ProcessAction {
     SetPriority(Priority),
     /// 動かしてよい CPU のビットの並び（0 番の CPU が最下位ビット）
     SetAffinity(u64),
-    /// 中断する（すべてのスレッドを止める）
     Suspend,
-    /// 中断したものを再開する
     Resume,
-    /// 効率モードを入れる（`true`）・外す（`false`）
     SetEfficiency(bool),
 }
 
-/// 状態機械に伝える出来事。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
     WindowShown,
@@ -130,14 +112,12 @@ pub enum Event {
     SampleFinished {
         ok: bool,
     },
-    /// 置き換えの状態を確かめた
     ReplacementObserved(Registry),
     ReplacementRequested {
         enable: bool,
     },
     /// 管理者として切り替えを試み終え、改めて状態を確かめた
     ElevationFinished(Registry),
-    /// プロセスへの操作（終了・優先度・関係・中断・再開・効率モード）を頼まれた。`observed` は今その PID で動いているプロセス
     ProcessActionRequested {
         target: KillTarget,
         observed: Option<ObservedProcess>,
@@ -145,7 +125,6 @@ pub enum Event {
     },
 }
 
-/// 断った理由。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Rejection {
     Hidden,
@@ -178,15 +157,11 @@ impl fmt::Display for Rejection {
 /// 状態が変わったあとに、呼び出し側が行うこと。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Effect {
-    /// 何もしない（状態だけ変わる）
     Nothing,
     /// 計測する。終わったら [`Event::SampleFinished`] を伝える
     Sample,
-    /// 直前の計測結果を返す
     ServeCached,
-    /// 画面に表示状態を知らせる
     EmitVisibility(bool),
-    /// アプリを終了する
     Exit,
     /// 管理者として切り替えを試みる。終わったら [`Event::ElevationFinished`] を伝える
     StartElevation {
@@ -194,7 +169,6 @@ pub enum Effect {
     },
     ReplacementSucceeded,
     ReplacementFailed,
-    /// この PID のプロセスに操作を行う
     Act {
         pid: u32,
         action: ProcessAction,
@@ -202,7 +176,6 @@ pub enum Effect {
     Reject(Rejection),
 }
 
-/// 遷移の結果。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Transition {
     pub state: State,
@@ -249,7 +222,6 @@ fn replacement_request_step(s: State, enable: bool) -> Transition {
     } else if s.pending != Pending::Idle {
         to(s, Effect::Reject(Rejection::Busy))
     } else if s.registry == Registry::Other {
-        // 別のアプリの設定は上書きも削除もしない
         to(s, Effect::Reject(Rejection::OtherTool))
     } else {
         let pending = if enable {
@@ -346,7 +318,6 @@ pub fn step(s: State, event: &Event) -> Option<Transition> {
     }
 }
 
-/// 状態を持ち、出来事を順に受け取る。
 #[derive(Debug, Clone, Default)]
 pub struct Machine {
     state: State,

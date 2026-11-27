@@ -1,23 +1,18 @@
-// アプリの履歴（アプリごとの CPU 時間と読み書きの量）の集計（純粋関数）。
 // OS はアプリごとの記録を持っていない（Windows の記録は読めない）ので、計測結果の累計値の増え方を足し合わせる。
-// プロセスは「PID と起動時刻」で見分け、初めて見たときの値を起点にする（それより前の分は数えない）。
 import { formatBytes, formatCpuTime } from '../format/format';
 import type { ProcessInfo, Snapshot } from '../model/types';
 import type { TableColumn } from '../table/table';
 import { displayName } from '../process/process';
 
 export interface AppUsage {
-  /** まとめる鍵（実行ファイル名を小文字にしたもの） */
   key: string;
   name: string;
-  /** アイコンや説明を引くための実行ファイルの場所（分かったもの） */
   exe: string;
   cpuMs: number;
   readBytes: number;
   writtenBytes: number;
 }
 
-/** 保存する中身。 */
 export interface AppHistoryData {
   /** 記録を始めた時刻（UNIX ミリ秒） */
   since: number;
@@ -35,15 +30,11 @@ interface LiveProcess {
 
 export interface UsageTracker {
   data: AppHistoryData;
-  /** 動いているプロセス（PID:起動時刻 → 値） */
   live: ReadonlyMap<string, LiveProcess>;
-  /** 前の計測の時刻（まだ無ければ null） */
   last: number | null;
 }
 
-/** 保存する鍵。 */
 export const APP_HISTORY_STORAGE_KEY = 'taskmanagerlite.appHistory';
-/** 覚えておくアプリの数の上限（壊れた値で膨らまないように）。 */
 const MAX_APPS = 2000;
 
 export function appKey(name: string): string {
@@ -56,7 +47,6 @@ const valuesOf = (p: ProcessInfo): [number, number, number] => [
   p.diskWrittenTotal,
 ];
 
-/** 新しい記録。 */
 export function newTracker(data: AppHistoryData): UsageTracker {
   return { data, live: new Map(), last: null };
 }
@@ -80,10 +70,6 @@ function addUsage(apps: Record<string, AppUsage>, p: LiveProcess): void {
   };
 }
 
-/**
- * 計測結果を 1 つ受けて、記録を進める。消えたプロセスの分は「終わった分」に移す。
- * 前の計測より後に起動したプロセスは 0 から、それ以外は初めて見たときの値から数える。
- */
 export function track(tracker: UsageTracker, snapshot: Snapshot): UsageTracker {
   const live = new Map<string, LiveProcess>();
   for (const p of snapshot.processes) {
@@ -99,20 +85,17 @@ export function track(tracker: UsageTracker, snapshot: Snapshot): UsageTracker {
   return { data: { ...tracker.data, apps }, live, last: snapshot.timestampMs };
 }
 
-/** 今までの合計（終わった分と、動いているプロセスの分）。 */
 export function totals(tracker: UsageTracker): AppUsage[] {
   const apps = { ...tracker.data.apps };
   for (const p of tracker.live.values()) addUsage(apps, p);
   return Object.values(apps);
 }
 
-/** 記録を消す。動いているプロセスは、今の値から数え直す。 */
 export function cleared(tracker: UsageTracker, now: number): UsageTracker {
   const live = new Map([...tracker.live].map(([id, p]) => [id, { ...p, base: p.now }]));
   return { data: { since: now, apps: {} }, live, last: tracker.last };
 }
 
-/** 保存する文字（動いているプロセスの分も、終わった分として入れる）。 */
 export function serializeHistory(tracker: UsageTracker): string {
   const apps = Object.fromEntries(totals(tracker).map((a) => [a.key, a]));
   return JSON.stringify({ since: tracker.data.since, apps });
@@ -134,7 +117,6 @@ function parseUsage(key: string, value: unknown): AppUsage | null {
   };
 }
 
-/** 保存されていた記録を読む。壊れていれば、`now` から始まる空の記録にする。 */
 export function parseHistory(raw: string | null, now: number): AppHistoryData {
   const empty = { since: now, apps: {} };
   if (raw === null) return empty;
@@ -156,7 +138,6 @@ export function parseHistory(raw: string | null, now: number): AppHistoryData {
   return { since: rec.since, apps: Object.fromEntries(apps) };
 }
 
-/** 表の列（名前・CPU 時間・読み書きの量）。 */
 export function appHistoryColumns(
   icon: (exe: string) => string | null | undefined,
   description: (exe: string) => string,
@@ -196,7 +177,6 @@ export function appHistoryColumns(
   ];
 }
 
-/** 名前で絞り込む（大文字小文字は区別しない）。 */
 export function filterUsage(rows: readonly AppUsage[], query: string): AppUsage[] {
   const q = query.trim().toLowerCase();
   if (q === '') return [...rows];

@@ -56,14 +56,12 @@
     processActions: ProcessActions;
     appWindows: AppWindows;
     query: string;
-    /** 「詳細の表示に移動」で詳細タブを開く */
     ongotodetails?: (pid: number) => void;
   }
 
   const { monitor, settings, icons, menus, processActions, appWindows, query, ongotodetails }: Props =
     $props();
 
-  /** ウィンドウの一覧を読み直す間隔 */
   const WINDOWS_RELOAD_MS = 5000;
 
   let sort = $state<SortState<ProcessColumn>>({ key: 'cpu', direction: 'desc' });
@@ -85,12 +83,9 @@
     memoryTotal,
     averageCpu: (p: ProcessInfo) => processActions.usage.averageCpu(p) ?? p.cpu,
   });
-  // 隠した列で並べていたら CPU の順に戻す
   const activeSort = $derived<SortState<ProcessColumn>>(
     columns.includes(sort.key) ? sort : { key: 'cpu', direction: 'desc' },
   );
-  // 本家と同じく、使用率などが変わっても行は動かさない。並べ直すのは見出しを押したときだけ。
-  // 絞り込みで隠れた行も覚えておけるよう、並びは絞り込む前の全部で決める
   let lastOrder: readonly string[] = [];
   let lastSort = '';
   const order = $derived.by(() => {
@@ -109,7 +104,6 @@
     ),
   );
   const sections = $derived(tableSections(groups, grouped, ctx.kind));
-  // 画面を開いたときは見える分だけ先に描き、残りは次のフレームから足す
   const progressive = new ProgressiveRows(() => groups.length);
   const shownSections = $derived(limitSections(sections, progressive.limit));
   const totals = $derived<Partial<Record<ProcessColumn, string>>>({
@@ -126,7 +120,6 @@
   );
   const colspan = $derived(columns.length + 1);
 
-  // 種類分けや「種類」の列を出すときだけ、ウィンドウの一覧を読み直す
   $effect(() => {
     if (!grouped && !columns.includes('type')) return;
     void appWindows.refresh();
@@ -193,13 +186,8 @@
     });
   }
 
-  /** エクスプローラーだけは本家と同じく「再起動」を出す */
   const isExplorer = (p: ProcessInfo | undefined) => p?.name.toLowerCase() === 'explorer.exe';
 
-  /**
-   * 行の右クリック。1 つのプロセスの行は詳細タブと同じメニュー（優先度なども選べる）。
-   * 複数のプロセスをまとめた行は、まとめて扱えるものだけを出す。
-   */
   function openMenu(event: MouseEvent, group: ProcessGroup, child: ProcessInfo | null) {
     selection = child ? { kind: 'process', pid: child.pid } : { kind: 'group', key: group.key };
     const representative = child ?? group.children[0];
@@ -257,7 +245,6 @@
     });
   }
 
-  /** 開いた行の名前。ウィンドウがあればそのタイトル（本家と同じ）。 */
   function childLabel(p: ProcessInfo): string {
     const title = appWindows.titles.get(p.pid) ?? '';
     return title === '' ? childText(p, 'name', ctx) : title;

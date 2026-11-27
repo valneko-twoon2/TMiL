@@ -1,11 +1,7 @@
-// 送られてきた計測結果（項目名の無い配列）を、画面で使う形に戻す（純粋関数）。
-// 場所・コマンドライン・ユーザーは毎回は送られないので、覚えておいた ProcessDetails を合わせる。
 import type { ProcessDetails, ProcessInfo, ProcessRowValues, Snapshot, SnapshotWire } from './types';
 
-/** 場所やユーザーが空のプロセスを、聞き直すまでの間（バックエンドが後から補うことがあるため） */
 export const DETAILS_RETRY_MS = 10_000;
 
-/** 同じプロセスかを見分ける鍵（PID と起動時刻）。 */
 export const detailsKey = (p: Pick<ProcessInfo, 'pid' | 'startTime'>): string =>
   `${String(p.pid)}:${String(p.startTime)}`;
 
@@ -24,7 +20,6 @@ export function detailsToFetch(
     .map((row) => row.pid);
 }
 
-/** 受け取った詳細を覚え、今いないプロセスの分は忘れる。 */
 export function rememberDetails(
   known: ReadonlyMap<string, ProcessDetails>,
   received: readonly ProcessDetails[],
@@ -39,7 +34,6 @@ export function rememberDetails(
   return next;
 }
 
-/** 配列と詳細を合わせて、計測結果に戻す。詳細が無いプロセスは空にする。 */
 export function joinSnapshot(
   wire: SnapshotWire,
   rows: readonly ProcessRowValues[],
@@ -52,12 +46,10 @@ export function joinSnapshot(
   return { ...wire, processes };
 }
 
-/** 計測結果を、送る形（配列）にする。モックのバックエンドとテストで使う。 */
 export function encodeSnapshot(snapshot: Snapshot, encode: (p: ProcessRowValues) => unknown[]): SnapshotWire {
   return { ...snapshot, processes: snapshot.processes.map(encode) };
 }
 
-/** 頼まれた PID の詳細。モックのバックエンドとテストで使う。 */
 export function detailsOf(processes: readonly ProcessInfo[], pids: readonly unknown[]): ProcessDetails[] {
   const wanted = new Set(pids);
   return processes

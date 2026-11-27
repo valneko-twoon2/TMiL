@@ -1,6 +1,3 @@
-// バックエンド（src/backend/core/src/model.rs）と同じ形の型。
-// 形を変えたら tests/contract/fixtures の契約も更新すること。
-
 export interface Snapshot {
   timestampMs: number;
   cpu: CpuStats;
@@ -28,7 +25,6 @@ export interface ProcessDetails {
   user: string;
 }
 
-/** 計測結果の配列から読み取れる項目（ProcessDetails の分を除く）。 */
 export type ProcessRowValues = Omit<ProcessInfo, 'exe' | 'command' | 'user'>;
 
 export interface CpuStats {
@@ -76,7 +72,6 @@ export interface NetworkStats {
   addresses: string[];
 }
 
-/** GPU 1 つ分の状態。取れない値は null。 */
 export interface GpuStats {
   name: string;
   vendor: string;
@@ -126,7 +121,6 @@ export interface ProcessInfo {
   appContainer: boolean;
 }
 
-/** 終了するプロセスの指定。 */
 export interface KillTarget {
   pid: number;
   startTime: number;
@@ -194,7 +188,6 @@ export interface ReplacementStatus {
   other: string | null;
 }
 
-/** 画面にウィンドウを出しているプロセス（本家の「アプリ」）。 */
 export interface AppWindow {
   pid: number;
   title: string;
@@ -216,11 +209,9 @@ export type ServiceStartType = (typeof SERVICE_START_TYPES)[number];
 export const SERVICE_ACTIONS = ['start', 'stop', 'restart'] as const;
 export type ServiceAction = (typeof SERVICE_ACTIONS)[number];
 
-/** サービス 1 つ分。 */
 export interface ServiceInfo {
   /** サービス名（操作に使う） */
   name: string;
-  /** 表示名（本家の「説明」の列） */
   displayName: string;
   description: string;
   status: ServiceStatus;
@@ -248,7 +239,6 @@ export const TCP_STATES = [
 ] as const;
 export type TcpState = (typeof TCP_STATES)[number];
 
-/** ネットワークの接続か待ち受け 1 つ分。 */
 export interface Connection {
   protocol: Protocol;
   localAddress: string;
@@ -260,13 +250,11 @@ export interface Connection {
   pid: number | null;
 }
 
-/** ファイルなどを開いているプロセス（リソース モニターの「関連付けられたハンドル」）。 */
 export interface HandleInfo {
   pid: number;
   path: string;
 }
 
-/** プロセスが読み込んでいるモジュール。 */
 export interface ModuleInfo {
   name: string;
   path: string;

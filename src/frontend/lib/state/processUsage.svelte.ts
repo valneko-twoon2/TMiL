@@ -1,4 +1,3 @@
-// プロセスごとの使用状況の推移。計測が届くたびに進め、メモリが増え続けているプロセスを覚えておく。
 import type { ProcessInfo, Snapshot } from '../model/types';
 import {
   growingProcesses,
@@ -26,22 +25,18 @@ export class ProcessUsage {
     this.#growing = growingProcesses(this.#samples);
   }
 
-  /** そのプロセスの推移（まだ無ければ空）。 */
   series(p: Pick<ProcessInfo, 'pid' | 'startTime'>): UsageSeries {
     return this.#samples.get(processKey(p)) ?? { cpu: [], memory: [] };
   }
 
-  /** 直近 2 分ほどの CPU 使用率の平均（まだ計測が無ければ null）。 */
   averageCpu(p: Pick<ProcessInfo, 'pid' | 'startTime'>): number | null {
     return recentAverage(this.series(p).cpu);
   }
 
-  /** メモリが増え続けていれば増えた量。 */
   growth(p: Pick<ProcessInfo, 'pid' | 'startTime'>): number | null {
     return this.#growing.get(processKey(p)) ?? null;
   }
 
-  /** メモリが増え続けているプロセスの数。 */
   get growingCount(): number {
     return this.#growing.size;
   }

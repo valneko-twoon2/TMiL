@@ -18,19 +18,15 @@
 
   interface Props {
     monitor: Monitor;
-    /** 更新間隔（ミリ秒）。グラフの横軸の長さに使う */
     intervalMs: number;
     menus?: ContextMenus;
     toasts?: Toasts;
-    /** 「リソース モニターを開く」 */
     onopenresmon?: () => void;
   }
 
   const { monitor, intervalMs, menus, toasts, onopenresmon }: Props = $props();
   let selectedId = $state('cpu');
-  /** CPU のグラフを論理プロセッサごとに分けるか */
   let perCore = $state(false);
-  /** 概要表示（左の一覧だけを出す） */
   let summary = $state(false);
 
   const resources = $derived(

@@ -1,5 +1,3 @@
-// モック版ビルドで偽バックエンドを差し込む。
-// `?scale=10` を付けると、プロセスの数を 10 倍にする（実機に近い数で速さを測るため）。
 import { mockIPC, mockWindows } from '@tauri-apps/api/mocks';
 import { createMockState, handleCommand } from './backend';
 

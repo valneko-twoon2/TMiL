@@ -1,4 +1,3 @@
-// アプリの履歴の記録と保存（localStorage）。計測結果が届くたびに App から record を呼ぶ。
 import {
   APP_HISTORY_STORAGE_KEY,
   cleared,
@@ -12,7 +11,6 @@ import {
 } from '../history/appHistory';
 import type { Snapshot } from '../model/types';
 
-/** 何回の計測ごとに保存するか（毎回だと書き込みが多いので間引く）。 */
 const SAVE_EVERY = 10;
 
 export class AppHistoryStore {
@@ -35,7 +33,6 @@ export class AppHistoryStore {
     if (this.#unsaved >= SAVE_EVERY) this.save();
   }
 
-  /** 「使用状況の履歴の削除」。今から数え直す。 */
   clear(now = Date.now()): void {
     this.#tracker = cleared(this.#tracker, now);
     this.#publish();

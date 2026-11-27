@@ -1,4 +1,3 @@
-// プロセスのアイコンと説明・発行元の保持。知らない実行ファイルだけをまとめて問い合わせる。
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import type { Api } from '../api/ipc';
 import type { ProcessIcon } from '../model/types';
@@ -20,17 +19,14 @@ export class IconStore {
     return this.#icons.get(exe)?.icon;
   }
 
-  /** ファイルの説明（分からなければ空）。 */
   description(exe: string): string {
     return this.#icons.get(exe)?.description ?? '';
   }
 
-  /** 発行元（分からなければ空）。 */
   company(exe: string): string {
     return this.#icons.get(exe)?.company ?? '';
   }
 
-  /** 知らない実行ファイルのアイコンを問い合わせる。失敗したものは「無し」として覚え、繰り返さない。 */
   async request(exes: readonly string[]): Promise<void> {
     const missing = unknownExes(exes, this.#icons, this.#pending);
     if (missing.length === 0) return;

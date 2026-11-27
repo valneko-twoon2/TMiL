@@ -8,7 +8,6 @@
     sort: SortState<K>;
     onsort: (key: K) => void;
     align?: 'left' | 'right';
-    /** 見出しの上に出す合計値（CPU 使用率など） */
     summary?: string;
     /** 列の幅（px）。指定すると右端をドラッグして変えられる */
     width?: number;

@@ -1,4 +1,3 @@
-// ユーザー設定の型と読み書き。
 import { DEFAULT_DETAIL_COLUMNS, normalizeDetailColumns, type DetailColumn } from '../process/columns';
 import {
   DEFAULT_PROCESS_COLUMNS,
@@ -22,7 +21,6 @@ export const THEME_OPTIONS = [
 ] as const;
 export type Theme = (typeof THEME_OPTIONS)[number]['id'];
 
-/** ページ（サイドバーの並び。設定は一番下に別に置く）。 */
 export const PAGES = [
   'processes',
   'performance',
@@ -36,7 +34,6 @@ export const PAGES = [
 ] as const;
 export type Page = (typeof PAGES)[number];
 
-/** ページの名前（本家のタスク マネージャーの言い方）。 */
 export const PAGE_LABELS: Record<Page, string> = {
   processes: 'プロセス',
   performance: 'パフォーマンス',
@@ -53,17 +50,11 @@ export interface Settings {
   refresh: RefreshSpeed;
   theme: Theme;
   startPage: Page;
-  /** 詳細タブに出す列 */
   detailColumns: DetailColumn[];
-  /** 表の列の幅（「表.列」→ px）。無い列は最初の幅 */
   columnWidths: ColumnWidths;
-  /** 効率モードを入れる前に確かめる */
   confirmEfficiency: boolean;
-  /** プロセス タブに出す列 */
   processColumns: ProcessColumn[];
-  /** プロセス タブを種類（アプリ・バックグラウンド・Windows プロセス）ごとに分ける */
   groupByType: boolean;
-  /** ウィンドウを常に手前に出す */
   alwaysOnTop: boolean;
 }
 
@@ -88,17 +79,14 @@ const defaults = (): Settings => ({
 
 export const SETTINGS_STORAGE_KEY = 'taskmanagerlite.settings';
 
-/** 候補に含まれる値ならそれを、そうでなければ既定値を返す。 */
 function pick<T extends string>(candidates: readonly T[], value: unknown, fallback: T): T {
   return candidates.find((c) => c === value) ?? fallback;
 }
 
-/** オン・オフの値。真偽値でなければ既定値。 */
 function flag(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
 }
 
-/** 保存された JSON を読む。壊れた値は既定値に戻す。 */
 export function parseSettings(raw: string | null): Settings {
   if (raw === null) return defaults();
   let data: unknown;

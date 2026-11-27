@@ -1,4 +1,3 @@
-// バックエンドのコマンド呼び出し。受け取った値は契約どおりかを確かめてから返す。
 import { invoke } from '@tauri-apps/api/core';
 import {
   isAppWindows,
@@ -41,7 +40,6 @@ import { DETAILS_RETRY_MS, detailsToFetch, joinSnapshot, rememberDetails } from 
 
 export type Invoke = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
 
-/** 契約と違う値が返ってきたときのエラー。 */
 export class ContractError extends Error {
   constructor(readonly command: string) {
     super(`${command} の応答が想定と違います`);
@@ -49,7 +47,6 @@ export class ContractError extends Error {
   }
 }
 
-/** バックエンドが返したエラー文（文字列）を Error にする。 */
 export function toError(cause: unknown): Error {
   if (cause instanceof Error) return cause;
   if (typeof cause === 'string') return new Error(cause);
@@ -85,7 +82,6 @@ export interface Api {
   setAlwaysOnTop(enabled: boolean): Promise<void>;
 }
 
-/** invoke を差し替えられる形で API を作る（テストではモックを渡す）。 */
 export function createApi(call: Invoke): Api {
   async function request<T>(
     command: string,
@@ -102,7 +98,6 @@ export function createApi(call: Invoke): Api {
     return value;
   }
 
-  // 場所・コマンドライン・ユーザーは毎回は送られないので、ここで覚えておいて合わせる
   let details: ReadonlyMap<string, ProcessDetails> = new Map();
   let lastRetry = Number.NEGATIVE_INFINITY;
 
@@ -172,5 +167,4 @@ export function createApi(call: Invoke): Api {
   };
 }
 
-/** アプリで使う API。 */
 export const api: Api = createApi((cmd, args) => invoke(cmd, args));

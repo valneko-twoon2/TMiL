@@ -1,5 +1,3 @@
-//! Windows でアイコンと説明を取り出す PowerShell スクリプトと、その出力の読み方（どの OS でもテストできる）。
-
 use super::ExeDetails;
 use crate::base64;
 
@@ -30,7 +28,6 @@ foreach ($line in [Console]::In.ReadToEnd().Split([char]10)) { \
   [Console]::Out.WriteLine($data + $tab + $description + $tab + $company) \
 }";
 
-/// 空でなければその文字。
 fn text(field: Option<&str>) -> Option<String> {
     field
         .map(str::trim)
@@ -48,7 +45,6 @@ pub fn parse_output(output: &str, expected: usize) -> Option<Vec<ExeDetails>> {
         lines
             .into_iter()
             .map(|line| {
-                // タブは項目の区切りなので、行の前後の空白は改行の名残だけを落とす
                 let mut fields = line.trim_end_matches('\r').split('\t');
                 let data = fields.next().unwrap_or_default().trim();
                 ExeDetails {

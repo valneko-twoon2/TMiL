@@ -1,4 +1,3 @@
-// 画面下に一時的に出すお知らせ。
 export interface ToastMessage {
   id: number;
   text: string;

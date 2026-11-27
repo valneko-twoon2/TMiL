@@ -1,19 +1,11 @@
-//! ネットワークの接続（TCP）と待ち受け（TCP・UDP）の一覧。リソース モニターのネットワークの表に使う。
-//!
-//! 読むだけで状態を持たないので状態機械は通さない。
-//! - Windows: `netstat -ano`（速く、管理者でなくても PID まで分かる）
-//! - Linux: `/proc/net/{tcp,tcp6,udp,udp6}` を読み、`/proc/<pid>/fd` のソケットから PID を探す
-
 #[cfg(not(windows))]
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use crate::model::{Connection, Protocol, TcpState};
 
-/// 一覧の数の上限（とても多い環境で画面に送りすぎないように）。
 pub const MAX_CONNECTIONS: usize = 4000;
 
-/// netstat の状態名を区分にする。
 pub fn netstat_state(name: &str) -> Option<TcpState> {
     Some(match name {
         "LISTENING" | "LISTEN" => TcpState::Listen,
@@ -42,7 +34,6 @@ pub fn split_endpoint(text: &str) -> Option<(String, u16)> {
     Some((address.to_owned(), port))
 }
 
-/// `netstat -ano` の出力を読む。見出しなど、TCP・UDP で始まらない行は飛ばす。
 pub fn parse_netstat(output: &str) -> Vec<Connection> {
     output
         .lines()
@@ -68,7 +59,6 @@ pub fn parse_netstat(output: &str) -> Vec<Connection> {
         .collect()
 }
 
-/// `/proc/net/tcp` の状態（16 進）を区分にする。
 pub fn proc_state(hex: &str) -> Option<TcpState> {
     Some(match u8::from_str_radix(hex, 16).ok()? {
         0x01 => TcpState::Established,
@@ -149,7 +139,6 @@ pub fn socket_inode(link: &str) -> Option<u64> {
         .ok()
 }
 
-/// 接続の一覧（数は上限まで）。
 #[cfg(windows)]
 pub fn list() -> Result<Vec<Connection>, String> {
     let output = std::process::Command::new("netstat")
@@ -161,7 +150,6 @@ pub fn list() -> Result<Vec<Connection>, String> {
     Ok(list)
 }
 
-/// ソケットの inode → PID（読めるプロセスの分だけ）。
 #[cfg(not(windows))]
 fn socket_owners() -> HashMap<u64, u32> {
     let mut owners = HashMap::new();
@@ -191,7 +179,6 @@ fn socket_owners() -> HashMap<u64, u32> {
     owners
 }
 
-/// 接続の一覧（数は上限まで）。
 #[cfg(not(windows))]
 pub fn list() -> Result<Vec<Connection>, String> {
     let owners = socket_owners();

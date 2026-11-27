@@ -1,4 +1,3 @@
-// 右クリックメニューの状態。開けるのは 1 つだけ。画面は ContextMenuHost が描く。
 import type { MenuEntry } from '../menu/menu';
 
 export interface OpenMenu {
@@ -33,7 +32,6 @@ export class ContextMenus {
     this.current = null;
   }
 
-  /** 項目を選ぶ。メニューを閉じてから処理を呼ぶ。 */
   select(id: string): void {
     const menu = this.current;
     this.current = null;

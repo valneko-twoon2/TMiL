@@ -1,12 +1,10 @@
 //! Windows の `StartupApproved` に保存される有効・無効フラグ。
 //! 先頭バイトが偶数（0x02 など）なら有効、奇数（0x03 など）なら無効。値が無ければ有効。
 
-/// フラグの値から有効かどうかを判定する。
 pub fn is_enabled(data: Option<&[u8]>) -> bool {
     data.and_then(<[u8]>::first).is_none_or(|b| b & 1 == 0)
 }
 
-/// 書き込む値（12 バイト）を作る。
 pub fn encode(enabled: bool) -> [u8; 12] {
     let flag = if enabled { 0x02 } else { 0x03 };
     [flag, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]

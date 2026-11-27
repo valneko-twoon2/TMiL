@@ -1,10 +1,3 @@
-//! プロセスのアイコンと説明。実行ファイルの場所から、画面に出す画像（data URL）と説明・発行元を取る。
-//!
-//! 状態を持たない読み取りなので状態機械は通さない（スタートアップ一覧と同じ扱い）。
-//! 取り出しは重いので、一度調べた結果は [`IconCache`] が覚えておく。
-//! - Windows: PowerShell（System.Drawing）で実行ファイルからまとめて取り出す
-//! - Linux: `.desktop` ファイルの `Icon` からアイコンテーマの画像を探す
-
 pub mod freedesktop;
 pub mod script;
 #[cfg(windows)]
@@ -15,10 +8,8 @@ use std::sync::Mutex;
 
 use crate::model::ProcessIcon;
 
-/// 1 回の問い合わせで調べる数の上限（画面に出る分には足りる）。
 pub const MAX_PER_REQUEST: usize = 256;
 
-/// 1 つの実行ファイルについて分かったこと。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ExeDetails {
     /// 画像の data URL
@@ -27,14 +18,11 @@ pub struct ExeDetails {
     pub company: Option<String>,
 }
 
-/// 調べた結果の覚え書き。実行ファイルの場所 → 分かったこと。
 #[derive(Debug, Default)]
 pub struct IconCache {
     known: Mutex<HashMap<String, ExeDetails>>,
 }
 
-/// 問い合わせとして受け付ける実行ファイルの場所か。
-/// 空や改行を含むもの（PowerShell に 1 行ずつ渡すため）は調べずに `None` とする。
 fn is_lookup_target(exe: &str) -> bool {
     !exe.trim().is_empty() && !exe.contains(['\n', '\r', '\0'])
 }
@@ -68,7 +56,6 @@ impl IconCache {
         };
         if !missing.is_empty() {
             let mut loaded = load(&missing);
-            // 数が合わないときは、どれがどれか分からないので全部「無し」として扱う
             if loaded.len() != missing.len() {
                 loaded = vec![ExeDetails::default(); missing.len()];
             }
@@ -92,7 +79,6 @@ impl IconCache {
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<String, ExeDetails>> {
-        // 覚え書きが壊れても読み直せば済むので、毒されたロックもそのまま使う
         self.known
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

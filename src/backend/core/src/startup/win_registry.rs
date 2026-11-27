@@ -1,12 +1,9 @@
-//! `RegistryStore` の Windows 実装（winreg）。
-
 use winreg::RegKey;
 use winreg::RegValue;
 use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ, KEY_SET_VALUE, RegType};
 
 use super::registry::{Hive, RegistryStore};
 
-/// 実際のレジストリ。
 #[derive(Debug, Clone, Copy, Default)]
 pub struct WinRegistry;
 
@@ -53,7 +50,6 @@ impl RegistryStore for WinRegistry {
     }
 }
 
-/// HKLM の文字列値を 1 つ読む（タスクマネージャー置き換えの確認用）。
 pub fn read_machine_string(path: &str, name: &str) -> Option<String> {
     root(Hive::LocalMachine)
         .open_subkey_with_flags(path, KEY_READ)

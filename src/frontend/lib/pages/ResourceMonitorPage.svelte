@@ -1,6 +1,4 @@
 <script lang="ts">
-  // リソース モニター。本家（resmon.exe）と同じく、概要・CPU・メモリ・ディスク・ネットワークのタブに分け、
-  // チェックしたプロセスでほかの表を絞り込み、右にグラフを並べる。
   import { untrack } from 'svelte';
   import DataTable from '../components/DataTable.svelte';
   import LineChart from '../components/LineChart.svelte';
@@ -59,19 +57,15 @@
 
   const { monitor, settings, icons, menus, processActions, services, resmon }: Props = $props();
 
-  /** 接続の一覧とサービスの一覧を読み直す間隔 */
   const CONNECTIONS_MS = 2000;
   const SERVICES_MS = 10000;
-  /** 右のグラフの欄の幅（px）。つまみで変えられ、設定に残る */
   const GRAPHS_WIDTH = { initial: 260, min: 180, max: 640 };
   const sizer = untrack(() => new ColumnSizer(settings, 'resmon', { graphs: GRAPHS_WIDTH.initial }));
   const graphsWidth = $derived(Math.min(GRAPHS_WIDTH.max, Math.max(GRAPHS_WIDTH.min, sizer.width('graphs'))));
 
   let tab = $state<ResmonTab>('overview');
   let selected = $state<string | null>(null);
-  /** ネットワーク タブの、ポートやアドレスでの絞り込み */
   let portQuery = $state('');
-  /** CPU タブの、ハンドルの検索欄（前の検索の文字を残す） */
   let handleInput = $state(untrack(() => resmon.handlesQuery));
 
   const snapshot = $derived(monitor.snapshot);
@@ -136,7 +130,6 @@
   const networkColumns = $derived(columns(['image', 'pid', { key: 'connections', label: '接続数' }, 'cpu']));
   const serviceColumns = SERVICE_COLUMNS.filter((c) => c.key !== 'startType');
 
-  // グラフ（右側）
   const get = (key: string) => monitor.history.get(key) ?? [];
   const diskSeries = $derived(
     sumSeries(
@@ -165,7 +158,6 @@
   );
   const memoryShare = $derived(shareOf(snapshot?.memory.used ?? 0, memoryTotal));
 
-  // 接続の一覧は計測結果に入っていないので、使うタブを開いている間だけ読み直す
   $effect(() => {
     if (tab !== 'overview' && tab !== 'network') return;
     void resmon.refreshConnections();
@@ -184,7 +176,6 @@
     };
   });
 
-  // CPU タブでは、チェックしたプロセスのモジュールを読む（チェックが変わったときだけ）
   $effect(() => {
     if (tab !== 'cpu' || checkedKey === '') return;
     void resmon.loadModules(checkedProcesses);

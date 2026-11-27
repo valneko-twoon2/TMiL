@@ -1,12 +1,5 @@
-//! プロセスの優先度・関係（動かしてよい CPU）・中断と再開・効率モードの読み書き。
-//! 変えてよいかは状態機械が決める（[`crate::machine::ProcessAction`]）。ここは OS ごとのやり方だけを持つ。
-//! - Windows: PowerShell（`Get-Process` の `PriorityClass` と `ProcessorAffinity`）。
-//!   中断・再開・効率モードは Win32 API を C# 経由で呼ぶ（[`WINDOWS_NATIVE`]）
-//! - Linux: 読むのは `/proc`、変えるのは `renice`・`taskset`・`kill`・`chrt`
-
 use crate::model::{Priority, ProcessControls};
 
-/// 関係で指定できる CPU の数（ビットの並びの長さ）。
 pub const MAX_CPUS: u32 = 64;
 
 /// CPU の番号の並びをビットの並びにする。空や範囲外は受け付けない。
@@ -23,12 +16,10 @@ pub fn mask_from_cpus(cpus: &[u32]) -> Result<u64, String> {
     })
 }
 
-/// ビットの並びを CPU の番号の並びにする。
 pub fn cpus_from_mask(mask: u64) -> Vec<u32> {
     (0..MAX_CPUS).filter(|i| mask & (1u64 << i) != 0).collect()
 }
 
-/// Windows の優先度クラスの名前。
 pub fn windows_class(priority: Priority) -> &'static str {
     match priority {
         Priority::Realtime => "RealTime",
@@ -40,14 +31,12 @@ pub fn windows_class(priority: Priority) -> &'static str {
     }
 }
 
-/// Windows の優先度クラスの名前を読む。
 pub fn priority_from_windows_class(name: &str) -> Option<Priority> {
     Priority::ALL
         .into_iter()
         .find(|p| windows_class(*p).eq_ignore_ascii_case(name.trim()))
 }
 
-/// Linux の nice 値（小さいほど優先）。
 pub fn nice_of(priority: Priority) -> i32 {
     match priority {
         Priority::Realtime => -20,
@@ -59,7 +48,6 @@ pub fn nice_of(priority: Priority) -> i32 {
     }
 }
 
-/// nice 値をいちばん近い優先度にする。
 pub fn priority_from_nice(nice: i32) -> Priority {
     match nice {
         i32::MIN..=-15 => Priority::Realtime,
@@ -90,14 +78,12 @@ pub fn mask_from_proc_status(status: &str) -> Option<u64> {
     u64::from_str_radix(low, 16).ok()
 }
 
-/// Windows: 今の優先度と関係を 1 行で書き出すスクリプト。
 pub fn windows_read_script(pid: u32) -> String {
     format!(
         "$ErrorActionPreference = 'Stop'; $p = Get-Process -Id {pid}; [Console]::Out.WriteLine(('{{0}} {{1}}' -f $p.PriorityClass, [int64]$p.ProcessorAffinity))"
     )
 }
 
-/// Windows: 読み出しスクリプトの出力を読む。
 pub fn parse_windows_read(output: &str) -> ProcessControls {
     let mut parts = output.split_whitespace();
     let priority = parts.next().and_then(priority_from_windows_class);
@@ -108,7 +94,6 @@ pub fn parse_windows_read(output: &str) -> ProcessControls {
     ProcessControls { priority, affinity }
 }
 
-/// Windows: 優先度を変えるスクリプト。
 pub fn windows_priority_script(pid: u32, priority: Priority) -> String {
     format!(
         "$ErrorActionPreference = 'Stop'; (Get-Process -Id {pid}).PriorityClass = '{}'",
@@ -116,7 +101,6 @@ pub fn windows_priority_script(pid: u32, priority: Priority) -> String {
     )
 }
 
-/// Windows: 関係を変えるスクリプト。
 pub fn windows_affinity_script(pid: u32, mask: u64) -> String {
     format!(
         "$ErrorActionPreference = 'Stop'; (Get-Process -Id {pid}).ProcessorAffinity = [IntPtr][int64]{}",
@@ -124,7 +108,6 @@ pub fn windows_affinity_script(pid: u32, mask: u64) -> String {
     )
 }
 
-/// Windows: 中断・再開・効率モードに使う C#（PowerShell の `Add-Type` で読み込む）。
 /// 二重引用符と改行を含むので、[`crate::powershell::run_encoded`] で渡す。
 pub const WINDOWS_NATIVE: &str = r#"Add-Type -TypeDefinition @'
 using System;
@@ -163,7 +146,6 @@ public static class TaskManagerLiteNative {
         try { if (NtResumeProcess(handle) != 0) throw new InvalidOperationException(); }
         finally { CloseHandle(handle); }
     }
-    // 効率モード: 実行速度の調整（EcoQoS）を入れ、優先度を「低」にする。外すときは OS 任せと「通常」に戻す
     public static void Efficiency(uint pid, bool on) {
         IntPtr handle = Open(pid, SetInformation);
         try {
@@ -176,7 +158,6 @@ public static class TaskManagerLiteNative {
 '@
 "#;
 
-/// Win32 API で行う操作。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NativeOp {
     Suspend,
@@ -184,7 +165,6 @@ pub enum NativeOp {
     Efficiency(bool),
 }
 
-/// Windows: [`WINDOWS_NATIVE`] を読み込んで操作を 1 つ行うスクリプト。
 pub fn windows_native_script(pid: u32, op: NativeOp) -> String {
     let call = match op {
         NativeOp::Suspend => format!("Suspend({pid})"),
@@ -194,7 +174,6 @@ pub fn windows_native_script(pid: u32, op: NativeOp) -> String {
     format!("$ErrorActionPreference = 'Stop'\n{WINDOWS_NATIVE}[TaskManagerLiteNative]::{call}\n")
 }
 
-/// Linux: 中断・再開に送るシグナル（`kill` の引数）。
 pub fn linux_signal_args(pid: u32, suspend: bool) -> [String; 2] {
     [
         if suspend { "-STOP" } else { "-CONT" }.to_owned(),
@@ -202,7 +181,6 @@ pub fn linux_signal_args(pid: u32, suspend: bool) -> [String; 2] {
     ]
 }
 
-/// Linux: 効率モードの優先度（入れるときは「低」、外すときは「通常」）と、スケジューラーの指定（`chrt` の引数）。
 pub fn linux_efficiency(pid: u32, on: bool) -> (Priority, [String; 4]) {
     let priority = if on { Priority::Low } else { Priority::Normal };
     let policy = if on { "--idle" } else { "--other" };
@@ -231,7 +209,6 @@ pub fn controls(pid: u32) -> ProcessControls {
     )
 }
 
-/// 優先度を変える。
 #[cfg(windows)]
 pub fn set_priority(pid: u32, priority: Priority) -> Result<(), String> {
     crate::powershell::run(&windows_priority_script(pid, priority), "")
@@ -239,7 +216,6 @@ pub fn set_priority(pid: u32, priority: Priority) -> Result<(), String> {
         .map_err(|_| DENIED.to_owned())
 }
 
-/// 関係を変える。
 #[cfg(windows)]
 pub fn set_affinity(pid: u32, mask: u64) -> Result<(), String> {
     crate::powershell::run(&windows_affinity_script(pid, mask), "")
@@ -254,19 +230,16 @@ fn native(pid: u32, op: NativeOp) -> Result<(), String> {
         .map_err(|_| DENIED.to_owned())
 }
 
-/// プロセスを中断する（すべてのスレッドを止める）。
 #[cfg(windows)]
 pub fn suspend(pid: u32) -> Result<(), String> {
     native(pid, NativeOp::Suspend)
 }
 
-/// 中断したプロセスを再開する。
 #[cfg(windows)]
 pub fn resume(pid: u32) -> Result<(), String> {
     native(pid, NativeOp::Resume)
 }
 
-/// 効率モードを入れる・外す。
 #[cfg(windows)]
 pub fn set_efficiency(pid: u32, on: bool) -> Result<(), String> {
     native(pid, NativeOp::Efficiency(on))
@@ -307,7 +280,6 @@ pub fn set_priority(pid: u32, priority: Priority) -> Result<(), String> {
     run_tool("renice", &args)
 }
 
-/// 関係を変える。
 #[cfg(not(windows))]
 pub fn set_affinity(pid: u32, mask: u64) -> Result<(), String> {
     run_tool(
@@ -316,19 +288,16 @@ pub fn set_affinity(pid: u32, mask: u64) -> Result<(), String> {
     )
 }
 
-/// プロセスを中断する（SIGSTOP）。
 #[cfg(not(windows))]
 pub fn suspend(pid: u32) -> Result<(), String> {
     run_tool("kill", &linux_signal_args(pid, true))
 }
 
-/// 中断したプロセスを再開する（SIGCONT）。
 #[cfg(not(windows))]
 pub fn resume(pid: u32) -> Result<(), String> {
     run_tool("kill", &linux_signal_args(pid, false))
 }
 
-/// 効率モードを入れる・外す。優先度を変え、スケジューラーも合わせる（`chrt` が無くても優先度は変える）。
 #[cfg(not(windows))]
 pub fn set_efficiency(pid: u32, on: bool) -> Result<(), String> {
     let (priority, chrt) = linux_efficiency(pid, on);

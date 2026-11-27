@@ -1,10 +1,8 @@
-// スタートアップ一覧の検索と並べ替え。
 import { startupLocationLabel } from '../format/labels';
 import type { StartupEntry } from '../model/types';
 
 export type StartupColumn = 'name' | 'publisher' | 'program' | 'location' | 'enabled';
 
-/** 並べ替えに使う値。発行元は実行ファイルの会社名（`company` で引く。分からなければ空）。 */
 export function startupValue(
   entry: StartupEntry,
   column: StartupColumn,
@@ -24,7 +22,6 @@ export function startupValue(
   }
 }
 
-/** 名前・コマンドで絞り込む。 */
 export function filterStartup(entries: readonly StartupEntry[], query: string): StartupEntry[] {
   const q = query.trim().toLowerCase();
   if (q === '') return [...entries];

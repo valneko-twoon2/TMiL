@@ -1,11 +1,3 @@
-//! ほかのアプリで開く操作。
-//! - 「ファイルの場所を開く」: 実行ファイルを選んだ状態でファイル マネージャーを開く
-//! - 「オンライン検索」: プロセスの名前をブラウザーで検索する
-//!
-//! 状態を持たない操作なので状態機械は通さない。画面から渡された値はそのまま使わない。
-//! 場所は実在するファイルの絶対パスであることを確かめ（ファイル自体は実行しない）、
-//! 検索は決まった検索サイトの URL を組み立て、言葉は URL エンコードしてから渡す。
-
 use std::fmt::Write as _;
 use std::path::Path;
 
@@ -14,7 +6,6 @@ pub fn validate(path: &str) -> Result<(), String> {
     if path.trim().is_empty() {
         return Err("ファイルの場所が分かりません。".to_owned());
     }
-    // 引用符や制御文字は、コマンドの引数を壊しうるので受け付けない（Windows のパスには使えない文字）
     if path.chars().any(|c| c == '"' || c.is_control()) {
         return Err("ファイルの場所に使えない文字が含まれています。".to_owned());
     }
@@ -24,19 +15,16 @@ pub fn validate(path: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Windows のドライブ付き（`C:\`）か UNC（`\\server\`）、または `/` から始まるパスか。
 fn is_absolute(path: &str) -> bool {
     let bytes = path.as_bytes();
     let drive = matches!(bytes, [letter, b':', b'\\' | b'/', ..] if letter.is_ascii_alphabetic());
     drive || path.starts_with(r"\\") || path.starts_with('/')
 }
 
-/// Windows のエクスプローラーに渡す引数（`/select,"<path>"`）。
 pub fn explorer_select_arg(path: &str) -> String {
     format!("/select,\"{path}\"")
 }
 
-/// ファイルの場所を開く。
 pub fn reveal(path: &str) -> Result<(), String> {
     validate(path)?;
     if !Path::new(path).is_file() {
@@ -45,12 +33,9 @@ pub fn reveal(path: &str) -> Result<(), String> {
     open_location(path)
 }
 
-/// 検索に使うサイト（本家のタスク マネージャーと同じ Bing）。
 pub const SEARCH_URL: &str = "https://www.bing.com/search?q=";
-/// 検索する言葉の長さの上限。
 const MAX_QUERY_CHARS: usize = 200;
 
-/// URL のクエリに入れられるようにする（英数字と `-_.~` 以外はすべて %XX にする）。
 pub fn url_encode(text: &str) -> String {
     let mut out = String::with_capacity(text.len() * 3);
     for b in text.bytes() {
@@ -63,7 +48,6 @@ pub fn url_encode(text: &str) -> String {
     out
 }
 
-/// 検索する URL を作る。空や長すぎる言葉は受け付けない。
 pub fn search_url(query: &str) -> Result<String, String> {
     let query = query.trim();
     if query.is_empty() {
@@ -75,14 +59,12 @@ pub fn search_url(query: &str) -> Result<String, String> {
     Ok(format!("{SEARCH_URL}{}", url_encode(query)))
 }
 
-/// プロセスの名前などをブラウザーで検索する。
 pub fn search_online(query: &str) -> Result<(), String> {
     open_url(&search_url(query)?)
 }
 
 #[cfg(windows)]
 fn open_url(url: &str) -> Result<(), String> {
-    // URL は search_url が組み立てたもので、空白や引用符を含まない
     std::process::Command::new("explorer.exe")
         .arg(url)
         .status()
@@ -123,7 +105,6 @@ fn open_location(path: &str) -> Result<(), String> {
         .map_err(|e| format!("フォルダーを開けません（xdg-open が必要です）: {e}"))
 }
 
-/// サービス管理ツール（services.msc）を開く（Windows のみ）。
 #[cfg(windows)]
 pub fn open_services_tool() -> Result<(), String> {
     std::process::Command::new("mmc.exe")
@@ -133,7 +114,6 @@ pub fn open_services_tool() -> Result<(), String> {
         .map_err(|e| format!("サービス管理ツールを開けません: {e}"))
 }
 
-/// サービス管理ツールを開く（Windows のみ）。
 #[cfg(not(windows))]
 pub fn open_services_tool() -> Result<(), String> {
     Err("サービス管理ツールは Windows でだけ開けます。".to_owned())

@@ -1,4 +1,3 @@
-// 列挙値の表示名。
 import type { ProcessState, StartupLocation, Priority } from '../model/types';
 
 const PROCESS_STATE_LABEL: Record<ProcessState, string> = {
@@ -9,12 +8,10 @@ const PROCESS_STATE_LABEL: Record<ProcessState, string> = {
   other: '',
 };
 
-/** 詳細タブに出す状態名。 */
 export function processStateLabel(state: ProcessState): string {
   return PROCESS_STATE_LABEL[state];
 }
 
-/** プロセス タブの「状態」列。本家と同じく通常時は空欄にする。 */
 export function processStatusBadge(
   state: ProcessState,
   marks: { efficient?: boolean; suspended?: boolean; growing?: boolean } = {},
@@ -47,7 +44,6 @@ const PRIORITY_LABEL: Record<Priority, string> = {
   low: '低',
 };
 
-/** 優先度の表示名（本家のタスク マネージャーと同じ言い方）。 */
 export function priorityLabel(priority: Priority): string {
   return PRIORITY_LABEL[priority];
 }

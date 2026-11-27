@@ -1,4 +1,3 @@
-//! TaskManagerLite のエントリーポイント。ウィンドウを閉じてもトレイに常駐する。
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
@@ -22,7 +21,6 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let backend = Backend::new()?;
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            // 2 つ目の起動（タスク マネージャー置き換え経由を含む）は既存のウィンドウを出す
             tray::show_main_window(app);
         }))
         .manage(backend)
@@ -62,7 +60,6 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         })
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
-                // 閉じるボタンではトレイに隠すだけにする
                 api.prevent_close();
                 tray::hide_window(window);
             }

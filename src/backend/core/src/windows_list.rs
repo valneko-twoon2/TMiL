@@ -1,9 +1,3 @@
-//! 画面にウィンドウを出しているプロセス（本家の「アプリ」）の一覧と、そのウィンドウへの切り替え。
-//!
-//! 読むだけか、ほかのアプリを前に出すだけで、状態を持たないので状態機械は通さない。
-//! - Windows: PowerShell（`MainWindowHandle` があるプロセス。切り替えは `WScript.Shell` の `AppActivate`）
-//! - Linux: `wmctrl -lp`（X11 のウィンドウ一覧。無い環境では空）
-
 use crate::model::AppWindow;
 
 /// Windows: ウィンドウを持つプロセスを「PID タブ タイトル」で 1 行ずつ書くスクリプト。
@@ -15,7 +9,6 @@ foreach ($p in Get-Process) { \
   } \
 }";
 
-/// Windows のスクリプトの出力を読む。
 pub fn parse_windows(output: &str) -> Vec<AppWindow> {
     output
         .lines()
@@ -57,7 +50,6 @@ pub fn parse_wmctrl(output: &str) -> Vec<WmctrlLine> {
         .collect()
 }
 
-/// Windows: そのプロセスのウィンドウを前に出すスクリプト。前に出せなければ終了コード 1。
 pub fn windows_switch_script(pid: u32) -> String {
     format!(
         "$shell = New-Object -ComObject WScript.Shell; if (-not $shell.AppActivate({pid})) {{ exit 1 }}"
@@ -67,7 +59,6 @@ pub fn windows_switch_script(pid: u32) -> String {
 const SWITCH_FAILED: &str =
     "ウィンドウに切り替えられませんでした。アプリがすでに終了している可能性があります。";
 
-/// ウィンドウを持つプロセスの一覧。
 #[cfg(windows)]
 pub fn list() -> Vec<AppWindow> {
     crate::powershell::run(WINDOWS_SCRIPT, "")
@@ -75,7 +66,6 @@ pub fn list() -> Vec<AppWindow> {
         .unwrap_or_default()
 }
 
-/// そのプロセスのウィンドウに切り替える。
 #[cfg(windows)]
 pub fn switch_to(pid: u32) -> Result<(), String> {
     crate::powershell::run(&windows_switch_script(pid), "")
@@ -94,7 +84,6 @@ fn wmctrl_lines() -> Vec<WmctrlLine> {
         .unwrap_or_default()
 }
 
-/// ウィンドウを持つプロセスの一覧（`wmctrl` が無ければ空）。
 #[cfg(not(windows))]
 pub fn list() -> Vec<AppWindow> {
     wmctrl_lines()
@@ -106,7 +95,6 @@ pub fn list() -> Vec<AppWindow> {
         .collect()
 }
 
-/// そのプロセスのウィンドウに切り替える（`wmctrl` が必要）。
 #[cfg(not(windows))]
 pub fn switch_to(pid: u32) -> Result<(), String> {
     let window = wmctrl_lines()

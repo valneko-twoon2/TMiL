@@ -1,6 +1,3 @@
-//! Linux（freedesktop）の autostart ディレクトリを扱う。
-//! ディレクトリを引数で受け取るので、どの OS でもテストできる。
-
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -32,7 +29,6 @@ pub fn default_dirs(
     (user, system)
 }
 
-/// ディレクトリ内の `.desktop` ファイル名を返す。読めなければ空。
 fn desktop_files(dir: &Path) -> Vec<String> {
     let Ok(read) = fs::read_dir(dir) else {
         return Vec::new();
@@ -85,7 +81,6 @@ pub fn list_in(user_dir: &Path, system_dirs: &[PathBuf]) -> Vec<StartupEntry> {
     entries
 }
 
-/// ファイル名として安全か（パス区切りや `..` を含まない `.desktop`）。
 pub fn is_safe_file_name(name: &str) -> bool {
     name.ends_with(".desktop")
         && name.len() > ".desktop".len()

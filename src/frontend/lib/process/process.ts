@@ -1,4 +1,3 @@
-// プロセス一覧の集計・検索・並べ替え。
 import type { ProcessInfo } from '../model/types';
 
 /** 同じ実行ファイル名のプロセスをまとめた行。 */
@@ -12,12 +11,10 @@ export interface ProcessGroup {
   children: ProcessInfo[];
 }
 
-/** 表示名（Windows の `.exe` は外す）。 */
 export function displayName(name: string): string {
   return name.replace(/\.exe$/i, '');
 }
 
-/** 実行ファイル名ごとにまとめる。 */
 export function groupProcesses(processes: readonly ProcessInfo[]): ProcessGroup[] {
   const groups = new Map<string, ProcessGroup>();
   for (const p of processes) {
@@ -40,7 +37,6 @@ export function groupProcesses(processes: readonly ProcessInfo[]): ProcessGroup[
   return [...groups.values()];
 }
 
-/** 名前・PID・ユーザー・コマンドラインで絞り込む（大文字小文字は区別しない）。 */
 export function filterProcesses(processes: readonly ProcessInfo[], query: string): ProcessInfo[] {
   const q = query.trim().toLowerCase();
   if (q === '') return [...processes];
@@ -60,7 +56,6 @@ export interface SortState<K extends string> {
   direction: SortDirection;
 }
 
-/** 列見出しを押したときの次の並び順。同じ列なら向きを反転、違う列なら数値は降順・文字は昇順で始める。 */
 export function nextSort<K extends string>(
   current: SortState<K>,
   key: K,
@@ -82,7 +77,6 @@ function compareValues(a: Value, b: Value): number {
   return String(a).localeCompare(String(b), 'ja', { numeric: true, sensitivity: 'base' });
 }
 
-/** 値の取り出し方を渡して並べ替える（元の配列は変えない、同値は元の順を保つ）。 */
 export function sortBy<T, K extends string>(
   rows: readonly T[],
   sort: SortState<K>,

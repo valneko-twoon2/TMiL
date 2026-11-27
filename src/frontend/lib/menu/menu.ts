@@ -1,5 +1,3 @@
-// 右クリックメニューの項目と位置の計算（純粋関数）。
-
 export interface MenuItem {
   id: string;
   label: string;
@@ -8,7 +6,6 @@ export interface MenuItem {
   checked?: boolean;
   /** アクセス キー（1 文字）。メニューを開いているときに押すと選べる。表示は「名前(E)」 */
   key?: string;
-  /** 下の階層のメニュー（優先度の設定など） */
   children?: MenuEntry[];
 }
 
@@ -20,7 +17,6 @@ export function isItem(entry: MenuEntry): entry is MenuItem {
   return !('separator' in entry);
 }
 
-/** 画面に出す名前。アクセス キーがあれば「名前(E)」にする。 */
 export function itemLabel(item: MenuItem): string {
   return item.key ? `${item.label}(${item.key.toUpperCase()})` : item.label;
 }
@@ -32,7 +28,6 @@ export function indexForKey(entries: readonly MenuEntry[], key: string): number 
   return entries.findIndex((e) => isItem(e) && e.disabled !== true && e.key?.toUpperCase() === wanted);
 }
 
-/** 画面からはみ出さない位置。入りきらないときは左・上に開く。 */
 export function menuPosition(
   x: number,
   y: number,
@@ -59,7 +54,6 @@ export function nextIndex(entries: readonly MenuEntry[], current: number, step: 
   return -1;
 }
 
-/** ブラウザ標準のメニューを残す場所か（文字を入力する欄では、コピーや貼り付けに使う）。 */
 export function allowsNativeMenu(target: EventTarget | null): boolean {
   if (typeof Element === 'undefined' || !(target instanceof Element)) return false;
   const field = target.closest('input, textarea, [contenteditable="true"]');

@@ -1,4 +1,3 @@
-// サービスの一覧の読み込みと操作。サービスのページとリソース モニターで使う。
 import type { Api } from '../api/ipc';
 import type { ServiceAction, ServiceInfo } from '../model/types';
 import type { Toasts } from './toast.svelte';
@@ -23,7 +22,6 @@ export class ServiceList {
     this.#toasts = toasts;
   }
 
-  /** 読み直す。読み込み中なら、その結果を待つだけにする。 */
   load(): Promise<void> {
     this.#loading ??= this.#fetch().finally(() => {
       this.#loading = null;
@@ -42,7 +40,6 @@ export class ServiceList {
     }
   }
 
-  /** サービスを操作し、終わったら一覧を読み直す。 */
   async control(service: ServiceInfo, action: ServiceAction): Promise<void> {
     if (this.busy) return;
     this.busy = true;

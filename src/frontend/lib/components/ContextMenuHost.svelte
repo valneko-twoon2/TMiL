@@ -23,7 +23,6 @@
   let position = $state({ left: 0, top: 0 });
   let subPosition = $state({ left: 0, top: 0 });
   let active = $state(-1);
-  /** 開いている下の階層（親の項目の位置）。-1 は閉じている */
   let openSub = $state(-1);
   let subActive = $state(-1);
 
@@ -42,7 +41,6 @@
     root?.querySelector<HTMLElement>(`[data-index="${String(index)}"]`)?.focus();
   };
 
-  // 開いたら画面に収まる位置に置き、最初の項目に移る（項目を差し替えたときは位置を保つ）
   let openedAt: { x: number; y: number } | null = null;
   $effect(() => {
     const current = menu;
@@ -61,7 +59,6 @@
     });
   });
 
-  // 外を押す・スクロール・ウィンドウの切り替えで閉じる
   $effect(() => {
     if (!menu) return;
     const close = (event: Event) => {
@@ -91,7 +88,6 @@
       const rect = parent.getBoundingClientRect();
       const size = sizeOf(subElement);
       const placed = menuPosition(rect.right, rect.top, size, view());
-      // 右に入りきらないときは、親のメニューの左側に出す
       subPosition =
         rect.right + size.width > window.innerWidth
           ? { ...placed, left: Math.max(4, rect.left - size.width) }
@@ -106,7 +102,6 @@
     else menus.select(item.id);
   }
 
-  /** 下の階層にいるか（下の階層の項目に移っているとき）。 */
   const inSub = () => openSub >= 0 && subActive >= 0;
 
   function move(step: 1 | -1) {
@@ -121,7 +116,6 @@
     }
   }
 
-  /** 下の階層にいれば親に戻る。Escape なら、親にいるときはメニューを閉じる。 */
   function back(close: boolean) {
     if (inSub()) {
       openSub = -1;
@@ -136,7 +130,6 @@
     if (!inSub() && entry && isItem(entry) && entry.children) showSub(active, true);
   }
 
-  /** アクセス キー（E や T など）。当たる項目が無ければ false。 */
   function accessKey(key: string): boolean {
     if (!menu) return false;
     const sub = inSub();

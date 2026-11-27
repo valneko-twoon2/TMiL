@@ -26,12 +26,10 @@ export class ProgressiveRows {
     });
   }
 
-  /** 今描く行の数。 */
   get limit(): number {
     return this.#limit;
   }
 
-  /** 今描く行。 */
   take<T>(rows: readonly T[]): readonly T[] {
     return takeRows(rows, this.#limit);
   }

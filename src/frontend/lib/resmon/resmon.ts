@@ -1,4 +1,3 @@
-// リソース モニターの表の行と列（純粋関数）。チェックしたプロセスでほかの表を絞り込む。
 import { formatBytes, formatPercent } from '../format/format';
 import type { Connection, DiskStats, HandleInfo, ModuleInfo, ProcessInfo, TcpState } from '../model/types';
 import type { TableColumn } from '../table/table';
@@ -30,7 +29,6 @@ export function tcpStateLabel(state: TcpState | null): string {
   return state === null ? '' : TCP_STATE_LABEL[state];
 }
 
-/** チェックしたものがあれば、そのプロセスの行だけにする。無ければそのまま。 */
 export function onlyChecked<T>(
   rows: readonly T[],
   pidOf: (row: T) => number | null,
@@ -43,12 +41,10 @@ export function onlyChecked<T>(
   });
 }
 
-/** 待ち受け（TCP の LISTEN と UDP）か。 */
 export function isListening(c: Connection): boolean {
   return c.protocol === 'udp' || c.state === 'listen';
 }
 
-/** プロセスごとの接続の数（待ち受けは数えない）。 */
 export function connectionCounts(connections: readonly Connection[]): Map<number, number> {
   const counts = new Map<number, number>();
   for (const c of connections) {
@@ -58,10 +54,6 @@ export function connectionCounts(connections: readonly Connection[]): Map<number
   return counts;
 }
 
-/**
- * 接続が探す文字に合うか。数字だけ（先頭の「:」は省ける）ならローカルかリモートのポートが同じもの、
- * それ以外はアドレス・イメージ名・PID に含まれるもの。空なら全部。
- */
 export function connectionMatches(
   c: Connection,
   query: string,
@@ -77,7 +69,6 @@ export function connectionMatches(
   return texts.some((t) => t.toLowerCase().includes(q));
 }
 
-/** 接続か待ち受けのあるプロセス。 */
 export function networkProcesses(
   processes: readonly ProcessInfo[],
   connections: readonly Connection[],
@@ -86,7 +77,6 @@ export function networkProcesses(
   return processes.filter((p) => pids.has(p.pid));
 }
 
-/** ディスクの読み書きをしているプロセス（チェックしたものは読み書きが無くても出す）。 */
 export function diskProcesses(
   processes: readonly ProcessInfo[],
   checked: ReadonlySet<number>,
@@ -94,12 +84,10 @@ export function diskProcesses(
   return processes.filter((p) => p.diskReadPerSec + p.diskWrittenPerSec > 0 || checked.has(p.pid));
 }
 
-/** 行を見分ける鍵。 */
 export function connectionKey(c: Connection): string {
   return [c.protocol, c.localAddress, c.localPort, c.remoteAddress, c.remotePort, c.pid ?? '-'].join('|');
 }
 
-/** 同じ鍵の行は 1 つにする（表の鍵が重ならないように）。 */
 export function uniqueConnections(connections: readonly Connection[]): Connection[] {
   const seen = new Set<string>();
   return connections.filter((c) => {
@@ -110,7 +98,6 @@ export function uniqueConnections(connections: readonly Connection[]): Connectio
   });
 }
 
-/** PID からイメージ名を引く関数を作る（分からなければ PID の数字か「不明」）。 */
 export function imageNames(processes: readonly ProcessInfo[]): (pid: number | null) => string {
   const names = new Map(processes.map((p) => [p.pid, p.name]));
   return (pid) => (pid === null ? '（不明）' : (names.get(pid) ?? String(pid)));
@@ -125,7 +112,6 @@ const pidColumn = <T extends { pid: number | null }>(): TableColumn<T> => ({
   text: (r) => (r.pid === null ? '' : String(r.pid)),
 });
 
-/** TCP 接続の表の列。 */
 export function tcpColumns(image: (pid: number | null) => string): TableColumn<Connection>[] {
   return [
     { key: 'image', label: 'イメージ', width: 160, value: (c) => image(c.pid) },
@@ -138,7 +124,6 @@ export function tcpColumns(image: (pid: number | null) => string): TableColumn<C
   ];
 }
 
-/** 待ち受けの表の列。 */
 export function listenColumns(image: (pid: number | null) => string): TableColumn<Connection>[] {
   return [
     { key: 'image', label: 'イメージ', width: 160, value: (c) => image(c.pid) },
@@ -149,7 +134,6 @@ export function listenColumns(image: (pid: number | null) => string): TableColum
   ];
 }
 
-/** 関連付けられたハンドルの表の列。 */
 export function handleColumns(image: (pid: number | null) => string): TableColumn<HandleInfo>[] {
   return [
     { key: 'image', label: 'イメージ', width: 160, value: (h) => image(h.pid) },
@@ -158,7 +142,6 @@ export function handleColumns(image: (pid: number | null) => string): TableColum
   ];
 }
 
-/** ハンドルの行を見分ける鍵。 */
 export function handleKey(h: HandleInfo): string {
   return `${String(h.pid)}:${h.path}`;
 }
@@ -168,7 +151,6 @@ export interface ModuleRow extends ModuleInfo {
   image: string;
 }
 
-/** モジュールの表の行（プロセスごとの一覧を 1 つにまとめる）。 */
 export function moduleRows(
   list: readonly { pid: number; name: string; modules: readonly ModuleInfo[] }[],
 ): ModuleRow[] {
@@ -183,7 +165,6 @@ export const MODULE_COLUMNS: readonly TableColumn<ModuleRow>[] = [
   { key: 'path', label: 'フル パス', width: 360, value: (m) => m.path, muted: true },
 ];
 
-/** 記憶域の表の列。 */
 export const STORAGE_COLUMNS: readonly TableColumn<DiskStats>[] = [
   { key: 'mountPoint', label: '論理ディスク', width: 140, value: (d) => d.mountPoint },
   { key: 'name', label: '物理ディスク', width: 200, value: (d) => d.name },

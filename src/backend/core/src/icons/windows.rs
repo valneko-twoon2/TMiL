@@ -1,6 +1,3 @@
-//! Windows: PowerShell（System.Drawing と FileVersionInfo）で実行ファイルのアイコンと説明を取り出す。
-//! 依存を増やさず、unsafe も使わないための方法。場所は標準入力で 1 行ずつ渡す（スクリプトに埋め込まない）。
-
 use super::ExeDetails;
 use super::script::{SCRIPT, parse_output};
 

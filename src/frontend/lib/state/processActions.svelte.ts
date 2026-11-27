@@ -1,5 +1,3 @@
-// プロセスへの操作（右クリックメニューとダイアログ）。プロセス タブと詳細タブで共通に使う。
-// 画面は ProcessDialogs が描く。終了してよいか・変えてよいかの判断はバックエンドの状態機械が行う。
 import { SvelteSet } from 'svelte/reactivity';
 import type { Api } from '../api/ipc';
 import { priorityLabel } from '../format/labels';
@@ -23,38 +21,27 @@ export type ProcessDialog =
 
 export { processKey };
 
-/** この画面で入れた効率モードと中断（OS から読めないので、ここで覚えておく）。 */
 export interface ProcessMarks {
   efficient: boolean;
   suspended: boolean;
-  /** メモリが増え続けている（使用状況の推移から判断） */
   growing: boolean;
 }
 
 export interface ProcessActionOptions {
-  /** 効率モードを入れる前に確かめるか（設定で変えられる） */
   confirmEfficiency?: () => boolean;
-  /** プロセスごとの使用状況の推移（グラフとメモリ増加中の印に使う） */
   usage?: ProcessUsage;
 }
 
-/** ページごとに足す項目（展開する・詳細の表示に移動 など）。 */
 export interface MenuExtras {
-  /** 先頭に足す項目 */
   before?: MenuItem[];
-  /** 「ファイルの場所を開く」の前に足す項目 */
   middle?: MenuItem[];
-  /** 最後に足す項目（詳細タブの「サービスに移動」など） */
   after?: MenuItem[];
-  /** 足した項目が選ばれたとき */
   onextra?: (id: string) => void;
-  /** 「タスクの終了」（ページで選択の解除などをしたいとき） */
   onend?: () => void;
 }
 
 const PRIORITY_PREFIX = 'priority:';
 
-/** 優先度の下の階層。今の優先度が分かっていればチェックを付ける。 */
 export function priorityEntries(current: Priority | null | undefined): MenuEntry[] {
   return PRIORITIES.map((p) => ({
     id: `${PRIORITY_PREFIX}${p}`,
@@ -63,7 +50,6 @@ export function priorityEntries(current: Priority | null | undefined): MenuEntry
   }));
 }
 
-/** 右クリックメニューの項目（本家の詳細タブの並びに合わせる）。 */
 export function processMenuEntries(
   p: ProcessInfo,
   current: Priority | null | undefined,
@@ -89,7 +75,6 @@ export function processMenuEntries(
   ];
 }
 
-/** 選ばれた項目が優先度なら、その値。 */
 export function priorityOf(id: string): Priority | null {
   if (!id.startsWith(PRIORITY_PREFIX)) return null;
   const value = id.slice(PRIORITY_PREFIX.length);
@@ -101,16 +86,13 @@ const message = (cause: unknown) => (cause instanceof Error ? cause.message : St
 export class ProcessActions {
   dialog = $state<ProcessDialog>(null);
   busy = $state(false);
-  /** 効率モードを入れたプロセス（processKey） */
   readonly efficient = new SvelteSet<string>();
-  /** 中断したプロセス（processKey） */
   readonly suspended = new SvelteSet<string>();
   readonly #api: Api;
   readonly #monitor: Monitor;
   readonly #toasts: Toasts;
   readonly #menus: ContextMenus;
   readonly #confirmEfficiency: () => boolean;
-  /** プロセスごとの使用状況の推移 */
   readonly usage: ProcessUsage;
 
   constructor(
@@ -131,14 +113,12 @@ export class ProcessActions {
   marks(p: ProcessInfo): ProcessMarks {
     const key = processKey(p);
     return {
-      // ほかのアプリ（Chrome や Edge など）が自分で入れた効率モードも、OS から読んだ値で出す
       efficient: this.efficient.has(key) || p.efficient,
       suspended: this.suspended.has(key),
       growing: this.usage.growth(p) !== null,
     };
   }
 
-  /** 右クリックメニューを開く。今の優先度は後から読み、届いたらチェックを付け直す。 */
   openMenu(event: MouseEvent, p: ProcessInfo, extras: MenuExtras = {}): void {
     const handle = (id: string) => {
       this.#select(id, p, extras);
@@ -200,12 +180,10 @@ export class ProcessActions {
     }
   }
 
-  /** 使用状況のグラフを開く。 */
   showUsage(p: ProcessInfo): void {
     this.dialog = { kind: 'usage', process: p };
   }
 
-  /** 成功したものだけ、覚えている印を付け直す。 */
   #mark(set: SvelteSet<string>, processes: ProcessInfo[], results: KillResult[], on: boolean): void {
     for (const r of results) {
       const p = processes.find((x) => x.pid === r.pid);
@@ -215,10 +193,6 @@ export class ProcessActions {
     }
   }
 
-  /**
-   * 「効率モード」を選んだとき。すべて入っていれば外し、そうでなければ入れる。
-   * 入れるときは、設定に従って確かめるダイアログを出す（本家と同じく、不安定になることがあるため）。
-   */
   toggleEfficiency(processes: ProcessInfo[]): void {
     if (processes.length === 0) return;
     if (processes.every((p) => this.marks(p).efficient)) {
@@ -230,7 +204,6 @@ export class ProcessActions {
     }
   }
 
-  /** ダイアログで確かめた効率モードを入れる。 */
   async confirmEfficiency(): Promise<void> {
     const dialog = this.dialog;
     if (dialog?.kind !== 'efficiency') return;
@@ -246,7 +219,6 @@ export class ProcessActions {
     });
   }
 
-  /** プロセスを中断する。 */
   suspend(processes: ProcessInfo[]): Promise<void> {
     return this.#run(async () => {
       const results = await this.#api.suspendProcesses(processes.map(toKillTarget));
@@ -255,7 +227,6 @@ export class ProcessActions {
     });
   }
 
-  /** 中断したプロセスを再開する。 */
   resume(processes: ProcessInfo[]): Promise<void> {
     return this.#run(async () => {
       const results = await this.#api.resumeProcesses(processes.map(toKillTarget));
@@ -264,7 +235,6 @@ export class ProcessActions {
     });
   }
 
-  /** そのプロセスのウィンドウに切り替える（本家の「切り替え」）。 */
   async switchTo(pid: number): Promise<void> {
     try {
       await this.#api.switchToWindow(pid);
@@ -273,7 +243,6 @@ export class ProcessActions {
     }
   }
 
-  /** 終了してから起動し直す（本家のエクスプローラーの「再起動」）。 */
   restart(p: ProcessInfo): Promise<void> {
     return this.#run(async () => {
       const results = await this.#api.killProcesses([toKillTarget(p)]);
@@ -283,7 +252,6 @@ export class ProcessActions {
     });
   }
 
-  /** 結果のうち失敗したものを知らせる。 */
   #report(results: KillResult[], fallback: string): void {
     const failed = results.filter((r) => !r.ok);
     if (failed.length > 0) this.#toasts.show(failed[0]?.error ?? fallback, 'error');
@@ -301,7 +269,6 @@ export class ProcessActions {
     }
   }
 
-  /** プロセスを終了する。 */
   end(processes: ProcessInfo[]): Promise<void> {
     return this.#run(async () => {
       this.#report(await this.#api.killProcesses(processes.map(toKillTarget)), '終了できませんでした。');
@@ -309,13 +276,11 @@ export class ProcessActions {
     });
   }
 
-  /** プロセス ツリーの終了を確かめるダイアログを出す。 */
   confirmTree(p: ProcessInfo): void {
     const members = processTree(p.pid, this.#monitor.snapshot?.processes ?? [p]);
     this.dialog = { kind: 'tree', root: p, members: members.length > 0 ? members : [p] };
   }
 
-  /** ダイアログで確かめたツリーを終了する。 */
   async endTree(): Promise<void> {
     const dialog = this.dialog;
     if (dialog?.kind !== 'tree') return;
@@ -333,7 +298,6 @@ export class ProcessActions {
     });
   }
 
-  /** 関係の設定のダイアログを出し、今の設定を読む。 */
   async openAffinity(p: ProcessInfo): Promise<void> {
     const cores = this.#monitor.systemInfo?.logicalCores ?? 1;
     this.dialog = { kind: 'affinity', process: p, cpus: null, cores };
@@ -344,10 +308,8 @@ export class ProcessActions {
       cpus = [];
     }
     const all = Array.from({ length: cores }, (_, i) => i);
-    // 読んでいる間にダイアログが閉じられたり、別のプロセスのものに変わったりしうる
     const current = this.#currentDialog();
     if (current?.kind === 'affinity' && current.process.pid === p.pid) {
-      // 読めなかったときは、すべてのプロセッサを選んだ状態から始める
       this.dialog = { ...current, cpus: cpus.length > 0 ? cpus.filter((c) => c < cores) : all };
     }
   }

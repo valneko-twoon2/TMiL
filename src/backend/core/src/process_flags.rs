@@ -1,25 +1,14 @@
-//! プロセスの、sysinfo では取れない様子（効率モード・分離・GPU エンジン）。
-//!
-//! Windows では、Chrome や Edge のように自分で効率モード（EcoQoS）に入るプロセスもあるので、
-//! 本家と同じく OS から読む。PowerShell を毎回起動すると重いので、1 つを動かし続けて
-//! 決まった間隔で聞く（効率モードと分離は `GetProcessInformation` と `GetTokenInformation`、
-//! GPU エンジンはパフォーマンス カウンター `\GPU Engine(*)\Utilization Percentage`）。
 //! 開けないプロセス（管理者として動くもの）は、効率モードと分離が分からない。
 
 use std::collections::HashMap;
 use std::time::Duration;
 
-/// 聞き直す間隔。
 pub const SAMPLE_INTERVAL: Duration = Duration::from_secs(2);
-/// 1 回の答えの終わりの印。
 pub const END_MARK: &str = "TASKMANAGERLITE_END";
 
-/// プロセスの様子。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ProcessFlags {
-    /// 効率モード（EcoQoS）に入っている
     pub efficient: bool,
-    /// `AppContainer` の中で動いている
     pub app_container: bool,
     /// いちばん使っている GPU エンジン（`GPU 0 - 3D` のような本家の書き方）
     pub gpu_engine: Option<String>,
@@ -187,7 +176,6 @@ while ($null -ne [Console]::In.ReadLine()) {
 #[derive(Debug)]
 pub struct FlagsSampler {
     latest: std::sync::Arc<std::sync::Mutex<HashMap<u32, ProcessFlags>>>,
-    /// 捨てると裏のスレッドに止まるよう伝わる
     _stop: std::sync::mpsc::Sender<()>,
 }
 
@@ -203,7 +191,6 @@ impl FlagsSampler {
         }
     }
 
-    /// そのプロセスの様子（分からなければ既定値）。
     pub fn get(&self, pid: u32) -> ProcessFlags {
         self.latest
             .lock()
@@ -230,7 +217,6 @@ fn spawn_worker(
                 return;
             };
             let mut lines = BufReader::new(output).lines();
-            // 捨てられる（Disconnected）か止めるよう言われるまで、間隔ごとに聞く
             while let Err(std::sync::mpsc::RecvTimeoutError::Timeout) =
                 stopped.recv_timeout(SAMPLE_INTERVAL)
             {
@@ -263,7 +249,6 @@ fn spawn_worker(
         });
 }
 
-/// Linux では取らない（効率モードと分離は Windows の仕組み）。
 #[cfg(not(windows))]
 fn spawn_worker(
     _latest: std::sync::Arc<std::sync::Mutex<HashMap<u32, ProcessFlags>>>,

@@ -1,4 +1,3 @@
-// サービスの一覧の表示名・絞り込み・表の列（純粋関数）。
 import type { ServiceInfo, ServiceStartType, ServiceStatus } from '../model/types';
 import type { TableColumn } from '../table/table';
 
@@ -26,7 +25,6 @@ export function startTypeLabel(startType: ServiceStartType): string {
   return START_TYPE_LABEL[startType];
 }
 
-/** 名前・説明・グループ・PID で絞り込む（大文字小文字は区別しない）。 */
 export function filterServices(services: readonly ServiceInfo[], query: string): ServiceInfo[] {
   const q = query.trim().toLowerCase();
   if (q === '') return [...services];
@@ -39,12 +37,10 @@ export function filterServices(services: readonly ServiceInfo[], query: string):
   );
 }
 
-/** そのプロセスで動いているサービス（PID が無ければ空）。 */
 export function servicesOf(services: readonly ServiceInfo[], pids: ReadonlySet<number>): ServiceInfo[] {
   return services.filter((s) => s.pid !== null && pids.has(s.pid));
 }
 
-/** 選んだサービスでできる操作（開始・停止・再起動）。 */
 export function serviceCommands(service: ServiceInfo | undefined): {
   start: boolean;
   stop: boolean;
@@ -59,7 +55,6 @@ export function serviceCommands(service: ServiceInfo | undefined): {
   };
 }
 
-/** サービスの表の列（本家の並び。スタートアップの種類は足したもの）。 */
 export const SERVICE_COLUMNS: readonly TableColumn<ServiceInfo>[] = [
   { key: 'name', label: '名前', width: 200, value: (s) => s.name },
   {

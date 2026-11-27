@@ -30,9 +30,7 @@
     menus: ContextMenus;
     processActions: ProcessActions;
     query: string;
-    /** 開いたときに選んでおくプロセス（プロセス タブの「詳細の表示に移動」） */
     focusPid?: number | null;
-    /** 「サービスに移動」でサービス タブを開く */
     ongotoservices?: (pid: number) => void;
   }
 
@@ -53,7 +51,6 @@
   const sizer = untrack(() => new ColumnSizer(settings, 'details'));
 
   const columns = $derived(settings.value.detailColumns);
-  // 隠した列で並べていたら、名前の順に戻す
   const activeSort = $derived<SortState<DetailColumn>>(
     columns.includes(sort.key) ? sort : { key: REQUIRED_DETAIL_COLUMN, direction: 'asc' },
   );
@@ -63,12 +60,9 @@
     ),
   );
   const target = $derived(rows.find((r) => r.pid === selected));
-  // 画面を開いたときは見える分だけ先に描き、残りは次のフレームから足す。
-  // ほかのタブから移ってきたときは、その行まで動かせるよう全部描く
   const progressive = new ProgressiveRows(() => rows.length);
   const shown = $derived(focusPid === null ? progressive.take(rows) : rows);
 
-  // 「詳細の表示に移動」で来たときは、その行が見える位置まで動かす
   $effect(() => {
     if (focusPid === null || !untrack(() => target)) return;
     void tick().then(() => {

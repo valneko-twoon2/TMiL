@@ -15,7 +15,6 @@ import { Toasts } from './lib/state/toast.svelte';
 import './app.css';
 
 async function start(): Promise<void> {
-  // E2E・VRT 用のモック版ビルドでだけ、偽のバックエンドを差し込む
   if (import.meta.env.MODE === 'mock') {
     const { installMock } = await import('./lib/mock/install');
     installMock();

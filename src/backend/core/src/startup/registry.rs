@@ -1,6 +1,3 @@
-//! Windows のスタートアップ（Run キーとスタートアップフォルダー）を扱う。
-//! レジストリは `RegistryStore` 越しに触るので、どの OS でもロジックをテストできる。
-
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -18,18 +15,15 @@ fn approved(kind: &str) -> String {
     format!(r"{APPROVED}\{kind}")
 }
 
-/// レジストリのハイブ。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Hive {
     CurrentUser,
     LocalMachine,
 }
 
-/// スタートアップ管理で使うレジストリ操作。
 pub trait RegistryStore {
     /// 文字列値（`REG_SZ` / `REG_EXPAND_SZ`）を名前と組で返す。キーが無ければ空。
     fn string_values(&self, hive: Hive, path: &str) -> Vec<(String, String)>;
-    /// バイナリ値を返す。無ければ `None`。
     fn binary_value(&self, hive: Hive, path: &str, name: &str) -> Option<Vec<u8>>;
     /// バイナリ値を書き込む。キーが無ければ作る。
     fn set_binary_value(
@@ -41,7 +35,6 @@ pub trait RegistryStore {
     ) -> Result<(), String>;
 }
 
-/// スタートアップフォルダーの場所。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct StartupFolders {
     pub user: Option<PathBuf>,
@@ -49,7 +42,6 @@ pub struct StartupFolders {
 }
 
 impl StartupFolders {
-    /// `%APPDATA%` と `%ProgramData%` から場所を決める。
     pub fn from_env(appdata: Option<&str>, program_data: Option<&str>) -> Self {
         let sub = Path::new("Microsoft")
             .join("Windows")
@@ -66,7 +58,6 @@ impl StartupFolders {
     }
 }
 
-/// フォルダー内のファイル名（desktop.ini を除く）。
 fn folder_files(dir: Option<&Path>) -> Vec<(String, PathBuf)> {
     let Some(Ok(read)) = dir.map(fs::read_dir) else {
         return Vec::new();
@@ -100,7 +91,6 @@ fn entry(
     }
 }
 
-/// Windows のスタートアップ項目を一覧にする。
 pub fn list(store: &dyn RegistryStore, folders: &StartupFolders) -> Vec<StartupEntry> {
     let mut entries = Vec::new();
     let run_sources = [
@@ -122,7 +112,6 @@ pub fn list(store: &dyn RegistryStore, folders: &StartupFolders) -> Vec<StartupE
         for (name, command) in store.string_values(hive, path) {
             let flag = store.binary_value(hive, &approved(approval_kind), &name);
             let can_toggle = location == StartupLocation::RegistryUser;
-            // 32 ビット用の Run は別のキーなので、同じ名前でも別の項目として ID を分ける
             let id_name = if path == RUN32 {
                 format!(r"WOW6432Node\{name}")
             } else {
@@ -176,7 +165,6 @@ pub fn list(store: &dyn RegistryStore, folders: &StartupFolders) -> Vec<StartupE
     entries
 }
 
-/// ユーザー単位の項目の有効・無効を切り替える。
 pub fn set_enabled(
     store: &dyn RegistryStore,
     folders: &StartupFolders,

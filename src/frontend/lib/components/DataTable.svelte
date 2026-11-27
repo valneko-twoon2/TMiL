@@ -1,5 +1,4 @@
 <script lang="ts" generics="T">
-  // 並べ替え・列の幅・選択・右クリックができる表。サービス・ユーザー・アプリの履歴・リソース モニターで使う。
   import { untrack } from 'svelte';
   import { nextSort, type SortState } from '../process/process';
   import { ColumnSizer } from '../state/columnSizer.svelte';
@@ -25,9 +24,7 @@
     rows: readonly T[];
     rowKey: (row: T) => string;
     settings: SettingsStore;
-    /** 最初の並び順 */
     initialSort?: SortState<string>;
-    /** 選んでいる行の鍵（選び直すと onselect で知らせる） */
     selected?: string | null;
     onselect?: (key: string, row: T) => void;
     /** 行が無いときの文 */
@@ -73,9 +70,7 @@
   const sizer = untrack(() => new ColumnSizer(settings, table, defaultWidths(columns)));
 
   const current = $derived(activeSort(columns, sort));
-  // チェックした行は上にまとめる（本家のリソース モニターと同じ）
   const sorted = $derived(sortRowsPinned(rows, columns, current, checked));
-  // 画面を開いたときは見える分だけ先に描き、残りは次のフレームから足す
   const progressive = untrack(() => new ProgressiveRows(() => sorted.length, viewportHeight));
   const shown = $derived(progressive.take(sorted));
   const numeric = $derived(numericKeys(columns));

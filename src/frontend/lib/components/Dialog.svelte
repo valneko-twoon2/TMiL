@@ -12,7 +12,6 @@
 
   let element = $state<HTMLDialogElement | null>(null);
 
-  // 開いたらモーダルにする（Escape で閉じる・後ろは操作できない）。サーバー描画では何もしない
   $effect(() => {
     if (element && !element.open) element.showModal();
   });

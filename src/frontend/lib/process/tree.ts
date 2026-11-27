@@ -1,4 +1,3 @@
-// プロセス ツリー（あるプロセスと、そこから起動されたプロセスすべて）を求める（純粋関数）。
 import type { ProcessInfo } from '../model/types';
 
 /**

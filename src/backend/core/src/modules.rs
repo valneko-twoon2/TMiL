@@ -1,12 +1,5 @@
-//! プロセスが読み込んでいるモジュール（DLL・共有ライブラリ）の一覧。リソース モニターの CPU の表に使う。
-//!
-//! 読むだけで状態を持たないので状態機械は通さない。
-//! - Windows: PowerShell の `(Get-Process -Id <pid>).Modules`（権限や 32/64 ビットの違いで読めないものがある）
-//! - Linux: `/proc/<pid>/maps` に出てくるファイル
-
 use crate::model::ModuleInfo;
 
-/// 一覧の数の上限。
 pub const MAX_MODULES: usize = 2000;
 
 fn file_name(path: &str) -> &str {
@@ -24,7 +17,6 @@ foreach ($m in (Get-Process -Id {pid}).Modules) {{ \
     )
 }
 
-/// Windows のスクリプトの出力を読む。
 pub fn parse_windows(output: &str) -> Vec<ModuleInfo> {
     output
         .lines()
@@ -43,7 +35,6 @@ pub fn parse_windows(output: &str) -> Vec<ModuleInfo> {
         .collect()
 }
 
-/// `/proc/<pid>/maps` から、読み込まれているファイルを重ならないように出てきた順で取り出す。
 pub fn parse_maps(maps: &str) -> Vec<ModuleInfo> {
     let mut seen: Vec<&str> = Vec::new();
     for line in maps.lines() {
@@ -68,7 +59,6 @@ pub fn parse_maps(maps: &str) -> Vec<ModuleInfo> {
 const DENIED: &str =
     "モジュールを読めませんでした。権限が足りないか、プロセスが終了している可能性があります。";
 
-/// プロセスのモジュール。
 #[cfg(windows)]
 pub fn list(pid: u32) -> Result<Vec<ModuleInfo>, String> {
     crate::powershell::run(&windows_script(pid), "")
@@ -76,7 +66,6 @@ pub fn list(pid: u32) -> Result<Vec<ModuleInfo>, String> {
         .map_err(|_| DENIED.to_owned())
 }
 
-/// プロセスのモジュール。
 #[cfg(not(windows))]
 pub fn list(pid: u32) -> Result<Vec<ModuleInfo>, String> {
     std::fs::read_to_string(format!("/proc/{pid}/maps"))

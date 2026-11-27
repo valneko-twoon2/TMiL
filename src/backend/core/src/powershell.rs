@@ -1,4 +1,3 @@
-//! Windows で PowerShell を画面を出さずに動かす（アイコンの取り出しや、優先度・関係の変更に使う）。
 //! [`run`] はスクリプトを `-Command` の引数として渡すので、二重引用符を含めない（引数の区切りと混ざるため）。
 //! 二重引用符や改行が要るスクリプト（C# を埋め込むものなど）は [`run_encoded`] で渡す。
 
@@ -9,11 +8,9 @@ use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 use std::process::{Command, Stdio};
 
-/// 子プロセスのコンソール画面を出さない。
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
-/// スクリプトとして渡してよいか（二重引用符と改行は使わない）。
 pub fn is_safe_script(script: &str) -> bool {
     !script.contains(['"', '\n', '\r'])
 }
@@ -33,7 +30,6 @@ pub fn run(script: &str, stdin: &str) -> Result<String, String> {
     spawn(&["-Command", script], stdin)
 }
 
-/// どんな文字を含むスクリプトでも動かす（`-EncodedCommand` で渡す）。
 #[cfg(windows)]
 pub fn run_encoded(script: &str, stdin: &str) -> Result<String, String> {
     spawn(&["-EncodedCommand", &encode_command(script)], stdin)

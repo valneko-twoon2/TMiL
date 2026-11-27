@@ -1,6 +1,5 @@
 <script lang="ts">
   interface Props {
-    /** 今の幅（px） */
     width: number;
     /** 列の名前（読み上げ用） */
     label: string;
@@ -41,7 +40,6 @@
   }
 </script>
 
-<!-- 見出しの右端。ドラッグで幅を変え、ダブルクリックで最初の幅に戻す -->
 <button
   type="button"
   class="resize"

@@ -1,4 +1,3 @@
-// E2E・VRT 用の偽バックエンド。値は呼び出し回数だけで決まり、乱数は使わない。
 import {
   PRIORITIES,
   type KillResult,
@@ -50,7 +49,6 @@ const SEEDS: ProcessSeed[] = [
   { name: 'backup-agent.exe', count: 1, cpu: 0, memoryMb: 12, user: 'user', state: 'stopped' },
 ];
 
-/** 0〜1 を行き来する決まった波。 */
 function wave(tick: number, phase: number, period: number): number {
   return (Math.sin((tick + phase) / period) + 1) / 2;
 }
@@ -60,13 +58,9 @@ export interface MockState extends SystemMockState {
   killed: Set<number>;
   startup: StartupEntry[];
   replaced: boolean;
-  /** 「ファイルの場所を開く」で渡された場所 */
   revealed: string[];
-  /** 「オンライン検索」で渡された言葉 */
   searched: string[];
-  /** 変えた優先度と関係（PID ごと） */
   controls: Map<number, ProcessControls>;
-  /** プロセスの数を何倍にするか（実機に近い数で速さを測るため。既定は 1） */
   scale: number;
 }
 
@@ -136,17 +130,14 @@ function startup(
   };
 }
 
-/** GPU を使うプロセスと、その使用率の目安。 */
 const GPU_USERS: Record<string, number> = { 'dwm.exe': 4, 'chrome.exe': 1.5, 'Code.exe': 0.6 };
 
-/** 累計値や数など、計測ごとに少しずつ増える項目。 */
 function processExtras(seed: ProcessSeed, s: number, i: number, tick: number) {
   const memory = seed.memoryMb * MB * (1 + i * 0.15);
   const gpu = GPU_USERS[seed.name];
   const runTime = 3600 + tick;
   return {
     virtualMemory: Math.round(memory * 1.6),
-    // CPU 使用率（全コア = 100）× 8 コア × 1000 ミリ秒
     cpuTimeMs: Math.round(seed.cpu * 80 * runTime),
     diskReadTotal: (s + 1) * 40 * MB + i * MB + tick * 64 * 1024,
     diskWrittenTotal: (s + 1) * 8 * MB + tick * 16 * 1024,
@@ -161,16 +152,13 @@ function processExtras(seed: ProcessSeed, s: number, i: number, tick: number) {
         : Math.round(gpu * (0.5 + wave(tick, i, 3)) * 10) / 10,
     gpuMemory: gpu === undefined ? null : Math.round(gpu * 40 * MB),
     gpuEngine: gpu === undefined ? null : 'GPU 0 - 3D',
-    // 本家と同じく、Edge や Chrome の裏のプロセスは自分で効率モードに入る
     efficient: (seed.name === 'chrome.exe' && i >= 3) || seed.name === 'msedge.exe',
     appContainer: seed.name === 'RuntimeBroker.exe',
   };
 }
 
-/** Windows に付いてくるプロセス（本家の「Windows プロセス」）。 */
 const WINDOWS_EXES = new Set(['explorer.exe', 'svchost.exe', 'dwm.exe', 'RuntimeBroker.exe']);
 
-/** 実行ファイルの場所。Windows のものは Windows フォルダー、ほかは Program Files に置く。 */
 export function mockExe(name: string): string {
   if (name === 'System') return '';
   if (name === 'explorer.exe') return ['C:', 'Windows', name].join('\\');
@@ -178,7 +166,6 @@ export function mockExe(name: string): string {
   return ['C:', 'Program Files', name.replace('.exe', ''), name].join('\\');
 }
 
-/** 2 組目からは名前に番号を付けた写し（PID 4 の System は 1 つだけ）。 */
 function scaledSeeds(scale: number): ProcessSeed[] {
   return Array.from({ length: scale }, (_, k) =>
     k === 0
@@ -326,7 +313,6 @@ function replacement(state: MockState): ReplacementStatus {
 
 const ICON_COLORS = ['#0f6cbd', '#c239b3', '#107c10', '#ca5010', '#5c2e91', '#038387'];
 
-/** 実行ファイルごとに決まった色と頭文字のアイコン（VRT で毎回同じ見た目になるように）。 */
 export function mockIcon(exe: string): string | null {
   const file = exe.split(/[\\/]/).pop() ?? '';
   if (file === '') return null;
@@ -340,7 +326,6 @@ export function mockIcon(exe: string): string | null {
   return `data:image/svg+xml;base64,${btoa(svg)}`;
 }
 
-/** 実行ファイルの説明と発行元（本家の一覧のように、分かるものは説明で表示させる）。 */
 const FILE_INFO: Record<string, { description: string; company: string }> = {
   'explorer.exe': { description: 'エクスプローラー', company: 'Microsoft Corporation' },
   'chrome.exe': { description: 'Google Chrome', company: 'Google LLC' },
@@ -379,7 +364,6 @@ function targetsOf(args: Record<string, unknown>): KillTarget[] {
   return Array.isArray(args.targets) ? args.targets.filter(isKillTarget) : [];
 }
 
-/** 優先度や関係を変える。System（PID 4）は権限が足りない扱い。 */
 function control(
   state: MockState,
   args: Record<string, unknown>,
@@ -427,7 +411,6 @@ const HANDLERS: Record<string, Handler> = {
     state.alwaysOnTop = args.enabled === true;
     return null;
   },
-  // 本物と同じく、プロセスは項目名の無い配列で送り、場所・コマンドライン・ユーザーは別に取らせる
   snapshot: (state) => {
     const snap = mockSnapshot(state);
     state.tick += 1;
@@ -470,7 +453,6 @@ const HANDLERS: Record<string, Handler> = {
   },
 };
 
-/** コマンド名と引数から応答を作る。知らないコマンドは例外にする。 */
 export function handleCommand(state: MockState, cmd: string, args: Record<string, unknown> = {}): unknown {
   const handler = HANDLERS[cmd];
   if (!handler) throw new Error(`未対応のコマンド: ${cmd}`);

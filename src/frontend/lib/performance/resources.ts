@@ -1,4 +1,3 @@
-// パフォーマンス画面の左側に並べる項目と、右側に出す詳細を組み立てる。
 import { niceMax } from '../chart/chart';
 import {
   formatBits,
@@ -33,14 +32,10 @@ export interface Resource {
   id: string;
   kind: ResourceKind;
   title: string;
-  /** 左の一覧に出す 1 行の要約 */
   summary: string;
-  /** 右上に出す補足（CPU 名など） */
   caption: string;
   series: Series[];
-  /** グラフの上限 */
   max: number;
-  /** グラフの単位の説明 */
   axisLabel: string;
 }
 
@@ -49,7 +44,6 @@ export interface Stat {
   value: string;
 }
 
-/** 本家に寄せた色。 */
 export const RESOURCE_COLORS: Record<ResourceKind, string> = {
   cpu: '#1e88e5',
   memory: '#9c27b0',
@@ -60,7 +54,6 @@ export const RESOURCE_COLORS: Record<ResourceKind, string> = {
 
 const DISK_KIND_LABEL: Record<DiskKind, string> = { ssd: 'SSD', hdd: 'HDD', unknown: '不明' };
 
-/** 一覧に出すネットワーク（ループバックと通信実績の無いものは除く）。 */
 /** ループバックの名前（Linux の lo・lo0、Windows の Loopback Pseudo-Interface）。名前全体で判定する。 */
 const LOOPBACK = /^(lo\d*|loopback\b.*)$/i;
 
@@ -70,7 +63,6 @@ export function visibleNetworks(networks: readonly NetworkStats[]): NetworkStats
   );
 }
 
-/** グラフの横軸の長さ（更新間隔 × 履歴の数）。一時停止中は回数で表す。 */
 export function historySpanLabel(intervalMs: number): string {
   if (intervalMs <= 0) return `直近 ${String(HISTORY_CAPACITY)} 回`;
   return `${String((intervalMs * HISTORY_CAPACITY) / 1000)} 秒`;
@@ -162,7 +154,6 @@ function gpuResource(g: GpuStats, i: number, usage: readonly number[], memory: r
   };
 }
 
-/** すべてのプロセスの数の合計（取れたものだけ。1 つも取れなければ null）。 */
 export function sumKnown(values: readonly (number | null)[]): number | null {
   const known = values.filter((v): v is number => v !== null);
   return known.length === 0 ? null : known.reduce((a, b) => a + b, 0);
@@ -187,7 +178,6 @@ export function memoryParts(m: MemoryStats): MemoryPart[] {
   return parts;
 }
 
-/** 「コピー」で書き出す文字（本家と同じく、見出しと数値を 1 行ずつ）。 */
 export function statsText(resource: Resource, stats: readonly Stat[]): string {
   const head = [resource.title, resource.caption].filter((s) => s !== '').join('\n');
   return [head, '', ...stats.map((s) => `${s.label}\t${s.value}`)].join('\n');
@@ -261,7 +251,6 @@ function networkStats(n: NetworkStats): Stat[] {
   ];
 }
 
-/** 右側の詳細に出す数値。 */
 export function resourceStats(resource: Resource, snapshot: Snapshot, info: SystemInfo | null): Stat[] {
   switch (resource.kind) {
     case 'cpu':

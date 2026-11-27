@@ -1,21 +1,16 @@
-//! 開けないプロセス（SYSTEM や管理者として動くもの）の、実行ファイルの場所とアカウントを補う。
-//!
 //! 管理者でないと、ほかのアカウントのプロセスは開けず、sysinfo では場所もユーザーも空になる。
 //! Windows では、プロセスを開かなくても場所を返す `NtQuerySystemInformation`
 //! （SystemProcessIdInformation）と、サービスの設定（`Win32_Service` の `StartName`）から補う。
-//! PowerShell を使うので重い。裏のスレッドで、まだ聞いていないプロセスが出てきたときだけ、間を空けて聞く。
 //! 管理者として動いている自分のアカウントのプロセス（サービスでないもの）のユーザーは、管理者でないと分からない。
 
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
-/// 聞き直すまでの最短の間。
 pub const LOOKUP_INTERVAL: Duration = Duration::from_secs(10);
 
 /// 補った情報。分からないものは空。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Identity {
-    /// 実行ファイルの場所（`C:\...`）
     pub exe: String,
     /// アカウント（本家と同じ `SYSTEM` `LOCAL SERVICE` などの書き方）
     pub user: String,
@@ -34,7 +29,6 @@ pub fn account_label(start_name: &str) -> String {
     }
 }
 
-/// 場所のファイル名が、プロセスの名前と同じか（PID が使い回されたときに、別のプロセスの値を使わない）。
 pub fn same_image(exe: &str, name: &str) -> bool {
     let file = exe.rsplit(['\\', '/']).next().unwrap_or_default();
     !file.is_empty() && file.eq_ignore_ascii_case(name)
@@ -54,7 +48,6 @@ pub fn parse(output: &str) -> HashMap<u32, Identity> {
         .collect()
 }
 
-/// 聞くべき PID（まだ聞いていないもの）。前に聞いてから間が空いていなければ聞かない。
 pub fn due<S: std::hash::BuildHasher>(
     missing: &[u32],
     asked: &HashSet<u32, S>,
@@ -133,7 +126,6 @@ foreach ($word in [Console]::In.ReadToEnd() -split '\s+') {
 }
 "#;
 
-/// 開けないプロセスの情報を、裏のスレッドで聞いて覚えておく。
 #[derive(Debug, Default)]
 pub struct IdentityLookup {
     known: HashMap<u32, Identity>,
@@ -170,7 +162,6 @@ impl IdentityLookup {
         self.pending = spawn_lookup(&pids);
     }
 
-    /// 補った情報（聞いていない・分からなければ `None`）。
     pub fn get(&self, pid: u32) -> Option<&Identity> {
         self.known.get(&pid)
     }
@@ -196,7 +187,6 @@ fn spawn_lookup(pids: &[u32]) -> Option<std::sync::mpsc::Receiver<HashMap<u32, I
     Some(rx)
 }
 
-/// Linux では /proc から読めるので補わない。
 #[cfg(not(windows))]
 fn spawn_lookup(_pids: &[u32]) -> Option<std::sync::mpsc::Receiver<HashMap<u32, Identity>>> {
     None

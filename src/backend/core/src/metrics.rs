@@ -1,5 +1,3 @@
-//! 計測値の計算（純粋関数）。
-
 use std::time::Duration;
 
 /// 経過時間あたりのバイト数を「毎秒」に換算する。経過時間が 0 なら 0 を返す。
@@ -13,7 +11,6 @@ pub fn per_second(bytes: u64, elapsed: Duration) -> u64 {
 }
 
 /// sysinfo のプロセス CPU 使用率（1 コア = 100）を、全コア合計 = 100 の値に直す。
-/// 結果は 0〜100 に収める。
 pub fn normalize_cpu(raw: f32, logical_cores: usize) -> f32 {
     if !raw.is_finite() || raw <= 0.0 {
         return 0.0;

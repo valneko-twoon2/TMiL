@@ -1,10 +1,7 @@
-//! freedesktop の `.desktop` ファイル（autostart 用）の読み書き。
-
 const MAIN_GROUP: &str = "[Desktop Entry]";
 const HIDDEN: &str = "Hidden";
 const GNOME_ENABLED: &str = "X-GNOME-Autostart-enabled";
 
-/// `.desktop` から読み取った autostart に関係する値。
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct DesktopEntry {
     pub name: Option<String>,
@@ -14,7 +11,6 @@ pub struct DesktopEntry {
 }
 
 impl DesktopEntry {
-    /// 自動起動が有効か。
     pub fn is_enabled(&self) -> bool {
         !self.hidden && self.gnome_enabled != Some(false)
     }
@@ -24,7 +20,6 @@ fn parse_bool(value: &str) -> bool {
     value.trim().eq_ignore_ascii_case("true")
 }
 
-/// `[Desktop Entry]` グループのキーを読む。壊れた行は読み飛ばす。
 pub fn parse(content: &str) -> DesktopEntry {
     let mut entry = DesktopEntry::default();
     let mut in_main = false;
@@ -66,8 +61,6 @@ pub fn with_enabled(content: &str, enabled: bool) -> String {
         format!("{HIDDEN}={}", !enabled),
         format!("{GNOME_ENABLED}={enabled}"),
     ];
-    // 見出しが無いファイルは先頭に見出しを足すので、最初のグループより前の行も
-    // 書き換え後は `[Desktop Entry]` に属する。その行の切り替えキーも消す。
     let has_main = content.lines().any(|l| l.trim() == MAIN_GROUP);
     let mut out: Vec<String> = Vec::new();
     let mut in_main = !has_main;

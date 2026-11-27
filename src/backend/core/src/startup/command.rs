@@ -1,5 +1,3 @@
-//! コマンドライン文字列から実行ファイル部分を取り出す。
-
 /// コマンドラインの先頭にある実行ファイルを返す。
 ///
 /// - `"C:\Program Files\App\app.exe" --min` → `C:\Program Files\App\app.exe`

@@ -1,9 +1,3 @@
-//! サービスの一覧と、開始・停止・再起動。
-//!
-//! 一覧は読むだけ、操作は OS に頼むだけで、状態を持たないので状態機械は通さない（スタートアップと同じ扱い）。
-//! - Windows: 一覧は PowerShell の `Win32_Service`。操作は管理者として PowerShell を起動して行う（UAC の確認が出る）
-//! - Linux: systemd の `systemctl`（操作で権限が要るときは polkit が確認を出す）
-
 use std::collections::HashMap;
 
 use crate::model::{ServiceAction, ServiceInfo, ServiceStartType, ServiceStatus};
@@ -11,7 +5,6 @@ use crate::model::{ServiceAction, ServiceInfo, ServiceStartType, ServiceStatus};
 /// サービス名の長さの上限（Windows の上限と同じ）。
 const MAX_NAME_CHARS: usize = 256;
 
-/// 操作するサービスの名前として受け付けるか。
 /// 空・長すぎる・引用符や制御文字を含む・`-` で始まる（オプションと間違えられる）ものは断る。
 pub fn validate_name(name: &str) -> Result<(), String> {
     let ok = !name.trim().is_empty()
@@ -38,7 +31,6 @@ pub fn group_of(path_name: &str) -> String {
     String::new()
 }
 
-/// Windows の `State` を区分にする。
 pub fn windows_status(state: &str) -> ServiceStatus {
     match state.trim() {
         "Running" => ServiceStatus::Running,
@@ -50,7 +42,6 @@ pub fn windows_status(state: &str) -> ServiceStatus {
     }
 }
 
-/// Windows の `StartMode` を区分にする。
 pub fn windows_start_type(mode: &str) -> ServiceStartType {
     match mode.trim() {
         "Auto" | "Boot" | "System" => ServiceStartType::Automatic,
@@ -60,7 +51,6 @@ pub fn windows_start_type(mode: &str) -> ServiceStartType {
     }
 }
 
-/// Windows: サービスを 1 つ 1 行（名前・表示名・状態・PID・開始の種類・コマンドライン・説明をタブ区切り）で書くスクリプト。
 pub const WINDOWS_LIST_SCRIPT: &str = "$ErrorActionPreference = 'Stop'; \
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false); \
 $tab = [string][char]9; \
@@ -69,7 +59,6 @@ foreach ($s in Get-CimInstance -ClassName Win32_Service -Property Name,DisplayNa
   [Console]::Out.WriteLine($fields -join $tab) \
 }";
 
-/// Windows のスクリプトの出力を読む。名前の無い行は飛ばす。
 pub fn parse_windows(output: &str) -> Vec<ServiceInfo> {
     output
         .lines()
@@ -93,7 +82,6 @@ pub fn parse_windows(output: &str) -> Vec<ServiceInfo> {
         .collect()
 }
 
-/// Windows: サービスを操作する PowerShell のコマンド。
 pub fn windows_action_command(name: &str, action: ServiceAction) -> String {
     let quoted = name.replace('\'', "''");
     match action {
@@ -103,7 +91,6 @@ pub fn windows_action_command(name: &str, action: ServiceAction) -> String {
     }
 }
 
-/// Windows: 管理者ならそのまま、そうでなければ管理者として PowerShell を起動して操作するスクリプト。
 /// 管理者として起動する側には、操作を `-EncodedCommand` で渡す（引用符の扱いを気にしなくてよいように）。
 pub fn windows_control_script(name: &str, action: ServiceAction) -> String {
     let command = windows_action_command(name, action);
@@ -119,7 +106,6 @@ exit $p.ExitCode }}"
     )
 }
 
-/// systemd の状態（ACTIVE と SUB）を区分にする。
 pub fn systemd_status(active: &str, sub: &str) -> ServiceStatus {
     match (active, sub) {
         (_, "running") => ServiceStatus::Running,
@@ -131,7 +117,6 @@ pub fn systemd_status(active: &str, sub: &str) -> ServiceStatus {
     }
 }
 
-/// systemd の `UnitFileState` を区分にする。
 pub fn systemd_start_type(state: &str) -> ServiceStartType {
     match state {
         "enabled" | "enabled-runtime" | "alias" => ServiceStartType::Automatic,
@@ -141,7 +126,6 @@ pub fn systemd_start_type(state: &str) -> ServiceStartType {
     }
 }
 
-/// `systemctl list-units --type=service --all --plain --no-legend` の 1 行。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitLine {
     pub name: String,
@@ -171,7 +155,6 @@ pub fn parse_list_units(output: &str) -> Vec<UnitLine> {
         .collect()
 }
 
-/// `systemctl list-unit-files --type=service --no-legend` の出力を、名前 → 状態（`enabled` など）にする。
 /// 名前だけでは動かせない雛形（`getty@.service`）は除く。
 pub fn parse_unit_files(output: &str) -> HashMap<String, String> {
     output
@@ -185,7 +168,6 @@ pub fn parse_unit_files(output: &str) -> HashMap<String, String> {
         .collect()
 }
 
-/// `systemctl show --property=Id,MainPID ...` の出力を、名前 → 動いている PID にする。
 pub fn parse_main_pids(output: &str) -> HashMap<String, u32> {
     output
         .split("\n\n")
@@ -239,7 +221,6 @@ pub fn merge_systemd<S: std::hash::BuildHasher>(
     list
 }
 
-/// 動いているか、動き始め・止まりかけのユニット（PID を聞く相手）。
 pub fn active_units(units: &[UnitLine]) -> Vec<String> {
     units
         .iter()
@@ -248,7 +229,6 @@ pub fn active_units(units: &[UnitLine]) -> Vec<String> {
         .collect()
 }
 
-/// systemctl に渡す操作の名前。
 pub fn systemctl_verb(action: ServiceAction) -> &'static str {
     match action {
         ServiceAction::Start => "start",
@@ -257,13 +237,11 @@ pub fn systemctl_verb(action: ServiceAction) -> &'static str {
     }
 }
 
-/// 名前の順に並べる（大文字小文字は区別しない）。
 fn sorted(mut list: Vec<ServiceInfo>) -> Vec<ServiceInfo> {
     list.sort_by_key(|s| s.name.to_lowercase());
     list
 }
 
-/// サービスの一覧。
 #[cfg(windows)]
 pub fn list() -> Result<Vec<ServiceInfo>, String> {
     crate::powershell::run(WINDOWS_LIST_SCRIPT, "")
@@ -271,7 +249,6 @@ pub fn list() -> Result<Vec<ServiceInfo>, String> {
         .map_err(|e| format!("サービスの一覧を取れません: {e}"))
 }
 
-/// サービスを操作する。
 #[cfg(windows)]
 pub fn control(name: &str, action: ServiceAction) -> Result<(), String> {
     validate_name(name)?;
@@ -283,7 +260,6 @@ pub fn control(name: &str, action: ServiceAction) -> Result<(), String> {
         })
 }
 
-/// systemctl を動かして標準出力を返す。失敗したら理由を返す。
 #[cfg(not(windows))]
 fn systemctl(args: &[&str]) -> Result<String, String> {
     let output = std::process::Command::new("systemctl")
@@ -300,7 +276,6 @@ fn systemctl(args: &[&str]) -> Result<String, String> {
     }
 }
 
-/// サービスの一覧（読み込まれているものと、無効などで読み込まれていないもの）。
 #[cfg(not(windows))]
 pub fn list() -> Result<Vec<ServiceInfo>, String> {
     let units = parse_list_units(&systemctl(&[
@@ -311,7 +286,6 @@ pub fn list() -> Result<Vec<ServiceInfo>, String> {
         "--no-legend",
         "--no-pager",
     ])?);
-    // ユニット ファイルと PID は、取れなくても一覧は出す
     let files = systemctl(&[
         "list-unit-files",
         "--type=service",
@@ -333,7 +307,6 @@ pub fn list() -> Result<Vec<ServiceInfo>, String> {
     Ok(sorted(merge_systemd(&units, &files, &pids)))
 }
 
-/// サービスを操作する。
 #[cfg(not(windows))]
 pub fn control(name: &str, action: ServiceAction) -> Result<(), String> {
     validate_name(name)?;

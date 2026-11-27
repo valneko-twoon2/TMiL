@@ -1,4 +1,3 @@
-// 共通の表（DataTable）でプロセスを並べるときの列（ユーザー・リソース モニターで使う）。
 import { formatBytes, formatCount, formatCpuTime, formatPercent, formatRate } from '../format/format';
 import { heatLevel, rateLevel, shareOf } from '../format/heat';
 import { processStateLabel } from '../format/labels';
@@ -6,17 +5,11 @@ import type { ProcessInfo } from '../model/types';
 import type { TableColumn } from '../table/table';
 import { displayName } from './process';
 
-/** 列を作るのに使う、プロセスの外の情報。 */
 export interface ProcessTableContext {
-  /** 実行ファイルのアイコン */
   icon?: (exe: string) => string | null | undefined;
-  /** 実行ファイルの説明（分からなければ空） */
   description?: (exe: string) => string;
-  /** メモリの合計（使用量の色に使う） */
   memoryTotal?: number;
-  /** 直近の平均 CPU 使用率 */
   averageCpu?: (pid: number) => number | null;
-  /** 接続の数 */
   connections?: (pid: number) => number;
 }
 
@@ -26,7 +19,6 @@ type Build = (ctx: ProcessTableContext) => Omit<Column, 'key'>;
 const disk = (p: ProcessInfo) => p.diskReadPerSec + p.diskWrittenPerSec;
 const orMinus = (v: number | null) => v ?? -1;
 
-/** 数値の列（並べ替えは値、セルは整形した文字）。 */
 function numeric(
   label: string,
   width: number,
@@ -162,10 +154,8 @@ const COLUMNS = {
 
 export type ProcessTableKey = keyof typeof COLUMNS;
 
-/** 列の指定（見出しを場所ごとに変えたいときは label を渡す）。 */
 export type ProcessColumnSpec = ProcessTableKey | { key: ProcessTableKey; label: string };
 
-/** 指定した順に列を作る。 */
 export function processTableColumns(
   specs: readonly ProcessColumnSpec[],
   ctx: ProcessTableContext = {},
