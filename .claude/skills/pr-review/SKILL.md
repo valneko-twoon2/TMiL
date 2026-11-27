@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: TMiL の PR をレビューして、決まった形のコメントを PR に投稿する。PR を出した直後（CI の実行中）や、PR のレビューを頼まれたときに使う。作業ごとのレビューには使わない。
+description: TaskManagerLite の PR をレビューして、決まった形のコメントを PR に投稿する。PR を出した直後（CI の実行中）や、PR のレビューを頼まれたときに使う。作業ごとのレビューには使わない。
 ---
 
 # PR レビュー

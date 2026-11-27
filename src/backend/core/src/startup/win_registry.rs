@@ -78,7 +78,7 @@ mod tests {
 
         #[test]
         fn writes_and_reads_binary_value_in_test_key() {
-            let path = format!(r"Software\TMiL-test-{}", std::process::id());
+            let path = format!(r"Software\TaskManagerLite-test-{}", std::process::id());
             WinRegistry
                 .set_binary_value(Hive::CurrentUser, &path, "flag", &[3, 0])
                 .unwrap();
@@ -93,7 +93,7 @@ mod tests {
 
         #[test]
         fn missing_key_gives_empty_and_none() {
-            let path = r"Software\TMiL-does-not-exist";
+            let path = r"Software\TaskManagerLite-does-not-exist";
             assert_eq!(
                 WinRegistry.string_values(Hive::CurrentUser, path),
                 Vec::new()

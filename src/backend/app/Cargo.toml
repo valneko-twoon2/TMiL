@@ -1,6 +1,6 @@
 [package]
-name = "tmil"
-description = "TMiL - 軽量タスクマネージャー"
+name = "taskmanagerlite"
+description = "TaskManagerLite - 軽量タスクマネージャー"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,7 +11,7 @@ publish.workspace = true
 tauri-build.workspace = true
 
 [dependencies]
-tmil-core.workspace = true
+taskmanagerlite-core.workspace = true
 serde.workspace = true
 tauri.workspace = true
 tauri-plugin-single-instance.workspace = true

@@ -1,5 +1,5 @@
 //! フロントエンドとの契約（コマンドが返す JSON の形）を固定する。
-//! 形を変えたときは `UPDATE_CONTRACT=1 cargo test -p tmil-core --test contract` で
+//! 形を変えたときは `UPDATE_CONTRACT=1 cargo test -p taskmanagerlite-core --test contract` で
 //! `tests/contract/fixtures` を作り直し、フロント側の契約テストも通ることを確かめる。
 
 #![allow(
@@ -12,15 +12,15 @@ mod contract {
     use std::path::PathBuf;
 
     use serde::Serialize;
-    use tmil_core::model::{
+    use taskmanagerlite_core::model::{
         CpuStats, DiskKind, DiskStats, KillResult, KillTarget, MemoryStats, NetworkStats, Priority,
         ProcessControls, ProcessIcon, ProcessInfo, ProcessState, ReplacementStatus, Snapshot,
         StartupEntry, StartupLocation, SystemInfo,
     };
 
     fn fixtures_dir() -> PathBuf {
-        // ミューテーションテストでは src/backend だけが写されるので、TMIL_REPO_ROOT で本来の場所を教わる
-        std::env::var_os("TMIL_REPO_ROOT")
+        // ミューテーションテストでは src/backend だけが写されるので、TASKMANAGERLITE_REPO_ROOT で本来の場所を教わる
+        std::env::var_os("TASKMANAGERLITE_REPO_ROOT")
             .filter(|v| !v.is_empty())
             .map_or_else(
                 || PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.."),

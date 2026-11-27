@@ -6,9 +6,9 @@ const JUNIT = `<?xml version="1.0" encoding="utf-8"?>
 <testsuites>
 	<testsuite name="checkCommand" time="0.1" tests="2">
 		<testsuite name="equivalence" time="0.1" tests="1">
-			<testcase name="止める: git commit -m &quot;x&quot;" time="0.1" classname="test" file="E:\\TMiL\\scripts\\lib\\a.test.mjs"/>
+			<testcase name="止める: git commit -m &quot;x&quot;" time="0.1" classname="test" file="E:\\TaskManagerLite\\scripts\\lib\\a.test.mjs"/>
 		</testsuite>
-		<testcase name="直下のテスト" time="0.1" classname="test" file="E:\\TMiL\\scripts\\lib\\a.test.mjs"/>
+		<testcase name="直下のテスト" time="0.1" classname="test" file="E:\\TaskManagerLite\\scripts\\lib\\a.test.mjs"/>
 	</testsuite>
 	<testcase name="describe の外" time="0.1" classname="test" file="/repo/scripts/lib/b.test.mjs"/>
 </testsuites>`;
@@ -58,10 +58,10 @@ describe('inventory', () => {
     it('JUnit の出力から describe の入れ子とファイルを取り出す', () => {
       assert.deepEqual(parseJunit(JUNIT), [
         {
-          file: 'E:\\TMiL\\scripts\\lib\\a.test.mjs',
+          file: 'E:\\TaskManagerLite\\scripts\\lib\\a.test.mjs',
           path: ['checkCommand', 'equivalence', '止める: git commit -m "x"'],
         },
-        { file: 'E:\\TMiL\\scripts\\lib\\a.test.mjs', path: ['checkCommand', '直下のテスト'] },
+        { file: 'E:\\TaskManagerLite\\scripts\\lib\\a.test.mjs', path: ['checkCommand', '直下のテスト'] },
         { file: '/repo/scripts/lib/b.test.mjs', path: ['describe の外'] },
       ]);
     });

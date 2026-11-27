@@ -67,7 +67,7 @@ pub(crate) fn registry_tla(r: Registry) -> &'static str {
     match r {
         Registry::Unknown => "unknown",
         Registry::NotReplaced => "none",
-        Registry::Replaced => "tmil",
+        Registry::Replaced => "ours",
         Registry::Other => "other",
     }
 }
@@ -274,7 +274,7 @@ pub(crate) fn render_table() -> String {
     );
     let _ = writeln!(
         out,
-        "\\* Regenerate: UPDATE_FORMAL=1 cargo test -p tmil-core machine::tests::formal"
+        "\\* Regenerate: UPDATE_FORMAL=1 cargo test -p taskmanagerlite-core machine::tests::formal"
     );
     let _ = writeln!(
         out,

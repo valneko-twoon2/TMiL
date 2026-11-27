@@ -1,8 +1,8 @@
-//! Windows のタスク マネージャーを TMiL に置き換える設定。
+//! Windows のタスク マネージャーを TaskManagerLite に置き換える設定。
 //!
 //! タスクバーの右クリックメニューに独自の項目は足せないため、Process Explorer と同じく
 //! Image File Execution Options の `Debugger` 値で `taskmgr.exe` の起動先を差し替える。
-//! これでメニューの「タスク マネージャー」や Ctrl+Shift+Esc から TMiL が開く。
+//! これでメニューの「タスク マネージャー」や Ctrl+Shift+Esc から TaskManagerLite が開く。
 //! HKLM への書き込みになるので、`reg.exe` を管理者として起動する。
 
 use std::path::Path;
@@ -176,7 +176,7 @@ mod tests {
     use std::path::PathBuf;
 
     fn exe() -> PathBuf {
-        PathBuf::from(r"C:\Program Files\TMiL\tmil.exe")
+        PathBuf::from(r"C:\Program Files\TaskManagerLite\taskmanagerlite.exe")
     }
 
     mod equivalence {
@@ -186,13 +186,16 @@ mod tests {
         fn debugger_value_is_quoted_path() {
             assert_eq!(
                 debugger_value(&exe()),
-                r#""C:\Program Files\TMiL\tmil.exe""#
+                r#""C:\Program Files\TaskManagerLite\taskmanagerlite.exe""#
             );
         }
 
         #[test]
         fn evaluate_detects_our_value_case_insensitively() {
-            let s = evaluate(Some(r#""c:\program files\tmil\TMIL.exe""#), &exe());
+            let s = evaluate(
+                Some(r#""c:\program files\taskmanagerlite\TASKMANAGERLITE.exe""#),
+                &exe(),
+            );
             assert!(s.replaced);
             assert_eq!(s.other, None);
         }

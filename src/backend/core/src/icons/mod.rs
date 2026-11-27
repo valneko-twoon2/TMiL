@@ -214,7 +214,7 @@ mod tests {
             let windir = std::env::var("WINDIR").unwrap_or_else(|_| r"C:\Windows".to_owned());
             let exes = vec![
                 format!(r"{windir}\explorer.exe"),
-                format!(r"{windir}\tmil-no-such-file.exe"),
+                format!(r"{windir}\taskmanagerlite-no-such-file.exe"),
             ];
             let icons = load(&exes);
             assert_eq!(icons.len(), 2);

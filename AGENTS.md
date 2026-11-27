@@ -1,6 +1,6 @@
 # AGENTS.md
 
-TMiL は Rust + Tauri 2 + Svelte 5 で作る軽量タスクマネージャーです（Windows と Linux）。画面の構成は Windows 11 のタスク マネージャーに寄せています。
+TaskManagerLite は Rust + Tauri 2 + Svelte 5 で作る軽量タスクマネージャーです（Windows と Linux）。画面の構成は Windows 11 のタスク マネージャーに寄せています。
 
 全体の構成は [docs/architecture/01-overview.md](docs/architecture/01-overview.md)、細かいルールは `.claude/rules/` にあります（Claude Code は自動で読み込みます。ほかのエージェントも作業する場所に応じて読んでください）。
 

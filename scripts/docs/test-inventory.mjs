@@ -40,7 +40,7 @@ for (const c of parseJunit(junit)) {
 // Rust
 const rustList = capture(
   'cargo',
-  ['test', '-p', 'tmil-core', '--quiet', '--', '--list', '--format', 'terse'],
+  ['test', '-p', 'taskmanagerlite-core', '--quiet', '--', '--list', '--format', 'terse'],
   {
     cwd: BACKEND,
   },

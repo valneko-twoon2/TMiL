@@ -21,7 +21,7 @@ if (!jar || !existsSync(jar)) {
 const dir = join(ROOT, 'tests', 'formal');
 
 function tlc(check, quiet) {
-  const meta = mkdtempSync(join(tmpdir(), 'tmil-tlc-'));
+  const meta = mkdtempSync(join(tmpdir(), 'taskmanagerlite-tlc-'));
   try {
     return run('java', tlcArgs(jar, check, meta), { cwd: dir, quiet });
   } finally {

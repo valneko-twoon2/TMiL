@@ -248,7 +248,7 @@ mod regression {
         assert!(again.unwrap_err().contains("反映されませんでした"));
     }
 
-    /// TMiL 自身の子プロセス（WebView など）まで終了できてしまい、画面が落ちていた。
+    /// TaskManagerLite 自身の子プロセス（WebView など）まで終了できてしまい、画面が落ちていた。
     #[test]
     fn own_child_process_is_not_killed() {
         let mut child = spawn_sleeper();
@@ -259,7 +259,13 @@ mod regression {
         let _ = child.kill();
         let _ = child.wait();
         assert!(!result[0].ok);
-        assert!(result[0].error.as_deref().unwrap().contains("TMiL"));
+        assert!(
+            result[0]
+                .error
+                .as_deref()
+                .unwrap()
+                .contains("TaskManagerLite")
+        );
         assert!(alive, "子プロセスが終了されている");
     }
 
@@ -303,7 +309,7 @@ mod regression {
         let (_, next) = cache.as_ref().unwrap();
         assert!(next.processes.iter().all(|p| p.pid != target.pid));
         assert_eq!(next.cpu.process_count, next.processes.len());
-        // 終了していないプロセス（TMiL 自身など）は残る
+        // 終了していないプロセス（TaskManagerLite 自身など）は残る
         assert!(next.processes.iter().any(|p| p.pid == std::process::id()));
     }
 

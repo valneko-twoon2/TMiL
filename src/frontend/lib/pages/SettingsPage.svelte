@@ -31,7 +31,9 @@
     try {
       replacement = await api.setTaskmgrReplacement(!replacement.replaced);
       toasts.show(
-        replacement.replaced ? 'タスク マネージャーを TMiL に置き換えました。' : '元に戻しました。',
+        replacement.replaced
+          ? 'タスク マネージャーを TaskManagerLite に置き換えました。'
+          : '元に戻しました。',
       );
     } catch (cause) {
       toasts.show(cause instanceof Error ? cause.message : String(cause), 'error');
@@ -111,15 +113,15 @@
     <section>
       <h2>Windows のタスク マネージャーを置き換える</h2>
       <p class="note">
-        タスクバーの右クリックメニューや Ctrl+Shift+Esc で TMiL
-        が開くようになります。切り替えには管理者の確認が出ます。 TMiL
+        タスクバーの右クリックメニューや Ctrl+Shift+Esc で TaskManagerLite
+        が開くようになります。切り替えには管理者の確認が出ます。 TaskManagerLite
         をインストーラーでアンインストールすると、自動で元に戻ります。
       </p>
       {#if replacement.other}
         <p class="note warn">別のアプリ（{replacement.other}）に置き換えられています。</p>
       {/if}
       <button type="button" class="command outline" disabled={busy} onclick={toggleReplacement}>
-        {replacement.replaced ? '元に戻す' : 'TMiL に置き換える'}
+        {replacement.replaced ? '元に戻す' : 'TaskManagerLite に置き換える'}
       </button>
       <span class="state">現在: {replacement.replaced ? '置き換え中' : '置き換えていません'}</span>
     </section>
@@ -127,7 +129,7 @@
 
   <section>
     <h2>バージョン情報</h2>
-    <p>TMiL v{import.meta.env.VITE_APP_VERSION}</p>
+    <p>TaskManagerLite v{import.meta.env.VITE_APP_VERSION}</p>
   </section>
 </div>
 

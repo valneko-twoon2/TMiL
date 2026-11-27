@@ -1,6 +1,6 @@
 [package]
-name = "tmil-core"
-description = "TMiL のシステム情報取得とスタートアップ管理（Tauri 非依存）"
+name = "taskmanagerlite-core"
+description = "TaskManagerLite のシステム情報取得とスタートアップ管理（Tauri 非依存）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

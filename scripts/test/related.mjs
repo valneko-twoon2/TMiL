@@ -51,7 +51,7 @@ if (plan.tools) {
 }
 for (const filter of plan.rustFilters) {
   const label = filter === '' ? 'cargo test（全体）' : `cargo test ${filter}`;
-  const cargoArgs = ['test', '-p', 'tmil-core', '--quiet', '--', ...(filter ? [filter] : [])];
+  const cargoArgs = ['test', '-p', 'taskmanagerlite-core', '--quiet', '--', ...(filter ? [filter] : [])];
   step(label, run('cargo', cargoArgs, { cwd: BACKEND }).status);
 }
 if (args.includes('--e2e-mock')) {

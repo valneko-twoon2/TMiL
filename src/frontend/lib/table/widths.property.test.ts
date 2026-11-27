@@ -100,7 +100,7 @@ describe('列の幅・メニュー・設定', () => {
           expect(parseSettings(JSON.stringify(settings))).toEqual(settings);
         }),
       );
-      expect(SETTINGS_STORAGE_KEY).toBe('tmil.settings');
+      expect(SETTINGS_STORAGE_KEY).toBe('taskmanagerlite.settings');
     });
   });
 });

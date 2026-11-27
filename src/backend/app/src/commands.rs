@@ -1,16 +1,16 @@
-//! フロントエンドから呼ぶコマンド。判断は tmil-core の状態機械に任せ、ここは受け渡しだけにする。
+//! フロントエンドから呼ぶコマンド。判断は taskmanagerlite-core の状態機械に任せ、ここは受け渡しだけにする。
 //!
 //! 計測やプロセス終了、UAC の確認待ちはスレッドを止めるので、非同期の実行環境では行わず
 //! `spawn_blocking` で専用のスレッドに回す。
 
-use tauri::{AppHandle, Manager};
-use tmil_core::backend::{Backend, set_replacement_for_exe};
-use tmil_core::icons::{self, IconCache};
-use tmil_core::model::{
+use taskmanagerlite_core::backend::{Backend, set_replacement_for_exe};
+use taskmanagerlite_core::icons::{self, IconCache};
+use taskmanagerlite_core::model::{
     KillResult, KillTarget, Priority, ProcessControls, ProcessIcon, ReplacementStatus, Snapshot,
     StartupEntry, SystemInfo,
 };
-use tmil_core::{open, startup, taskmgr};
+use taskmanagerlite_core::{open, startup, taskmgr};
+use tauri::{AppHandle, Manager};
 
 fn current_exe() -> Result<std::path::PathBuf, String> {
     std::env::current_exe().map_err(|e| format!("実行ファイルの場所が分かりません: {e}"))

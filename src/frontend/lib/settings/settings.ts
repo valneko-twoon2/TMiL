@@ -44,7 +44,7 @@ const defaults = (): Settings => ({
   columnWidths: {},
 });
 
-export const SETTINGS_STORAGE_KEY = 'tmil.settings';
+export const SETTINGS_STORAGE_KEY = 'taskmanagerlite.settings';
 
 /** 候補に含まれる値ならそれを、そうでなければ既定値を返す。 */
 function pick<T extends string>(candidates: readonly T[], value: unknown, fallback: T): T {

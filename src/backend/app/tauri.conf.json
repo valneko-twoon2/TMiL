@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "TMiL",
+  "productName": "TaskManagerLite",
   "version": "../../frontend/package.json",
-  "identifier": "io.github.valneko-twoon2.tmil",
+  "identifier": "io.github.valneko-twoon2.taskmanagerlite",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "TMiL",
+        "title": "TaskManagerLite",
         "width": 1040,
         "height": 720,
         "minWidth": 720,

@@ -6,7 +6,7 @@ use std::process::{Child, Command, Stdio};
 
 /// テストが読むリポジトリ直下（tests/formal など）の場所を決める（純粋関数）。
 /// ミューテーションテストは src/backend だけを別の場所に写して動かすので、
-/// そのときは `TMIL_REPO_ROOT` で本来の場所を教える。無ければ core から 3 つ上。
+/// そのときは `TASKMANAGERLITE_REPO_ROOT` で本来の場所を教える。無ければ core から 3 つ上。
 pub(crate) fn repo_root_from(env: Option<OsString>, manifest_dir: &Path) -> PathBuf {
     env.filter(|v| !v.is_empty())
         .map_or_else(|| manifest_dir.join("../../.."), PathBuf::from)
@@ -15,7 +15,7 @@ pub(crate) fn repo_root_from(env: Option<OsString>, manifest_dir: &Path) -> Path
 /// リポジトリ直下。
 pub(crate) fn repo_root() -> PathBuf {
     repo_root_from(
-        std::env::var_os("TMIL_REPO_ROOT"),
+        std::env::var_os("TASKMANAGERLITE_REPO_ROOT"),
         Path::new(env!("CARGO_MANIFEST_DIR")),
     )
 }

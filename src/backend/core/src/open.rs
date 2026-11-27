@@ -170,7 +170,7 @@ mod tests {
 
         #[test]
         fn missing_file_is_an_error() {
-            let err = reveal("/tmil/no/such/file").unwrap_err();
+            let err = reveal("/taskmanagerlite/no/such/file").unwrap_err();
             assert!(
                 err.contains("見つかりません") || err.contains("絶対パス"),
                 "{err}"

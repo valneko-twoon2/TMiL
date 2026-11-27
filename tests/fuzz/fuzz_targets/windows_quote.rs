@@ -2,7 +2,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use tmil_core::taskmgr::{quote_windows_arg, unquote_windows_arg};
+use taskmanagerlite_core::taskmgr::{quote_windows_arg, unquote_windows_arg};
 
 fuzz_target!(|arg: &str| {
     assert_eq!(

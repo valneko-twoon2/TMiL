@@ -1,6 +1,6 @@
 ------------------------------- MODULE Backend -------------------------------
 (***************************************************************************)
-(* TMiL のバックエンド（BackendMachine の Step）を、まわりの環境と組み合わせて *)
+(* TaskManagerLite のバックエンド（BackendMachine の Step）を、まわりの環境と組み合わせて *)
 (* 検査する。環境として次を自由に動かす。                                  *)
 (*   - 利用者: ウィンドウの表示・非表示、終了、置き換えの依頼、プロセス終了 *)
 (*   - 画面: 一定間隔の計測の依頼（間隔の長さは fresh で抽象化）           *)
@@ -13,14 +13,14 @@ EXTENDS BackendMachine, Naturals
 CONSTANTS
   MStep(_, _),     \* 検査する状態機械（普段は Step。Regressions.tla では不具合を戻した版）
   Pids,            \* PID の集合
-  Protected,       \* TMiL 自身とその子孫（WebView など）
+  Protected,       \* TaskManagerLite 自身とその子孫（WebView など）
   MaxIncarnation   \* PID を使い回す回数の上限（起動のたびに番号が増える）
 
 ASSUME Protected \subseteq Pids /\ MaxIncarnation \in Nat
 
 VARIABLES
   m,          \* 状態機械の状態
-  registry,   \* 実際の置き換えの設定（"none", "tmil", "other"）
+  registry,   \* 実際の置き換えの設定（"none", "ours", "other"）
   elev,       \* 管理者としての書き込み: "idle", "running", "done"
   fresh,      \* 前回の計測から最小間隔がたっていないか
   procs,      \* PID ごとに今動いているプロセスの番号（0 = 無い）
@@ -31,7 +31,7 @@ VARIABLES
 
 vars == <<m, registry, elev, fresh, procs, nextInc, shown, cacheExists, violation>>
 
-ActualRegistries == {"none", "tmil", "other"}
+ActualRegistries == {"none", "ours", "other"}
 
 Violations ==
   {"none", "sampledWhileHiddenOrQuitting", "overlappingSamples", "resampledTooSoon",
@@ -181,7 +181,7 @@ RequestKill(p) ==
             /\ violation' = IF violation = "none" THEN Broken(m, r) ELSE violation
   /\ UNCHANGED <<registry, elev, fresh, nextInc, shown, cacheExists>>
 
-\* OS がプロセスを終了させる（TMiL 自身とその子孫は動き続ける）
+\* OS がプロセスを終了させる（TaskManagerLite 自身とその子孫は動き続ける）
 ProcessExits(p) ==
   /\ p \notin Protected
   /\ procs[p] # 0

@@ -1,4 +1,4 @@
-// 実際に TMiL を起動して操作する E2E（tauri-driver + WebDriver）。
+// 実際に TaskManagerLite を起動して操作する E2E（tauri-driver + WebDriver）。
 // バックエンドの変更を確かめたいときに使う。実行は scripts/test/e2e-native.mjs から。
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -10,7 +10,7 @@ const require = createRequire(new URL('../../../src/frontend/package.json', impo
 /** @type {typeof import('selenium-webdriver')} */
 const { Builder, By, Capabilities, until } = require('selenium-webdriver');
 
-const application = process.env.TMIL_APP;
+const application = process.env.TASKMANAGERLITE_APP;
 const server = process.env.TAURI_DRIVER_URL ?? 'http://127.0.0.1:4444/';
 const TIMEOUT = 20_000;
 
@@ -23,7 +23,7 @@ async function navigate(label) {
 }
 
 before(async () => {
-  assert.ok(application, 'TMIL_APP に起動するアプリのパスを指定してください');
+  assert.ok(application, 'TASKMANAGERLITE_APP に起動するアプリのパスを指定してください');
   const capabilities = new Capabilities();
   capabilities.set('tauri:options', { application });
   capabilities.setBrowserName('wry');
@@ -56,14 +56,14 @@ describe('実アプリ', () => {
     // getText は「見えている文字」だけを返し、列の幅に収めるため overflow: hidden にしたセルを
     // WebKitGTK では含めない（画面には出ている）。一覧の中身は textContent で確かめる
     const body = await driver.findElement(By.css('tbody')).getAttribute('textContent');
-    assert.match(body, /tmil/i, 'TMiL 自身が一覧にあるはず');
+    assert.match(body, /taskmanagerlite/i, 'TaskManagerLite 自身が一覧にあるはず');
   });
 
   it('詳細タブで自分の PID を検索できる', async () => {
     await navigate('詳細');
     const search = await driver.findElement(By.css('input[type="search"]'));
     await search.clear();
-    await search.sendKeys('tmil');
+    await search.sendKeys('taskmanagerlite');
     const rows = await driver.wait(until.elementsLocated(By.css('[data-testid="detail-row"]')), TIMEOUT);
     assert.ok(rows.length >= 1);
     await search.clear();
@@ -88,9 +88,9 @@ describe('実アプリ', () => {
   it('設定にバージョンが出る', async () => {
     await navigate('設定');
     const body = await driver.wait(
-      until.elementLocated(By.xpath('//*[contains(text(), "TMiL v")]')),
+      until.elementLocated(By.xpath('//*[contains(text(), "TaskManagerLite v")]')),
       TIMEOUT,
     );
-    assert.match(await body.getText(), /TMiL v\d+\.\d+\.\d+/);
+    assert.match(await body.getText(), /TaskManagerLite v\d+\.\d+\.\d+/);
   });
 });

@@ -2,7 +2,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use tmil_core::startup::command::program_of;
+use taskmanagerlite_core::startup::command::program_of;
 
 fuzz_target!(|command: &str| {
     let program = program_of(command);

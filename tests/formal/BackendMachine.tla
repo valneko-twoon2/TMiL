@@ -1,6 +1,6 @@
 --------------------------- MODULE BackendMachine ---------------------------
 (***************************************************************************)
-(* TMiL のバックエンドの状態機械。                                         *)
+(* TaskManagerLite のバックエンドの状態機械。                                         *)
 (* Rust の src/backend/core/src/machine/mod.rs の step と同じ判断をする。   *)
 (* 一致していることは MachineConformance.tla（遷移表との突き合わせ）で確かめる。 *)
 (***************************************************************************)
@@ -8,7 +8,7 @@ EXTENDS Naturals
 
 Windows    == {"visible", "hidden"}
 Lives      == {"running", "quitting"}
-Registries == {"unknown", "none", "tmil", "other"}
+Registries == {"unknown", "none", "ours", "other"}
 Pendings   == {"idle", "enable", "disable"}
 
 \* 状態: 表示・生死・計測中か・直前の結果を持つか・置き換えの状態・切り替え中か
@@ -42,7 +42,7 @@ NA == [ok |-> FALSE]
 To(s, effect) == [ok |-> TRUE, state |-> s, effect |-> effect]
 
 \* 切り替えが成功したときにあるべき置き換えの状態
-Target(p) == IF p = "enable" THEN "tmil" ELSE "none"
+Target(p) == IF p = "enable" THEN "ours" ELSE "none"
 
 \* 計測の依頼: 終了中 → 計測中 → 非表示 → まだ新しい の順に断り、残れば計測する
 SnapshotStep(s, stale) ==

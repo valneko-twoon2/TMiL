@@ -24,9 +24,9 @@
 
 `reveal_file` は実在するファイルの絶対パスだけを受け付けます（Windows はエクスプローラーで選んだ状態、Linux は入っているフォルダーを開く）。アイコンとこの操作は状態を持たないので、状態機械は通しません。
 
-優先度と関係の変更は、終了と同じく状態機械が 1 つずつ判断します（TMiL 自身とその子孫・入れ替わったプロセスは変えない）。`search_online` は検索サイトの URL をバックで組み立て、言葉は URL エンコードして渡します。
+優先度と関係の変更は、終了と同じく状態機械が 1 つずつ判断します（TaskManagerLite 自身とその子孫・入れ替わったプロセスは変えない）。`search_online` は検索サイトの URL をバックで組み立て、言葉は URL エンコードして渡します。
 
-`kill_processes` は PID と起動時刻（`startTime`）の組を受け取ります。一覧を取ってから PID が別のプロセスに再利用されていたら終了しません。TMiL 自身とその子孫（WebView）も終了しません。
+`kill_processes` は PID と起動時刻（`startTime`）の組を受け取ります。一覧を取ってから PID が別のプロセスに再利用されていたら終了しません。TaskManagerLite 自身とその子孫（WebView）も終了しません。
 
 ## 契約テスト
 
@@ -39,5 +39,5 @@
 型を変えたら次の順で直します。
 
 1. `model.rs` を変更
-2. `UPDATE_CONTRACT=1 cargo test -p tmil-core --test contract`（`src/backend` で）で見本を作り直す
+2. `UPDATE_CONTRACT=1 cargo test -p taskmanagerlite-core --test contract`（`src/backend` で）で見本を作り直す
 3. `types.ts` と `guards.ts` を合わせて、フロントの契約テストを通す

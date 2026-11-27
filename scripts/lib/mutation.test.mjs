@@ -8,7 +8,7 @@ import { cargoMutantsArgs, strykerArgs } from './mutation.mjs';
 describe('cargoMutantsArgs', () => {
   describe('equivalence', () => {
     it('CPU 4 つにつき 1 つずつ並べる', () => {
-      const dir = mkdtempSync(join(tmpdir(), 'tmil-mutation-'));
+      const dir = mkdtempSync(join(tmpdir(), 'taskmanagerlite-mutation-'));
       try {
         const args = cargoMutantsArgs(join(dir, 'out'), 16);
         assert.deepEqual(args.slice(args.indexOf('--jobs'), args.indexOf('--jobs') + 2), ['--jobs', '4']);
@@ -20,7 +20,7 @@ describe('cargoMutantsArgs', () => {
 
   describe('boundary', () => {
     it('CPU が少なくても 1 つは回す', () => {
-      const dir = mkdtempSync(join(tmpdir(), 'tmil-mutation-'));
+      const dir = mkdtempSync(join(tmpdir(), 'taskmanagerlite-mutation-'));
       try {
         assert.ok(cargoMutantsArgs(join(dir, 'out'), 1).includes('1'));
       } finally {
@@ -40,7 +40,7 @@ describe('cargoMutantsArgs', () => {
 
     // 結果を置くフォルダーの親（reports/mutation）が無いと、cargo-mutants が始まる前に失敗していた
     it('結果を置くフォルダーを親ごと作る', () => {
-      const dir = mkdtempSync(join(tmpdir(), 'tmil-mutation-'));
+      const dir = mkdtempSync(join(tmpdir(), 'taskmanagerlite-mutation-'));
       try {
         const output = join(dir, 'reports', 'mutation', 'backend');
         cargoMutantsArgs(output, 4);

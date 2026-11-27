@@ -1,4 +1,4 @@
-//! TMiL のコア機能。Tauri に依存しない処理（システム情報の取得、スタートアップ管理など）をまとめる。
+//! TaskManagerLite のコア機能。Tauri に依存しない処理（システム情報の取得、スタートアップ管理など）をまとめる。
 
 pub mod backend;
 pub mod collector;

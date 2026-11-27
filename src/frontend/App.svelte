@@ -100,7 +100,7 @@
   <header class="titlebar">
     <div class="brand">
       <img src="/logo.svg" alt="" width="18" height="18" />
-      <span>TMiL</span>
+      <span>TaskManagerLite</span>
     </div>
     <label class="search" class:disabled={!searchable}>
       <Icon name="search" size={14} />

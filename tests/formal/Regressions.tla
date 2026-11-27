@@ -34,7 +34,7 @@ FalseSuccessStep(s, e) ==
     THEN To([s EXCEPT !.registry = e.registry, !.pending = "idle"], "replacementOk")
     ELSE Step(s, e)
 
-\* TMiL 自身の WebView まで終了できてしまい、画面が落ちていた
+\* TaskManagerLite 自身の WebView まで終了できてしまい、画面が落ちていた
 KillProtectedStep(s, e) ==
   IF e.kind = "killRequested" /\ Running(s) /\ e.exists /\ e.sameStart
     THEN To(s, "kill")

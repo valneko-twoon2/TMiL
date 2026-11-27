@@ -1,11 +1,11 @@
-# TMiL をインストールする（Windows・x64）。管理者権限は要らない（ユーザーごとのインストール）。
+# TaskManagerLite をインストールする（Windows・x64）。管理者権限は要らない（ユーザーごとのインストール）。
 #
 #   irm https://github.com/valneko-twoon2/TMiL/releases/latest/download/install.ps1 | iex
 #
 # リリースのインストーラー（*_x64-setup.exe）を、SHA256SUMS とハッシュが一致するか確かめてから静かに実行する。
 #
-#   バージョンを決める:  $env:TMIL_VERSION = '0.2.0'; irm ... | iex
-#   確かめるだけ:        $env:TMIL_DRY_RUN = '1'（ダウンロードとハッシュの確認だけ行う）
+#   バージョンを決める:  $env:TASKMANAGERLITE_VERSION = '0.2.0'; irm ... | iex
+#   確かめるだけ:        $env:TASKMANAGERLITE_DRY_RUN = '1'（ダウンロードとハッシュの確認だけ行う）
 #
 # iex で読み込まれるので、変数が呼び出し元に残らないようスクリプト ブロックの中で動かす。
 # exit は呼び出し元の PowerShell ごと閉じてしまうので使わず、失敗は throw で知らせる。
@@ -35,10 +35,10 @@
     }
   }
 
-  if ($env:TMIL_DOWNLOAD_BASE) {
-    $base = $env:TMIL_DOWNLOAD_BASE
-  } elseif ($env:TMIL_VERSION) {
-    $base = "https://github.com/$repo/releases/download/v$($env:TMIL_VERSION)"
+  if ($env:TASKMANAGERLITE_DOWNLOAD_BASE) {
+    $base = $env:TASKMANAGERLITE_DOWNLOAD_BASE
+  } elseif ($env:TASKMANAGERLITE_VERSION) {
+    $base = "https://github.com/$repo/releases/download/v$($env:TASKMANAGERLITE_VERSION)"
   } else {
     $base = "https://github.com/$repo/releases/latest/download"
   }
@@ -46,10 +46,10 @@
   # 古い Windows PowerShell でも TLS 1.2 で GitHub につなげるようにする
   [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
-  $temp = Join-Path ([IO.Path]::GetTempPath()) ('tmil-install-' + [guid]::NewGuid().ToString('N'))
+  $temp = Join-Path ([IO.Path]::GetTempPath()) ('taskmanagerlite-install-' + [guid]::NewGuid().ToString('N'))
   New-Item -ItemType Directory -Path $temp | Out-Null
   try {
-    Write-Host (Get-Message 'TMiL のリリースを確かめています...')
+    Write-Host (Get-Message 'TaskManagerLite のリリースを確かめています...')
     $sumsPath = Join-Path $temp 'SHA256SUMS'
     Invoke-WebRequest -UseBasicParsing -Uri "$base/SHA256SUMS" -OutFile $sumsPath
 
@@ -73,7 +73,7 @@
     }
     Write-Host (Get-Message 'ハッシュを確かめました。')
 
-    if ($env:TMIL_DRY_RUN -eq '1') {
+    if ($env:TASKMANAGERLITE_DRY_RUN -eq '1') {
       Write-Host (Get-Message '確かめるだけなので、インストールはしません。')
       return
     }
@@ -83,7 +83,7 @@
     if ($process.ExitCode -ne 0) {
       throw ((Get-Message 'インストーラーが失敗しました。終了コード: ') + $process.ExitCode)
     }
-    Write-Host (Get-Message 'TMiL をインストールしました。スタート メニューから起動できます。')
+    Write-Host (Get-Message 'TaskManagerLite をインストールしました。スタート メニューから起動できます。')
   } finally {
     Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue
   }

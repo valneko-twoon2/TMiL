@@ -35,7 +35,7 @@ pub enum Registry {
     Unknown,
     /// 置き換えていない
     NotReplaced,
-    /// TMiL に置き換わっている
+    /// TaskManagerLite に置き換わっている
     Replaced,
     /// 別のアプリに置き換わっている
     Other,
@@ -96,7 +96,7 @@ impl Default for State {
 pub struct ObservedProcess {
     /// 今その PID で動いているプロセスの起動時刻
     pub start_time: u64,
-    /// TMiL 自身か、その子孫（WebView など）か
+    /// TaskManagerLite 自身か、その子孫（WebView など）か
     pub protected: bool,
 }
 
@@ -159,7 +159,7 @@ impl fmt::Display for Rejection {
             Self::Quitting => "終了処理中です。",
             Self::NotFound => "プロセスが見つかりません。すでに終了している可能性があります。",
             Self::Protected => {
-                "TMiL 自身と、TMiL の画面を表示しているプロセスは終了・変更できません。TMiL を終了するときはトレイのメニューを使ってください。"
+                "TaskManagerLite 自身と、TaskManagerLite の画面を表示しているプロセスは終了・変更できません。TaskManagerLite を終了するときはトレイのメニューを使ってください。"
             }
             Self::Replaced => "プロセスが入れ替わっています。一覧を更新してからやり直してください。",
             Self::OtherTool => {

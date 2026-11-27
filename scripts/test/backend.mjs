@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// バックエンド（tmil-core）のテスト。
+// バックエンド（taskmanagerlite-core）のテスト。
 //   node scripts/test/backend.mjs              全部
 //   node scripts/test/backend.mjs --coverage   カバレッジ付き（行 80% 未満で失敗）
 //   node scripts/test/backend.mjs -- <filter>  名前で絞り込み（例: startup::desktop）
-// Tauri 本体（tmil クレート）は受け渡しだけなので、テストとカバレッジの対象外にしている。
+// Tauri 本体（taskmanagerlite クレート）は受け渡しだけなので、テストとカバレッジの対象外にしている。
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { BACKEND, ROOT, run } from '../lib/proc.mjs';
@@ -22,7 +22,7 @@ const result = coverage
   ? cargo([
       'llvm-cov',
       '-p',
-      'tmil-core',
+      'taskmanagerlite-core',
       '--fail-under-lines',
       '80',
       '--lcov',
@@ -31,9 +31,9 @@ const result = coverage
       '--',
       ...filter,
     ])
-  : cargo(['test', '-p', 'tmil-core', '--', ...filter]);
+  : cargo(['test', '-p', 'taskmanagerlite-core', '--', ...filter]);
 
 if (coverage && result.status === 0) {
-  cargo(['llvm-cov', 'report', '-p', 'tmil-core', '--summary-only']);
+  cargo(['llvm-cov', 'report', '-p', 'taskmanagerlite-core', '--summary-only']);
 }
 process.exit(result.status);

@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/logo.svg" width="112" alt="TMiL のロゴ">
+<img src="assets/logo.svg" width="112" alt="TaskManagerLite のロゴ">
 
-# TMiL
+# TaskManagerLite
 
 **Rust + Tauri + Svelte 5 で作った、軽いタスクマネージャー**
 
@@ -26,7 +26,7 @@
 - **軽い** — ウィンドウを閉じるとトレイに隠れ、その間は計測を止めます
 - **見慣れた画面** — Windows 11 のタスク マネージャーと同じ並びのタブとコマンド
 - **Windows と Linux** — スタートアップ アプリは Windows のレジストリと Linux の autostart の両方に対応
-- **置き換えられる** — 設定から、タスクバーの右クリックメニューや Ctrl+Shift+Esc で TMiL が開くようにできます（Windows）
+- **置き換えられる** — 設定から、タスクバーの右クリックメニューや Ctrl+Shift+Esc で TaskManagerLite が開くようにできます（Windows）
 - **ライト・ダーク** — OS の設定に合わせるか、手動で選べます
 
 ## 画面
@@ -61,14 +61,14 @@ Linux（x86_64）:
 curl -fsSL https://github.com/valneko-twoon2/TMiL/releases/latest/download/install.sh | sh
 ```
 
-Linux ではアプリを `~/.local/bin/tmil` に置き、アプリのメニューに登録します。消すときは `... | sh -s -- --uninstall` です。
+Linux ではアプリを `~/.local/bin/taskmanagerlite` に置き、アプリのメニューに登録します。消すときは `... | sh -s -- --uninstall` です。
 
 [Releases](https://github.com/valneko-twoon2/TMiL/releases) からファイルを直接ダウンロードすることもできます。
 
-| OS      | ファイル                   |
-| ------- | -------------------------- |
-| Windows | `TMiL_x.y.z_x64-setup.exe` |
-| Linux   | `.deb` / `.AppImage`       |
+| OS      | ファイル                              |
+| ------- | ------------------------------------- |
+| Windows | `TaskManagerLite_x.y.z_x64-setup.exe` |
+| Linux   | `.deb` / `.AppImage`                  |
 
 > [!NOTE]
 > タスク マネージャーの置き換えは、Windows のインストーラーでアンインストールすれば自動で元に戻ります（管理者の確認が出ます）。

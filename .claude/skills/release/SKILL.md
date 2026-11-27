@@ -1,6 +1,6 @@
 ---
 name: release
-description: TMiL のバージョンを上げて develop から main への PR を出す手順。リリース・バージョンアップ・main へのマージの準備を頼まれたときに使う。
+description: TaskManagerLite のバージョンを上げて develop から main への PR を出す手順。リリース・バージョンアップ・main へのマージの準備を頼まれたときに使う。
 ---
 
 # リリース PR の出し方

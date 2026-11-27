@@ -393,7 +393,7 @@ mod tests {
 
         #[test]
         fn load_returns_one_result_per_exe() {
-            let exes = vec![String::new(), "/tmil/no/such/app".to_owned()];
+            let exes = vec![String::new(), "/taskmanagerlite/no/such/app".to_owned()];
             assert_eq!(load(&exes), vec![None, None]);
         }
 

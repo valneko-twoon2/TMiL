@@ -14,16 +14,16 @@ import { sha256sums } from '../lib/installer.mjs';
 import { ROOT } from '../lib/proc.mjs';
 
 const INSTALLER = join(ROOT, 'src', 'installer');
-const work = mkdtempSync(join(tmpdir(), 'tmil-installer-'));
+const work = mkdtempSync(join(tmpdir(), 'taskmanagerlite-installer-'));
 const failures = [];
 
 /** 偽のリリースを作る。`bad` は SHA256SUMS のハッシュをわざと違える。 */
 function makeRelease(dir, bad) {
   mkdirSync(dir, { recursive: true });
   const files = {
-    'TMiL_9.9.9_amd64.AppImage': '#!/bin/sh\necho tmil\n',
-    'TMiL_9.9.9_amd64.deb': 'deb',
-    'TMiL_9.9.9_x64-setup.exe': 'setup',
+    'TaskManagerLite_9.9.9_amd64.AppImage': '#!/bin/sh\necho taskmanagerlite\n',
+    'TaskManagerLite_9.9.9_amd64.deb': 'deb',
+    'TaskManagerLite_9.9.9_x64-setup.exe': 'setup',
     'install.sh': readFileSync(join(INSTALLER, 'install.sh')),
     'install.ps1': readFileSync(join(INSTALLER, 'install.ps1')),
   };
@@ -88,13 +88,13 @@ try {
   if (process.platform === 'linux' && has('sh', ['-c', 'true'])) {
     const home = join(work, 'home');
     const env = (release) => ({
-      TMIL_DOWNLOAD_BASE: `${base}/${release}`,
-      TMIL_BIN_DIR: join(home, 'bin'),
+      TASKMANAGERLITE_DOWNLOAD_BASE: `${base}/${release}`,
+      TASKMANAGERLITE_BIN_DIR: join(home, 'bin'),
       XDG_DATA_HOME: join(home, 'share'),
     });
     const script = join(INSTALLER, 'install.sh');
-    const bin = join(home, 'bin', 'tmil');
-    const desktop = join(home, 'share', 'applications', 'tmil.desktop');
+    const bin = join(home, 'bin', 'taskmanagerlite');
+    const desktop = join(home, 'share', 'applications', 'taskmanagerlite.desktop');
 
     const bad = await exec('sh', [script], env('bad'));
     check('install.sh: ハッシュが違えば入れない', bad.code !== 0 && !existsSync(bin), bad.output);
@@ -131,7 +131,7 @@ try {
           '-Command',
           `[Console]::OutputEncoding = [Text.Encoding]::UTF8; $ErrorActionPreference = 'Stop'; irm '${base}/${release}/install.ps1' | iex`,
         ],
-        { TMIL_DOWNLOAD_BASE: `${base}/${release}`, TMIL_DRY_RUN: '1' },
+        { TASKMANAGERLITE_DOWNLOAD_BASE: `${base}/${release}`, TASKMANAGERLITE_DRY_RUN: '1' },
       );
 
     const good = await run('good');

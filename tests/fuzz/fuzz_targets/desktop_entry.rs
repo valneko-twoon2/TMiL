@@ -2,7 +2,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use tmil_core::startup::desktop::{parse, with_enabled};
+use taskmanagerlite_core::startup::desktop::{parse, with_enabled};
 
 fuzz_target!(|data: (&str, bool)| {
     let (content, enabled) = data;

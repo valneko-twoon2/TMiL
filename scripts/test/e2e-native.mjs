@@ -15,7 +15,12 @@ import { BACKEND, FRONTEND, run, runNodeBin, toolEnv } from '../lib/proc.mjs';
 import { tauriEnv } from '../lib/tauri.mjs';
 
 const skipBuild = process.argv.includes('--skip-build');
-const exe = join(BACKEND, 'target', 'debug', process.platform === 'win32' ? 'tmil.exe' : 'tmil');
+const exe = join(
+  BACKEND,
+  'target',
+  'debug',
+  process.platform === 'win32' ? 'taskmanagerlite.exe' : 'taskmanagerlite',
+);
 
 if (!skipBuild) {
   const build = runNodeBin('@tauri-apps/cli', 'tauri', ['build', '--debug', '--no-bundle'], {
@@ -43,7 +48,7 @@ let status;
 try {
   await sleep(2000);
   status = run(process.execPath, nativeTestArgs(), {
-    env: { TMIL_APP: exe },
+    env: { TASKMANAGERLITE_APP: exe },
   }).status;
 } finally {
   driver.kill();

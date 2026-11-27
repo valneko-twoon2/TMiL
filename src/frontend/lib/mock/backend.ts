@@ -30,7 +30,7 @@ const SEEDS: ProcessSeed[] = [
   { name: 'chrome.exe', count: 6, cpu: 1.5, memoryMb: 220, user: 'user' },
   { name: 'Code.exe', count: 4, cpu: 2.2, memoryMb: 310, user: 'user' },
   { name: 'svchost.exe', count: 8, cpu: 0.2, memoryMb: 24, user: 'SYSTEM' },
-  { name: 'TMiL.exe', count: 1, cpu: 0.3, memoryMb: 38, user: 'user' },
+  { name: 'TaskManagerLite.exe', count: 1, cpu: 0.3, memoryMb: 38, user: 'user' },
   { name: 'Discord.exe', count: 3, cpu: 0.6, memoryMb: 140, user: 'user' },
   { name: 'OneDrive.exe', count: 1, cpu: 0.1, memoryMb: 60, user: 'user' },
   { name: 'MsMpEng.exe', count: 1, cpu: 3.5, memoryMb: 250, user: 'SYSTEM' },

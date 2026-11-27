@@ -1,10 +1,10 @@
 //! トレイアイコンとウィンドウの表示切り替え。
 //! 表示・非表示・終了は状態機械に伝え、返ってきた判断のとおりに画面へ知らせる。
 
+use taskmanagerlite_core::backend::Backend;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, Runtime, Window};
-use tmil_core::backend::Backend;
 
 /// 画面の表示状態をフロントへ知らせるイベント名。非表示中は計測を止めてもらう。
 pub(crate) const VISIBILITY_EVENT: &str = "window-visibility";
@@ -14,12 +14,12 @@ const MENU_QUIT: &str = "quit";
 
 /// トレイアイコンを作る。
 pub(crate) fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
-    let open = MenuItem::with_id(app, MENU_OPEN, "TMiL を開く", true, None::<&str>)?;
+    let open = MenuItem::with_id(app, MENU_OPEN, "TaskManagerLite を開く", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, MENU_QUIT, "終了", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&open, &quit])?;
 
     let mut builder = TrayIconBuilder::with_id("main")
-        .tooltip("TMiL")
+        .tooltip("TaskManagerLite")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {

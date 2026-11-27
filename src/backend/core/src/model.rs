@@ -244,7 +244,7 @@ pub struct StartupEntry {
 pub struct ReplacementStatus {
     /// この OS で使えるか（Windows のみ）
     pub supported: bool,
-    /// TMiL に置き換わっているか
+    /// TaskManagerLite に置き換わっているか
     pub replaced: bool,
     /// 別のアプリに置き換わっている場合、その設定値
     pub other: Option<String>,

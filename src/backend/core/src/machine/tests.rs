@@ -347,7 +347,7 @@ mod regression {
         }
     }
 
-    /// TMiL 自身の WebView まで終了できてしまい、画面が落ちていた。
+    /// TaskManagerLite 自身の WebView まで終了できてしまい、画面が落ちていた。
     #[test]
     fn protected_process_is_never_killed() {
         let t = kill(State::INITIAL, Some(observed(KILL_TARGET.start_time, true))).unwrap();
@@ -484,7 +484,7 @@ mod formal {
         let committed = std::fs::read_to_string(&path).unwrap_or_default();
         assert!(
             committed.replace("\r\n", "\n") == text,
-            "遷移表が古いです。UPDATE_FORMAL=1 cargo test -p tmil-core machine::tests::formal で作り直し、TLA+ 側（BackendMachine.tla）も合わせてください"
+            "遷移表が古いです。UPDATE_FORMAL=1 cargo test -p taskmanagerlite-core machine::tests::formal で作り直し、TLA+ 側（BackendMachine.tla）も合わせてください"
         );
     }
 

@@ -1,6 +1,6 @@
 ---
 name: docs
-description: TMiL の docs/ フォルダーに文書を足す・直す・並べ替えるときの決まりと手順。ドキュメントの追加・更新、docs の構成や番号・README の目次の変更、設計や手順を書き残すときに使う。README.md・AGENTS.md・CHANGELOG.md だけを直すときは使わない。
+description: TaskManagerLite の docs/ フォルダーに文書を足す・直す・並べ替えるときの決まりと手順。ドキュメントの追加・更新、docs の構成や番号・README の目次の変更、設計や手順を書き残すときに使う。README.md・AGENTS.md・CHANGELOG.md だけを直すときは使わない。
 ---
 
 # docs/ の書き方

@@ -1,6 +1,6 @@
-; TMiL のインストーラー用フック（tauri.conf.json の bundle.windows.nsis.installerHooks）
+; TaskManagerLite のインストーラー用フック（tauri.conf.json の bundle.windows.nsis.installerHooks）
 
-; アンインストール時、タスク マネージャーの置き換え（IFEO の Debugger 値）が TMiL を指していれば消す。
+; アンインストール時、タスク マネージャーの置き換え（IFEO の Debugger 値）が TaskManagerLite を指していれば消す。
 ; 残ったままだと Ctrl+Shift+Esc やタスクバーのメニューからタスク マネージャーが開かなくなる。
 ; 更新（/UPDATE）のときは同じ場所に入れ直すので消さない。
 !macro NSIS_HOOK_PREUNINSTALL

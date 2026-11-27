@@ -48,7 +48,7 @@ describe('formatBytes', () => {
 
 ```sh
 # src/backend で
-cargo test -p tmil-core boundary          # Rust の境界値テストだけ
+cargo test -p taskmanagerlite-core boundary          # Rust の境界値テストだけ
 # src/frontend で
 npx vitest run -t "boundary"              # フロントの境界値テストだけ
 npx playwright test --project=e2e-mock    # E2E（モック）だけ

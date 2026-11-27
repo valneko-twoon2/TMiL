@@ -1,18 +1,18 @@
-//! TMiL のエントリーポイント。ウィンドウを閉じてもトレイに常駐する。
+//! TaskManagerLite のエントリーポイント。ウィンドウを閉じてもトレイに常駐する。
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
 mod tray;
 
+use taskmanagerlite_core::backend::Backend;
+use taskmanagerlite_core::icons::IconCache;
 use tauri::WindowEvent;
-use tmil_core::backend::Backend;
-use tmil_core::icons::IconCache;
 
 fn main() {
     if let Err(err) = run() {
         #[expect(clippy::print_stderr, reason = "起動失敗を知らせる手段が他に無い")]
         {
-            eprintln!("TMiL を起動できませんでした: {err}");
+            eprintln!("TaskManagerLite を起動できませんでした: {err}");
         }
         std::process::exit(1);
     }

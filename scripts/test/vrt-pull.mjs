@@ -40,7 +40,7 @@ if (!runId) {
 }
 
 // gh run download は既存のファイルを上書きしないので、一時フォルダーに落としてから上書きコピーする
-const temp = mkdtempSync(join(tmpdir(), 'tmil-vrt-'));
+const temp = mkdtempSync(join(tmpdir(), 'taskmanagerlite-vrt-'));
 let status;
 try {
   status = run('gh', ['run', 'download', runId, '--name', ARTIFACT, '--dir', temp]).status;

@@ -121,8 +121,10 @@ pub(crate) mod test_support {
     impl TempDir {
         pub(crate) fn new(label: &str) -> Self {
             let n = COUNTER.fetch_add(1, Ordering::Relaxed);
-            let dir =
-                std::env::temp_dir().join(format!("tmil-test-{label}-{}-{n}", std::process::id()));
+            let dir = std::env::temp_dir().join(format!(
+                "taskmanagerlite-test-{label}-{}-{n}",
+                std::process::id()
+            ));
             let _ = std::fs::remove_dir_all(&dir);
             std::fs::create_dir_all(&dir).unwrap();
             Self(dir)

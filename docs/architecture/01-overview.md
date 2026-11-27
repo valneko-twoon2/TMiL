@@ -1,6 +1,6 @@
 # 全体の構成
 
-TMiL は Tauri 2 のデスクトップアプリです。画面は Svelte 5、処理は Rust で書いています。
+TaskManagerLite は Tauri 2 のデスクトップアプリです。画面は Svelte 5、処理は Rust で書いています。
 
 ```
 src/
@@ -20,8 +20,8 @@ src/
 └── backend/            Cargo のワークスペース
     ├── Cargo.toml      ワークスペース・Lint・ビルドの設定（target/ もここにできる）
     ├── *.toml          clippy・rustfmt・cargo-deny の設定（.cargo/ に cargo-mutants）
-    ├── core/           tmil-core: 状態機械・システム情報の取得・スタートアップ管理（Tauri に依存しない）
-    └── app/            tmil: Tauri 本体。コマンドの受け渡し・トレイ・ウィンドウ
+    ├── core/           taskmanagerlite-core: 状態機械・システム情報の取得・スタートアップ管理（Tauri に依存しない）
+    └── app/            taskmanagerlite: Tauri 本体。コマンドの受け渡し・トレイ・ウィンドウ
 tests/                  E2E・VRT・契約の見本・cargo-fuzz・TLA+（formal/）。tsconfig.json は TypeScript のテスト用
 scripts/                開発用スクリプト（種類ごとにフォルダー分け。Node だけで動く）
 docs/                   ドキュメント

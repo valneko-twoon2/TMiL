@@ -54,7 +54,7 @@ describe('regression', () => {
 ## カバレッジ
 
 - フロント: `src/frontend/lib` の `.ts`（`.svelte.ts` とモックは除く）で 80% 以上
-- バック: `tmil-core` で行 80% 以上
+- バック: `taskmanagerlite-core` で行 80% 以上
 - 画面（`.svelte`）と Tauri 本体（`app`）は薄く保ち、スナップショットと E2E で確かめる
 
 ## VRT の基準画像

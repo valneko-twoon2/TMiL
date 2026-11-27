@@ -255,7 +255,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tmil-core"
+name = "taskmanagerlite-core"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -264,11 +264,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "tmil-fuzz"
+name = "taskmanagerlite-fuzz"
 version = "0.0.0"
 dependencies = [
  "libfuzzer-sys",
- "tmil-core",
+ "taskmanagerlite-core",
 ]
 
 [[package]]

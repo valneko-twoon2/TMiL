@@ -10,7 +10,7 @@ export function cargoMutantsArgs(output, cpus) {
   mkdirSync(output, { recursive: true });
   // 1 つの変異ごとにビルドとテストをするので、CPU 4 つにつき 1 つずつ並べて回す
   const jobs = Math.max(1, Math.floor(cpus / 4));
-  return ['mutants', '-p', 'tmil-core', '--jobs', String(jobs), '--output', output];
+  return ['mutants', '-p', 'taskmanagerlite-core', '--jobs', String(jobs), '--output', output];
 }
 
 /** Stryker の版（npx で一時的に取得する）。 */
