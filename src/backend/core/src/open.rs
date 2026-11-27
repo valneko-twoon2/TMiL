@@ -182,6 +182,12 @@ mod tests {
         use super::*;
 
         #[test]
+        fn empty_query_is_rejected_before_opening_browser() {
+            assert!(search_online("").is_err());
+            assert!(search_online("   ").is_err());
+        }
+
+        #[test]
         fn empty_or_too_long_query_is_rejected() {
             assert!(search_url("").is_err());
             assert!(search_url("   ").is_err());

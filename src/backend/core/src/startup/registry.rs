@@ -380,6 +380,19 @@ mod tests {
         }
     }
 
+    mod keys {
+        use super::*;
+
+        /// 有効・無効は、エクスプローラーと同じ `StartupApproved` のキーに書く
+        #[test]
+        fn approval_key_is_under_explorer_startup_approved() {
+            assert_eq!(
+                approved("Run"),
+                r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"
+            );
+        }
+    }
+
     mod boundary {
         use super::*;
 

@@ -359,6 +359,42 @@ mod tests {
             let tmp = TempDir::new("icons-escape");
             write(&tmp.path().join("pixmaps/../secret.png"), b"x");
             assert_eq!(find_image("../secret", &dirs(tmp.path())), None);
+            // 「.」で始まらなくても、途中に区切りがあれば探す場所の外を指しうる
+            write(&tmp.path().join("pixmaps/sub/secret.png"), b"x");
+            assert_eq!(find_image("sub/secret", &dirs(tmp.path())), None);
+            assert_eq!(find_image("sub\\secret", &dirs(tmp.path())), None);
+            // 区切りが無くても「.」で始まる名前（隠しファイル）は使わない
+            write(&tmp.path().join("pixmaps/.hidden.png"), b"x");
+            assert_eq!(find_image(".hidden", &dirs(tmp.path())), None);
+        }
+
+        #[test]
+        fn image_size_limit_is_512_kib_inclusive() {
+            let tmp = TempDir::new("icons-limit");
+            let limit = usize::try_from(MAX_IMAGE_BYTES).unwrap();
+            let small = tmp.path().join("small.png");
+            write(&small, &[0u8; 2000]);
+            assert!(data_url(&small).is_some());
+            let exact = tmp.path().join("exact.png");
+            write(&exact, &vec![0u8; limit]);
+            assert!(data_url(&exact).is_some());
+        }
+
+        #[test]
+        fn icon_outside_main_group_is_ignored() {
+            let tmp = TempDir::new("icons-group");
+            let root = tmp.path();
+            write(
+                &root.join("system/applications/c.desktop"),
+                b"[Desktop Entry]\nExec=cee\n[Desktop Action new]\nIcon=wrong\n",
+            );
+            assert_eq!(build_index(&dirs(root).applications).get("cee"), None);
+        }
+
+        #[test]
+        fn load_returns_one_result_per_exe() {
+            let exes = vec![String::new(), "/tmil/no/such/app".to_owned()];
+            assert_eq!(load(&exes), vec![None, None]);
         }
 
         #[test]

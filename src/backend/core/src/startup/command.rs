@@ -66,6 +66,19 @@ mod tests {
         }
     }
 
+    mod twice {
+        use super::*;
+
+        #[test]
+        fn exe_inside_a_folder_name_is_skipped() {
+            assert_eq!(
+                program_of(r"C:\Tools\old.exe.d\new app.exe --run"),
+                r"C:\Tools\old.exe.d\new app.exe"
+            );
+            assert_eq!(program_of(r"C:\a.exe.b.exe x"), r"C:\a.exe.b.exe");
+        }
+    }
+
     mod boundary {
         use super::*;
 

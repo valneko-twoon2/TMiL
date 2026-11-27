@@ -88,6 +88,7 @@ mod tests {
         fn too_much_padding_is_invalid() {
             assert!(!is_valid("Zm==="));
             assert!(!is_valid("Z==="));
+            assert!(!is_valid("AAAAA==="));
         }
     }
 

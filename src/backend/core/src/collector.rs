@@ -392,6 +392,34 @@ mod tests {
         }
     }
 
+    mod environment {
+        use super::*;
+
+        #[test]
+        fn error_message_says_what_failed() {
+            let e = CollectorError("理由".to_owned());
+            assert_eq!(e.to_string(), "システム情報を取得できません: 理由");
+        }
+
+        #[test]
+        fn terminating_missing_process_fails() {
+            let c = Collector::new().unwrap();
+            assert!(!c.terminate(u32::MAX - 1));
+        }
+
+        /// 実機には、少なくとも 1 つのディスクとネットワーク（ループバックを含む）がある
+        #[test]
+        fn real_machine_has_disks_and_networks() {
+            let mut c = Collector::new().unwrap();
+            let snap = c.snapshot();
+            assert!(!snap.disks.is_empty(), "ディスクが 1 つも取れていない");
+            assert!(
+                !snap.networks.is_empty(),
+                "ネットワークが 1 つも取れていない"
+            );
+        }
+    }
+
     mod boundary {
         use super::*;
 

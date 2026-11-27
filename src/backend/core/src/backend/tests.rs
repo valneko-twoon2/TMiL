@@ -298,9 +298,13 @@ mod regression {
         let target = target_of(&b, child.id());
         assert!(b.kill(&[target]).unwrap()[0].ok);
         let _ = child.wait();
-        let next = b.snapshot().unwrap();
+        // 次の計測を待たずに、直前の結果（キャッシュ）から消えている。計測し直すと時間次第で結果が変わるので、キャッシュを直接見る
+        let cache = lock(&b.cache).unwrap();
+        let (_, next) = cache.as_ref().unwrap();
         assert!(next.processes.iter().all(|p| p.pid != target.pid));
         assert_eq!(next.cpu.process_count, next.processes.len());
+        // 終了していないプロセス（TMiL 自身など）は残る
+        assert!(next.processes.iter().any(|p| p.pid == std::process::id()));
     }
 
     /// 別のアプリの置き換えを確認なしで上書きしていた。UAC も出さずに断る。

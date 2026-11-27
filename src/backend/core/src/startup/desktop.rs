@@ -280,6 +280,17 @@ Exec=/usr/bin/sample --tray
         }
     }
 
+    mod first_key {
+        use super::*;
+
+        #[test]
+        fn first_name_and_exec_win() {
+            let e = parse("[Desktop Entry]\nName=A\nExec=first\nName=B\nExec=second\n");
+            assert_eq!(e.name.as_deref(), Some("A"));
+            assert_eq!(e.exec.as_deref(), Some("first"));
+        }
+    }
+
     mod property {
         use super::*;
         use proptest::prelude::*;
