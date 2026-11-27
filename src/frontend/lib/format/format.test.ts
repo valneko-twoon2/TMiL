@@ -1,3 +1,5 @@
+import { priorityLabel } from './labels';
+import { PRIORITIES, PROCESS_STATES, STARTUP_LOCATIONS } from '../model/types';
 import { describe, expect, it } from 'vitest';
 import {
   formatBits,
@@ -206,6 +208,24 @@ describe('labels', () => {
     it('終了済みのプロセスを「応答なし」と表示しない', () => {
       expect(processStateLabel('zombie')).not.toBe('応答なし');
       expect(processStatusBadge('zombie')).not.toBe('応答なし');
+    });
+  });
+});
+
+describe('表示名（すべて）', () => {
+  describe('snapshot', () => {
+    it('状態・場所・優先度の表示名', () => {
+      expect({
+        states: PROCESS_STATES.map(processStateLabel),
+        locations: STARTUP_LOCATIONS.map(startupLocationLabel),
+        priorities: PRIORITIES.map(priorityLabel),
+      }).toMatchSnapshot();
+    });
+  });
+
+  describe('boundary', () => {
+    it('ネットワークの速度がとても大きくても、いちばん大きな単位で出す', () => {
+      expect(formatBits(1e15)).toMatch(/ Gbps$/);
     });
   });
 });

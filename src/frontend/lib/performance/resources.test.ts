@@ -1,3 +1,4 @@
+import type { NetworkStats } from '../model/types';
 import { describe, expect, it } from 'vitest';
 import { EMPTY_HISTORY, recordSnapshot } from '../history/history';
 import { snapshotFixture, systemInfoFixture } from '../../test/fixtures';
@@ -106,6 +107,100 @@ describe('historySpanLabel', () => {
     // 更新間隔に関係なく「60 秒」と表示していた
     it('更新間隔 0.5 秒なら 30 秒', () => {
       expect(historySpanLabel(500)).toBe('30 秒');
+    });
+  });
+});
+
+const network = (name: string, extra: Partial<NetworkStats> = {}): NetworkStats => ({
+  name,
+  receivedPerSec: 0,
+  transmittedPerSec: 0,
+  totalReceived: 0,
+  totalTransmitted: 0,
+  ...extra,
+});
+
+describe('パフォーマンスの一覧（細部）', () => {
+  describe('snapshot', () => {
+    it('すべてのリソースの見出し・詳細の文言', () => {
+      const list = buildResources(snapshot, recordSnapshot(EMPTY_HISTORY, snapshot), info);
+      const view = list.map((r) => ({
+        id: r.id,
+        title: r.title,
+        summary: r.summary,
+        caption: r.caption,
+        axisLabel: r.axisLabel,
+        max: r.max,
+        series: r.series.map((s) => `${s.label}:${s.color}:${s.values.join(',')}`),
+        stats: resourceStats(r, snapshot, info),
+      }));
+      expect(view).toMatchSnapshot();
+    });
+  });
+
+  describe('equivalence', () => {
+    it('2 つ目のディスクやネットワークは、その値で詳細を出す', () => {
+      const list = buildResources(snapshot, EMPTY_HISTORY, info);
+      const second = list.filter((r) => r.kind === 'disk')[1];
+      if (!second) throw new Error('disk');
+      const disk = snapshot.disks[1];
+      expect(resourceStats(second, snapshot, info).find((s) => s.label === 'ファイルシステム')?.value).toBe(
+        disk?.fileSystem,
+      );
+      const twoNets = {
+        ...snapshot,
+        networks: [network('eth0', { totalReceived: 1 }), network('eth1', { totalTransmitted: 2048 })],
+      };
+      const net = buildResources(twoNets, EMPTY_HISTORY, info).filter((r) => r.kind === 'network')[1];
+      if (!net) throw new Error('net');
+      expect(resourceStats(net, twoNets, info).find((s) => s.label === '送信済み（合計）')?.value).toBe(
+        '2.0 KB',
+      );
+    });
+
+    it('マウントポイントが重なるディスクも、別々の履歴とキーで扱う', () => {
+      const base = snapshot.disks[0];
+      if (!base) throw new Error('disk');
+      const twin = { ...snapshot, disks: [base, { ...base, readPerSec: 9 }] };
+      const ids = buildResources(twin, EMPTY_HISTORY, info)
+        .filter((r) => r.kind === 'disk')
+        .map((r) => r.id);
+      expect(ids).toEqual([`disk:${base.mountPoint}`, `disk:${base.mountPoint}#1`]);
+    });
+
+    it('履歴が無ければグラフは空、ネットワークの最大値は履歴から決める', () => {
+      const list = buildResources(snapshot, EMPTY_HISTORY, info);
+      expect(list.every((r) => r.series.every((s) => s.values.length === 0))).toBe(true);
+      const history = new Map([[`net:${String(snapshot.networks[0]?.name)}:rx`, [5000]]]);
+      const net = buildResources(snapshot, history, info).find((r) => r.kind === 'network');
+      expect(net?.max).toBeGreaterThanOrEqual(5000);
+    });
+  });
+
+  describe('boundary', () => {
+    it('物理コア数が分からない（null）なら「-」', () => {
+      const cpu = buildResources(snapshot, EMPTY_HISTORY, info)[0];
+      if (!cpu) throw new Error('cpu');
+      const stats = resourceStats(cpu, snapshot, { ...info, physicalCores: null });
+      expect(stats.find((s) => s.label === 'コア')?.value).toBe('-');
+    });
+
+    it('送信・受信のどれか 1 つでも実績があれば出す', () => {
+      const names = visibleNetworks([
+        network('rx-only', { totalReceived: 1 }),
+        network('tx-only', { totalTransmitted: 1 }),
+        network('rate-only', { receivedPerSec: 1 }),
+        network('none'),
+      ]).map((n) => n.name);
+      expect(names).toEqual(['rx-only', 'tx-only', 'rate-only']);
+    });
+
+    it('名前の途中に lo があるだけのアダプター（wlo1 など）はループバックではない', () => {
+      const names = visibleNetworks([
+        network('wlo1', { totalReceived: 1 }),
+        network('lo0', { totalReceived: 1 }),
+      ]).map((n) => n.name);
+      expect(names).toEqual(['wlo1']);
     });
   });
 });

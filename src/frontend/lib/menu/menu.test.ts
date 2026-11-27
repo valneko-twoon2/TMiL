@@ -1,3 +1,4 @@
+import { afterEach, vi } from 'vitest';
 import { describe, expect, it } from 'vitest';
 import {
   allowsNativeMenu,
@@ -108,6 +109,71 @@ describe('itemLabel / indexForKey', () => {
       expect(indexForKey(withKeys, 't')).toBe(-1);
       expect(indexForKey(withKeys, 'z')).toBe(-1);
       expect(indexForKey(withKeys, 'Enter')).toBe(-1);
+    });
+  });
+});
+
+describe('右クリックメニュー（細部）', () => {
+  describe('boundary', () => {
+    it('余白の分だけはみ出すときも反対側に開く', () => {
+      // 597 + 200 + 余白 4 = 801 > 800
+      expect(menuPosition(597, 100, size, view).left).toBe(397);
+      expect(menuPosition(100, 497, size, view).top).toBe(397);
+    });
+
+    it('下に進むか上に進むかで、選ぶ項目が変わる', () => {
+      const list: MenuEntry[] = [
+        { id: 'a', label: 'A' },
+        { id: 'b', label: 'B' },
+        { id: 'c', label: 'C' },
+      ];
+      expect(nextIndex(list, 0, 1)).toBe(1);
+      expect(nextIndex(list, 0, -1)).toBe(2);
+    });
+  });
+});
+
+describe('標準のメニューを残す場所', () => {
+  /** テスト環境には DOM が無いので、使う所だけを持った要素で代わりにする。 */
+  class FakeElement {
+    constructor(readonly field: FakeElement | null = null) {}
+    closest(selector: string): FakeElement | null {
+      return selector === 'input, textarea, [contenteditable="true"]' ? this.field : null;
+    }
+  }
+  class FakeInput extends FakeElement {
+    constructor(readonly type: string) {
+      super();
+    }
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  describe('equivalence', () => {
+    it('文字を入力する欄では残し、それ以外では出さない', () => {
+      vi.stubGlobal('Element', FakeElement);
+      vi.stubGlobal('HTMLInputElement', FakeInput);
+      for (const type of ['text', 'search', 'url', 'email', 'number', 'password']) {
+        const input = new FakeInput(type);
+        expect(allowsNativeMenu(new FakeElement(input) as unknown as EventTarget), type).toBe(true);
+      }
+      for (const type of ['checkbox', 'radio', 'range']) {
+        const input = new FakeInput(type);
+        expect(allowsNativeMenu(new FakeElement(input) as unknown as EventTarget), type).toBe(false);
+      }
+      const textarea = new FakeElement();
+      expect(allowsNativeMenu(new FakeElement(textarea) as unknown as EventTarget)).toBe(true);
+      expect(allowsNativeMenu(new FakeElement(null) as unknown as EventTarget)).toBe(false);
+    });
+  });
+
+  describe('boundary', () => {
+    it('要素でないものでは出さない', () => {
+      vi.stubGlobal('Element', FakeElement);
+      vi.stubGlobal('HTMLInputElement', FakeInput);
+      expect(allowsNativeMenu({} as EventTarget)).toBe(false);
     });
   });
 });

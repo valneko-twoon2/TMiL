@@ -240,3 +240,42 @@ describe('columns', () => {
     });
   });
 });
+
+describe('プロセスの一覧（細部）', () => {
+  describe('equivalence', () => {
+    it('名前の大文字・小文字を区別せずに絞り込む', () => {
+      const list = [proc(1, 'Chrome.exe'), proc(2, 'code.exe')];
+      expect(filterProcesses(list, 'CHROME').map((p) => p.pid)).toEqual([1]);
+      expect(filterProcesses(list, 'chrome').map((p) => p.pid)).toEqual([1]);
+    });
+
+    it('プロセス タブの数値の列は大きい順から並べる', () => {
+      for (const key of ['cpu', 'memory', 'disk'] as const) {
+        expect(nextSort({ key: 'name', direction: 'asc' }, key, GROUP_NUMERIC).direction).toBe('desc');
+      }
+    });
+
+    it('詳細タブのディスクは読み取りと書き込みの合計', () => {
+      expect(detailText(proc(1, 'a', { diskReadPerSec: 1024, diskWrittenPerSec: 1024 }), 'disk')).toBe(
+        '2.0 KB/秒',
+      );
+    });
+  });
+
+  describe('boundary', () => {
+    it('同じ値のものは元の順を保つ（3 つ以上でも）', () => {
+      const list = [proc(5, 'a'), proc(3, 'a'), proc(9, 'a'), proc(1, 'a')];
+      expect(sortBy(list, { key: 'cpu', direction: 'desc' }, (p) => p.cpu).map((p) => p.pid)).toEqual([
+        5, 3, 9, 1,
+      ]);
+      expect(sortBy(list, { key: 'cpu', direction: 'asc' }, (p) => p.cpu).map((p) => p.pid)).toEqual([
+        5, 3, 9, 1,
+      ]);
+    });
+
+    it('.exe は末尾にあるときだけ外す', () => {
+      expect(displayName('setup.exe.bak')).toBe('setup.exe.bak');
+      expect(displayName('App.EXE')).toBe('App');
+    });
+  });
+});

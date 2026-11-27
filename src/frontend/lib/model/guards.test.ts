@@ -1,3 +1,13 @@
+import {
+  isKillTargets,
+  isProcessControls,
+  isProcessIcons,
+  isSnapshot,
+  isStartupEntries,
+  isSystemInfo,
+  isKillResults,
+} from './guards';
+import { readFixture } from '../../test/fixtures';
 import { describe, expect, it } from 'vitest';
 import { isKillResult, isNull, isProcessInfo, isReplacementStatus, isStartupEntry } from './guards';
 import type { ProcessInfo } from './types';
@@ -79,6 +89,85 @@ describe('guards', () => {
         canToggle: false,
       };
       expect(isStartupEntry(entry)).toBe(true);
+    });
+  });
+});
+
+/** 値の中の、すべての項目へのたどり方（配列は最初の要素だけ）。 */
+function* paths(value: unknown, path: (string | number)[] = []): Generator<(string | number)[]> {
+  if (Array.isArray(value)) {
+    if (value.length > 0) yield* paths(value[0], [...path, 0]);
+    return;
+  }
+  if (typeof value === 'object' && value !== null) {
+    for (const [key, child] of Object.entries(value)) {
+      yield [...path, key];
+      yield* paths(child, [...path, key]);
+    }
+  }
+}
+
+/** 型の違う値（数なら文字や無限大、文字なら数 など）。 */
+function wrongValues(value: unknown): unknown[] {
+  if (typeof value === 'number') return ['1', Number.POSITIVE_INFINITY, Number.NaN];
+  if (typeof value === 'string') return [1];
+  if (typeof value === 'boolean') return ['true'];
+  if (value === null) return [{}];
+  if (Array.isArray(value)) return ['x', {}];
+  return ['x', null];
+}
+
+function replaced(root: unknown, path: (string | number)[], next: unknown, remove: boolean): unknown {
+  const copy = structuredClone(root) as Record<string | number, unknown>;
+  let node = copy;
+  for (const key of path.slice(0, -1)) node = node[key] as Record<string | number, unknown>;
+  const last = path.at(-1) ?? '';
+  if (remove) Reflect.deleteProperty(node, last);
+  else node[last] = next;
+  return copy;
+}
+
+const CONTRACTS: [string, (v: unknown) => boolean][] = [
+  ['snapshot', isSnapshot],
+  ['system-info', isSystemInfo],
+  ['kill-results', isKillResults],
+  ['kill-targets', isKillTargets],
+  ['startup-entries', isStartupEntries],
+  ['process-icons', isProcessIcons],
+  ['process-controls', (v) => Array.isArray(v) && v.every(isProcessControls)],
+];
+
+describe('検証関数（型の違い）', () => {
+  describe('contract', () => {
+    it.each(CONTRACTS)('%s: どの項目でも、型が違う・項目が無いなら受け取らない', (name, guard) => {
+      const value = readFixture(name);
+      expect(guard(value)).toBe(true);
+      for (const path of paths(value)) {
+        const original = path.reduce<unknown>((v, k) => (v as Record<string | number, unknown>)[k], value);
+        for (const wrong of wrongValues(original)) {
+          expect(guard(replaced(value, path, wrong, false)), `${path.join('.')} = ${String(wrong)}`).toBe(
+            false,
+          );
+        }
+        if (typeof path.at(-1) === 'string') {
+          expect(guard(replaced(value, path, undefined, true)), `${path.join('.')} が無い`).toBe(false);
+        }
+      }
+    });
+  });
+
+  describe('boundary', () => {
+    const icon = (url: unknown) => isProcessIcons([{ exe: 'a', icon: url }]);
+
+    it('画像は PNG・SVG の data URL だけ。前後に余計なものがあれば受け取らない', () => {
+      expect(icon('data:image/png;base64,AAAA')).toBe(true);
+      expect(icon('data:image/png;base64,AA==')).toBe(true);
+      expect(icon('data:image/svg+xml;base64,AAA=')).toBe(true);
+      expect(icon('xdata:image/png;base64,AA==')).toBe(false);
+      expect(icon('data:image/png;base64,AA==<script>')).toBe(false);
+      expect(icon('data:image/gif;base64,AA==')).toBe(false);
+      expect(icon('https://example.com/a.png')).toBe(false);
+      expect(icon(null)).toBe(true);
     });
   });
 });
