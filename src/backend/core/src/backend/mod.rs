@@ -3,12 +3,13 @@ use std::sync::{Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
 use crate::collector::{Collector, CollectorError};
-use crate::machine::{Effect, Event, Machine, ProcessAction, Registry, State};
+use crate::machine::{Effect, Event, ProcessAction, Registry, State};
 use crate::model::{
     KillResult, KillTarget, Priority, ProcessControls, ProcessDetails, ReplacementStatus, Snapshot,
     SystemInfo, process_details,
 };
 use crate::process_control;
+use machine_lock::MachineLock;
 
 /// 前回の計測からこれより短い間隔の依頼には、計測し直さず直前の結果を返す。
 /// （短すぎると CPU 使用率や転送量の計算が不安定になる）
@@ -18,6 +19,32 @@ const POISONED: &str = "内部状態が壊れました。アプリを再起動�
 
 fn lock<T>(m: &Mutex<T>) -> Result<MutexGuard<'_, T>, String> {
     m.lock().map_err(|_| POISONED.to_owned())
+}
+
+mod machine_lock {
+    use std::sync::Mutex;
+
+    use super::lock;
+    use crate::machine::{Effect, Event, Machine, State};
+
+    /// ロックを外に渡さず、状態機械の 1 歩の間だけ持つ。持ったままほかのロックを待てないので、
+    /// collector を持ってから machine を取る順番が崩れない。
+    #[derive(Debug)]
+    pub(super) struct MachineLock(Mutex<Machine>);
+
+    impl MachineLock {
+        pub(super) fn new() -> Self {
+            Self(Mutex::new(Machine::new()))
+        }
+
+        pub(super) fn state(&self) -> Result<State, String> {
+            Ok(lock(&self.0)?.state())
+        }
+
+        pub(super) fn dispatch(&self, event: &Event) -> Result<Option<Effect>, String> {
+            Ok(lock(&self.0)?.dispatch(event))
+        }
+    }
 }
 
 pub fn registry_of(status: &ReplacementStatus) -> Registry {
@@ -36,7 +63,7 @@ pub fn is_stale(last_sample: Option<Instant>, now: Instant) -> bool {
 
 #[derive(Debug)]
 pub struct Backend {
-    machine: Mutex<Machine>,
+    machine: MachineLock,
     collector: Mutex<Collector>,
     cache: Mutex<Option<(Instant, Snapshot)>>,
 }
@@ -48,18 +75,18 @@ impl Backend {
 
     pub fn with_collector(collector: Collector) -> Self {
         Self {
-            machine: Mutex::new(Machine::new()),
+            machine: MachineLock::new(),
             collector: Mutex::new(collector),
             cache: Mutex::new(None),
         }
     }
 
     pub fn state(&self) -> Result<State, String> {
-        Ok(lock(&self.machine)?.state())
+        self.machine.state()
     }
 
     fn dispatch(&self, event: &Event) -> Result<Option<Effect>, String> {
-        Ok(lock(&self.machine)?.dispatch(event))
+        self.machine.dispatch(event)
     }
 
     fn cached(&self) -> Result<Snapshot, String> {
