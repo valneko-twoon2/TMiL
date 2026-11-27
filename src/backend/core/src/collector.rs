@@ -9,6 +9,7 @@ use sysinfo::{
 };
 
 use crate::gpu::GpuSampler;
+use crate::identity::{IdentityLookup, same_image};
 use crate::machine::ObservedProcess;
 use crate::metrics::{clamp_percent, normalize_cpu, per_second, truncate_chars};
 use crate::model::{
@@ -53,6 +54,8 @@ pub struct Collector {
     last_process_gpu: Option<Instant>,
     /// このプロセスと、その子孫（WebView など）は終了させない
     protected_root: Option<u32>,
+    /// 開けないプロセスの場所とアカウント（裏で聞いて補う）
+    identity: IdentityLookup,
 }
 
 impl Collector {
@@ -77,6 +80,7 @@ impl Collector {
             last_refresh: None,
             last_process_gpu: None,
             protected_root: Some(std::process::id()),
+            identity: IdentityLookup::default(),
         })
     }
 
@@ -92,6 +96,7 @@ impl Collector {
             self.last_process_gpu = Some(now);
         }
         self.refresh(with_gpu);
+        self.update_identity(now);
 
         let logical_cores = self.system.cpus().len();
         let processes = self.processes(elapsed, logical_cores);
@@ -188,6 +193,18 @@ impl Collector {
         self.networks.refresh(true);
     }
 
+    /// 場所が取れなかったプロセス（開けないもの）を、裏で聞くよう頼む。
+    fn update_identity(&mut self, now: Instant) {
+        let processes = self.system.processes();
+        let alive = processes.keys().map(|p| p.as_u32()).collect();
+        let missing: Vec<u32> = processes
+            .values()
+            .filter(|p| p.exe().is_none())
+            .map(|p| p.pid().as_u32())
+            .collect();
+        self.identity.update(&missing, &alive, now);
+    }
+
     fn processes(&self, elapsed: Duration, logical_cores: usize) -> Vec<ProcessInfo> {
         self.system
             .processes()
@@ -195,20 +212,27 @@ impl Collector {
             .filter(|p| p.thread_kind().is_none())
             .map(|p| {
                 let usage = p.disk_usage();
+                let name = p.name().to_string_lossy().into_owned();
+                // 開けないプロセスは、裏で聞いた値で補う（PID が使い回されていれば使わない）
+                let identity = self
+                    .identity
+                    .get(p.pid().as_u32())
+                    .filter(|i| same_image(&i.exe, &name));
                 ProcessInfo {
                     pid: p.pid().as_u32(),
                     parent_pid: p.parent().map(Pid::as_u32),
-                    name: p.name().to_string_lossy().into_owned(),
-                    exe: p
-                        .exe()
-                        .map(|e| e.to_string_lossy().into_owned())
-                        .unwrap_or_default(),
+                    exe: p.exe().map_or_else(
+                        || identity.map(|i| i.exe.clone()).unwrap_or_default(),
+                        |e| e.to_string_lossy().into_owned(),
+                    ),
+                    name,
                     command: truncate_chars(&join_command(p.cmd()), COMMAND_MAX_CHARS),
                     state: map_status(p.status()),
                     user: p
                         .user_id()
                         .and_then(|uid| self.users.get_user_by_id(uid))
                         .map(|u| u.name().to_owned())
+                        .or_else(|| identity.map(|i| i.user.clone()))
                         .unwrap_or_default(),
                     cpu: normalize_cpu(p.cpu_usage(), logical_cores),
                     memory: p.memory(),

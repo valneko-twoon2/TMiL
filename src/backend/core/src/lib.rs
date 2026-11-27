@@ -7,6 +7,7 @@ pub mod connections;
 pub mod gpu;
 pub mod handles;
 pub mod icons;
+pub mod identity;
 pub mod launch;
 pub mod machine;
 pub mod metrics;
