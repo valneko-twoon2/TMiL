@@ -158,6 +158,17 @@ function processExtras(seed: ProcessSeed, s: number, i: number, tick: number) {
   };
 }
 
+/** Windows に付いてくるプロセス（本家の「Windows プロセス」）。 */
+const WINDOWS_EXES = new Set(['explorer.exe', 'svchost.exe', 'dwm.exe', 'RuntimeBroker.exe']);
+
+/** 実行ファイルの場所。Windows のものは Windows フォルダー、ほかは Program Files に置く。 */
+export function mockExe(name: string): string {
+  if (name === 'System') return '';
+  if (name === 'explorer.exe') return ['C:', 'Windows', name].join('\\');
+  if (WINDOWS_EXES.has(name)) return ['C:', 'Windows', 'System32', name].join('\\');
+  return ['C:', 'Program Files', name.replace('.exe', ''), name].join('\\');
+}
+
 function processes(tick: number, killed: ReadonlySet<number>): ProcessInfo[] {
   const list: ProcessInfo[] = [];
   let pid = 1000;
@@ -171,10 +182,7 @@ function processes(tick: number, killed: ReadonlySet<number>): ProcessInfo[] {
         pid: id,
         parentPid: id === 4 ? null : 4,
         name: seed.name,
-        exe:
-          seed.name === 'System'
-            ? ''
-            : ['C:', 'Program Files', seed.name.replace('.exe', ''), seed.name].join('\\'),
+        exe: mockExe(seed.name),
         command: seed.name === 'System' ? '' : `${seed.name} --instance=${String(i)}`,
         state: seed.state ?? 'running',
         user: seed.user,

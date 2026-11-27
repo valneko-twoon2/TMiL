@@ -128,7 +128,11 @@ test.describe('詳細', () => {
       'ファイルの場所を開く(O)',
       'オンライン検索(N)',
       'プロパティ(R)',
+      'サービスに移動(S)',
     ]);
+    await expect(page.getByRole('menu', { name: 'プロセスの操作' }).getByRole('menuitemcheckbox')).toHaveText(
+      ['効率モード(M)'],
+    );
   });
 
   test('優先度を下の階層から選ぶと、次に開いたときにチェックが付く', async ({ page }) => {
@@ -204,7 +208,7 @@ test.describe('詳細', () => {
     await page.keyboard.press('r');
     const dialog = page.getByRole('dialog', { name: 'explorer.exe のプロパティ' });
     await expect(dialog).toContainText('1008');
-    await expect(dialog).toContainText('C:\\Program Files\\explorer\\explorer.exe');
+    await expect(dialog).toContainText('C:\\Windows\\explorer.exe');
     await dialog.getByRole('button', { name: '閉じる' }).click();
     await expect(dialog).toHaveCount(0);
   });
@@ -239,8 +243,11 @@ test.describe('右クリック', () => {
     await open(page);
     await groupRow(page, 'Code (4)').click({ button: 'right' });
     const menu = page.getByRole('menu', { name: 'プロセスの操作' });
+    // ウィンドウを出しているアプリなので「切り替え」もある。効率モードはチェック付きの項目
+    await expect(menu.getByRole('menuitemcheckbox')).toHaveText(['効率モード(M)']);
     await expect(menu.getByRole('menuitem')).toHaveText([
       '展開する(X)',
+      '切り替え(S)',
       'タスクの終了(E)',
       '詳細の表示に移動(D)',
       'ファイルの場所を開く(O)',
@@ -249,12 +256,12 @@ test.describe('右クリック', () => {
     await expect(menu.getByRole('menuitem', { name: '展開する(X)' })).toBeFocused();
     // 作っている途中で、区切りの数だけ矢印キーの移動先がずれる不具合があった
     await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
     await expect(menu.getByRole('menuitem', { name: 'タスクの終了(E)' })).toBeFocused();
     await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
     await expect(menu.getByRole('menuitem', { name: '詳細の表示に移動(D)' })).toBeFocused();
-    await page.keyboard.press('ArrowUp');
-    await page.keyboard.press('ArrowUp');
-    await page.keyboard.press('ArrowUp');
+    for (let i = 0; i < 5; i += 1) await page.keyboard.press('ArrowUp');
     await expect(menu.getByRole('menuitem', { name: 'オンライン検索(N)' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(menu).toHaveCount(0);
@@ -266,7 +273,7 @@ test.describe('右クリック', () => {
     await page.getByRole('menuitem', { name: '展開する' }).click();
     await expect(page.locator('tr.child')).toHaveCount(4);
 
-    await groupRow(page, 'explorer').click({ button: 'right' });
+    await groupRow(page, 'エクスプローラー').click({ button: 'right' });
     await page.getByRole('menuitem', { name: '詳細の表示に移動' }).click();
     await expect(page.getByRole('heading', { name: '詳細' })).toBeVisible();
     await expect(page.locator('[data-testid="detail-row"].selected')).toContainText('explorer.exe');
@@ -274,7 +281,7 @@ test.describe('右クリック', () => {
 
   test('ファイルの場所を開いてもエラーにならない', async ({ page }) => {
     await open(page);
-    await groupRow(page, 'explorer').click({ button: 'right' });
+    await groupRow(page, 'エクスプローラー').click({ button: 'right' });
     await page.getByRole('menuitem', { name: 'ファイルの場所を開く' }).click();
     await expect(page.getByRole('menu')).toHaveCount(0);
     await expect(page.getByRole('alert')).toHaveCount(0);
@@ -310,7 +317,7 @@ test.describe('右クリック', () => {
 test.describe('アイコン', () => {
   test('プロセスと詳細の行にアイコンが出る', async ({ page }) => {
     await open(page);
-    await expect(groupRow(page, 'explorer').locator('img.process-icon')).toHaveAttribute(
+    await expect(groupRow(page, 'エクスプローラー').locator('img.process-icon')).toHaveAttribute(
       'src',
       /^data:image\/svg\+xml;base64,/,
     );
