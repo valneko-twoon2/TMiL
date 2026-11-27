@@ -115,6 +115,31 @@
       <button type="button" onclick={close}>キャンセル</button>
     {/snippet}
   </Dialog>
+{:else if dialog?.kind === 'efficiency'}
+  {@const first = dialog.processes[0]}
+  <Dialog
+    title="{dialog.processes.length > 1
+      ? `${String(dialog.processes.length)} 個のプロセス`
+      : (first?.name ?? '')} の効率モードをオンにしますか?"
+    onclose={close}
+  >
+    <p>
+      効率モードにすると、このプロセスの優先度が下がり、電力効率が上がります。
+      アプリによっては動作が不安定になることがあります。
+    </p>
+    {#snippet buttons()}
+      <button
+        type="button"
+        class="primary"
+        onclick={() => {
+          void actions.confirmEfficiency();
+        }}
+      >
+        効率モードをオンにする
+      </button>
+      <button type="button" onclick={close}>キャンセル</button>
+    {/snippet}
+  </Dialog>
 {:else if dialog?.kind === 'properties'}
   {@const p = dialog.process}
   <Dialog title="{p.name} のプロパティ" onclose={close}>

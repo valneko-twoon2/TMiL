@@ -28,6 +28,8 @@ export interface Settings {
   detailColumns: DetailColumn[];
   /** 表の列の幅（「表.列」→ px）。無い列は最初の幅 */
   columnWidths: ColumnWidths;
+  /** 効率モードを入れる前に確かめる */
+  confirmEfficiency: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -36,6 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
   startPage: 'processes',
   detailColumns: [...DEFAULT_DETAIL_COLUMNS],
   columnWidths: {},
+  confirmEfficiency: true,
 };
 
 const defaults = (): Settings => ({
@@ -76,6 +79,8 @@ export function parseSettings(raw: string | null): Settings {
     startPage: pick(PAGES, rec.startPage, DEFAULT_SETTINGS.startPage),
     detailColumns: normalizeDetailColumns(rec.detailColumns),
     columnWidths: parseWidths(rec.columnWidths),
+    confirmEfficiency:
+      typeof rec.confirmEfficiency === 'boolean' ? rec.confirmEfficiency : DEFAULT_SETTINGS.confirmEfficiency,
   };
 }
 

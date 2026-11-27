@@ -132,6 +132,54 @@ mod equivalence {
     }
 
     #[test]
+    fn child_can_be_suspended_and_resumed() {
+        let mut child = spawn_sleeper();
+        let b = Backend::with_collector(Collector::new().unwrap().without_self_protection());
+        let target = target_of(&b, child.id());
+        let suspended = b.suspend(&[target]).unwrap();
+        let resumed = b.resume(&[target]).unwrap();
+        let _ = child.kill();
+        let _ = child.wait();
+        assert!(suspended[0].ok, "{:?}", suspended[0].error);
+        assert!(resumed[0].ok, "{:?}", resumed[0].error);
+    }
+
+    #[test]
+    fn efficiency_mode_lowers_priority() {
+        let mut child = spawn_sleeper();
+        let b = Backend::with_collector(Collector::new().unwrap().without_self_protection());
+        let target = target_of(&b, child.id());
+        let on = b.set_efficiency(&[target], true).unwrap();
+        let during = Backend::controls(target.pid);
+        // Linux では nice 値を戻す（優先度を上げる）のに管理者権限が要るので、外すのは Windows だけで確かめる
+        let off = cfg!(windows).then(|| b.set_efficiency(&[target], false).unwrap());
+        let after = Backend::controls(target.pid);
+        let _ = child.kill();
+        let _ = child.wait();
+        assert!(on[0].ok, "{:?}", on[0].error);
+        assert_eq!(during.priority, Some(Priority::Low));
+        if let Some(off) = off {
+            assert!(off[0].ok, "{:?}", off[0].error);
+            assert_eq!(after.priority, Some(Priority::Normal));
+        }
+    }
+
+    #[test]
+    fn suspending_self_is_rejected_as_protected() {
+        let b = backend();
+        let me = target_of(&b, std::process::id());
+        let result = b.suspend(&[me]).unwrap();
+        assert!(!result[0].ok);
+        assert!(
+            result[0]
+                .error
+                .as_deref()
+                .unwrap_or("")
+                .contains("終了・変更できません")
+        );
+    }
+
+    #[test]
     fn registry_of_maps_status() {
         assert_eq!(registry_of(&status(true, None)), Registry::Replaced);
         assert_eq!(registry_of(&status(false, Some("p"))), Registry::Other);

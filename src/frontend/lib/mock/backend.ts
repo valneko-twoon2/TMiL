@@ -368,6 +368,10 @@ const HANDLERS: Record<string, Handler> = {
     if (cpus.length === 0) throw new Error('少なくとも 1 つのプロセッサを選んでください。');
     return control(state, args, { affinity: cpus });
   },
+  suspend_processes: (state, args) => control(state, args, {}),
+  resume_processes: (state, args) => control(state, args, {}),
+  set_process_efficiency: (state, args) =>
+    control(state, args, { priority: args.enabled === true ? 'low' : 'normal' }),
   process_controls: (state, args) => controlsOf(state, typeof args.pid === 'number' ? args.pid : 0),
   search_online: (state, args) => {
     if (typeof args.query !== 'string' || args.query.trim() === '') {

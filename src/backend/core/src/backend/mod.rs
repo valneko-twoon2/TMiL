@@ -1,7 +1,7 @@
 //! 状態機械（[`machine`](crate::machine)）と実際の処理をつなぐ殻。
 //!
 //! 判断はすべて状態機械に任せ、ここでは出来事を伝えて、返ってきた [`Effect`] のとおりに
-//! 計測・プロセスへの操作（終了・優先度・関係）・管理者としての切り替えを行うだけにする。
+//! 計測・プロセスへの操作（終了・優先度・関係・中断・再開・効率モード）・管理者としての切り替えを行うだけにする。
 //!
 //! ロックの順番は「collector → machine」に固定する（machine を持ったまま collector を待たない）。
 //! 計測や UAC の確認の間は machine のロックを手放すので、その間の依頼は状態機械が
@@ -148,6 +148,31 @@ impl Backend {
         let mask = process_control::mask_from_cpus(cpus)?;
         self.act(targets, ProcessAction::SetAffinity(mask), |pid, _| {
             process_control::set_affinity(pid, mask)
+        })
+    }
+
+    /// プロセスを中断する。中断してよいかは 1 つずつ状態機械が決める。
+    pub fn suspend(&self, targets: &[KillTarget]) -> Result<Vec<KillResult>, String> {
+        self.act(targets, ProcessAction::Suspend, |pid, _| {
+            process_control::suspend(pid)
+        })
+    }
+
+    /// 中断したプロセスを再開する。
+    pub fn resume(&self, targets: &[KillTarget]) -> Result<Vec<KillResult>, String> {
+        self.act(targets, ProcessAction::Resume, |pid, _| {
+            process_control::resume(pid)
+        })
+    }
+
+    /// 効率モードを入れる・外す。
+    pub fn set_efficiency(
+        &self,
+        targets: &[KillTarget],
+        on: bool,
+    ) -> Result<Vec<KillResult>, String> {
+        self.act(targets, ProcessAction::SetEfficiency(on), |pid, _| {
+            process_control::set_efficiency(pid, on)
         })
     }
 

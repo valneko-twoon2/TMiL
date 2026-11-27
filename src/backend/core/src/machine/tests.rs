@@ -516,6 +516,10 @@ mod formal {
             ProcessAction::SetPriority(Priority::Low),
             ProcessAction::SetAffinity(1),
             ProcessAction::SetAffinity(u64::MAX),
+            ProcessAction::Suspend,
+            ProcessAction::Resume,
+            ProcessAction::SetEfficiency(true),
+            ProcessAction::SetEfficiency(false),
         ];
         let observations = [
             None,

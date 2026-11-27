@@ -5,7 +5,6 @@
 //! - Windows: PowerShell（System.Drawing）で実行ファイルからまとめて取り出す
 //! - Linux: `.desktop` ファイルの `Icon` からアイコンテーマの画像を探す
 
-pub mod base64;
 pub mod freedesktop;
 pub mod script;
 #[cfg(windows)]

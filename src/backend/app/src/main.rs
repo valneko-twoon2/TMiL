@@ -41,6 +41,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             commands::set_process_affinity,
             commands::process_controls,
             commands::search_online,
+            commands::suspend_processes,
+            commands::resume_processes,
+            commands::set_process_efficiency,
         ])
         .setup(|app| {
             tray::create(app.handle())?;

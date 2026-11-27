@@ -1,5 +1,6 @@
 //! Windows で PowerShell を画面を出さずに動かす（アイコンの取り出しや、優先度・関係の変更に使う）。
-//! スクリプトは `-Command` の引数として渡すので、二重引用符を含めない（引数の区切りと混ざるため）。
+//! [`run`] はスクリプトを `-Command` の引数として渡すので、二重引用符を含めない（引数の区切りと混ざるため）。
+//! 二重引用符や改行が要るスクリプト（C# を埋め込むものなど）は [`run_encoded`] で渡す。
 
 #[cfg(windows)]
 use std::io::Write;
@@ -17,14 +18,32 @@ pub fn is_safe_script(script: &str) -> bool {
     !script.contains(['"', '\n', '\r'])
 }
 
+/// `-EncodedCommand` に渡す形（UTF-16LE を Base64 にしたもの）。どんな文字でもそのまま渡せる。
+pub fn encode_command(script: &str) -> String {
+    let bytes: Vec<u8> = script.encode_utf16().flat_map(u16::to_le_bytes).collect();
+    crate::base64::encode(&bytes)
+}
+
 /// スクリプトを動かし、標準出力を返す。失敗したら標準エラーの内容を返す。
 #[cfg(windows)]
 pub fn run(script: &str, stdin: &str) -> Result<String, String> {
     if !is_safe_script(script) {
         return Err("内部エラー: スクリプトに使えない文字があります。".to_owned());
     }
+    spawn(&["-Command", script], stdin)
+}
+
+/// どんな文字を含むスクリプトでも動かす（`-EncodedCommand` で渡す）。
+#[cfg(windows)]
+pub fn run_encoded(script: &str, stdin: &str) -> Result<String, String> {
+    spawn(&["-EncodedCommand", &encode_command(script)], stdin)
+}
+
+#[cfg(windows)]
+fn spawn(args: &[&str], stdin: &str) -> Result<String, String> {
     let mut child = Command::new("powershell.exe")
-        .args(["-NoProfile", "-NonInteractive", "-Command", script])
+        .args(["-NoProfile", "-NonInteractive"])
+        .args(args)
         .creation_flags(CREATE_NO_WINDOW)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -54,6 +73,14 @@ mod tests {
         use super::*;
 
         #[test]
+        fn encoded_command_is_utf16le_base64() {
+            // "a" は UTF-16LE で 61 00
+            assert_eq!(encode_command("a"), "YQA=");
+            // 日本語も 2 バイトずつ（「あ」は U+3042 → 42 30）
+            assert_eq!(encode_command("あ"), "QjA=");
+        }
+
+        #[test]
         fn single_quoted_one_line_script_is_safe() {
             assert!(is_safe_script(
                 "$p = Get-Process -Id 4; $p.PriorityClass = 'High'"
@@ -63,6 +90,11 @@ mod tests {
 
     mod boundary {
         use super::*;
+
+        #[test]
+        fn empty_script_encodes_to_empty() {
+            assert_eq!(encode_command(""), "");
+        }
 
         #[test]
         fn double_quotes_and_newlines_are_rejected() {

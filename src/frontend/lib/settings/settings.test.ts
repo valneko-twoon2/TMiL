@@ -6,16 +6,15 @@ describe('parseSettings', () => {
     it('保存された値を読む', () => {
       const raw = JSON.stringify({ refresh: 'high', theme: 'dark', startPage: 'performance' });
       expect(parseSettings(raw)).toEqual({
+        ...DEFAULT_SETTINGS,
         refresh: 'high',
         theme: 'dark',
         startPage: 'performance',
-        detailColumns: DEFAULT_SETTINGS.detailColumns,
-        columnWidths: {},
       });
     });
 
     it('知らない値は既定値に戻す', () => {
-      const raw = JSON.stringify({ refresh: 'turbo', theme: 'pink', startPage: 'users' });
+      const raw = JSON.stringify({ refresh: 'turbo', theme: 'pink', startPage: 'nowhere' });
       expect(parseSettings(raw)).toEqual(DEFAULT_SETTINGS);
     });
 
@@ -38,6 +37,12 @@ describe('parseSettings', () => {
       s.detailColumns.push('exe');
       expect(DEFAULT_SETTINGS.theme).toBe('system');
       expect(DEFAULT_SETTINGS.detailColumns).not.toContain('exe');
+    });
+
+    it('オン・オフの設定は true と false だけを読み、ほかは既定値', () => {
+      expect(parseSettings(JSON.stringify({ confirmEfficiency: false })).confirmEfficiency).toBe(false);
+      expect(parseSettings(JSON.stringify({ confirmEfficiency: 0 })).confirmEfficiency).toBe(true);
+      expect(parseSettings(JSON.stringify({ confirmEfficiency: 'false' })).confirmEfficiency).toBe(true);
     });
 
     it('列の幅は保存された値を読む', () => {

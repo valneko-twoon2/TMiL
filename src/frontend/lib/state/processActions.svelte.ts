@@ -1,5 +1,6 @@
 // プロセスへの操作（右クリックメニューとダイアログ）。プロセス タブと詳細タブで共通に使う。
 // 画面は ProcessDialogs が描く。終了してよいか・変えてよいかの判断はバックエンドの状態機械が行う。
+import { SvelteSet } from 'svelte/reactivity';
 import type { Api } from '../api/ipc';
 import { priorityLabel } from '../format/labels';
 import { SEPARATOR, type MenuEntry, type MenuItem } from '../menu/menu';
@@ -14,7 +15,24 @@ export type ProcessDialog =
   | { kind: 'tree'; root: ProcessInfo; members: ProcessInfo[] }
   | { kind: 'affinity'; process: ProcessInfo; cpus: number[] | null; cores: number }
   | { kind: 'properties'; process: ProcessInfo }
+  | { kind: 'efficiency'; processes: ProcessInfo[] }
   | null;
+
+/** プロセスを見分ける鍵（PID は使い回されるので起動時刻も使う）。 */
+export function processKey(p: Pick<ProcessInfo, 'pid' | 'startTime'>): string {
+  return `${String(p.pid)}:${String(p.startTime)}`;
+}
+
+/** この画面で入れた効率モードと中断（OS から読めないので、ここで覚えておく）。 */
+export interface ProcessMarks {
+  efficient: boolean;
+  suspended: boolean;
+}
+
+export interface ProcessActionOptions {
+  /** 効率モードを入れる前に確かめるか（設定で変えられる） */
+  confirmEfficiency?: () => boolean;
+}
 
 /** ページごとに足す項目（展開する・詳細の表示に移動 など）。 */
 export interface MenuExtras {
@@ -45,11 +63,13 @@ export function processMenuEntries(
   current: Priority | null | undefined,
   busy: boolean,
   extras: MenuExtras = {},
+  efficient = false,
 ): MenuEntry[] {
   return [
     ...(extras.before ?? []),
     { id: 'end', label: 'タスクの終了', key: 'E', disabled: busy },
     { id: 'tree', label: 'プロセス ツリーの終了', key: 'T', disabled: busy },
+    { id: 'efficiency', label: '効率モード', key: 'M', checked: efficient, disabled: busy },
     SEPARATOR,
     { id: 'priority', label: '優先度の設定', key: 'P', children: priorityEntries(current) },
     { id: 'affinity', label: '関係の設定', key: 'F' },
@@ -73,16 +93,33 @@ const message = (cause: unknown) => (cause instanceof Error ? cause.message : St
 export class ProcessActions {
   dialog = $state<ProcessDialog>(null);
   busy = $state(false);
+  /** 効率モードを入れたプロセス（processKey） */
+  readonly efficient = new SvelteSet<string>();
+  /** 中断したプロセス（processKey） */
+  readonly suspended = new SvelteSet<string>();
   readonly #api: Api;
   readonly #monitor: Monitor;
   readonly #toasts: Toasts;
   readonly #menus: ContextMenus;
+  readonly #confirmEfficiency: () => boolean;
 
-  constructor(api: Api, monitor: Monitor, toasts: Toasts, menus: ContextMenus) {
+  constructor(
+    api: Api,
+    monitor: Monitor,
+    toasts: Toasts,
+    menus: ContextMenus,
+    options: ProcessActionOptions = {},
+  ) {
     this.#api = api;
     this.#monitor = monitor;
     this.#toasts = toasts;
     this.#menus = menus;
+    this.#confirmEfficiency = options.confirmEfficiency ?? (() => true);
+  }
+
+  marks(p: ProcessInfo): ProcessMarks {
+    const key = processKey(p);
+    return { efficient: this.efficient.has(key), suspended: this.suspended.has(key) };
   }
 
   /** 右クリックメニューを開く。今の優先度は後から読み、届いたらチェックを付け直す。 */
@@ -90,14 +127,20 @@ export class ProcessActions {
     const handle = (id: string) => {
       this.#select(id, p, extras);
     };
-    this.#menus.open(event, 'プロセスの操作', processMenuEntries(p, undefined, this.busy, extras), handle);
+    const efficient = this.marks(p).efficient;
+    this.#menus.open(
+      event,
+      'プロセスの操作',
+      processMenuEntries(p, undefined, this.busy, extras, efficient),
+      handle,
+    );
     const opened = this.#menus.current;
     void this.#api.processControls(p.pid).then(
       (controls) => {
         if (this.#menus.current !== opened || opened === null) return;
         this.#menus.current = {
           ...opened,
-          entries: processMenuEntries(p, controls.priority, this.busy, extras),
+          entries: processMenuEntries(p, controls.priority, this.busy, extras, efficient),
         };
       },
       () => undefined,
@@ -118,6 +161,9 @@ export class ProcessActions {
       case 'tree':
         this.confirmTree(p);
         break;
+      case 'efficiency':
+        this.toggleEfficiency([p]);
+        break;
       case 'affinity':
         void this.openAffinity(p);
         break;
@@ -133,6 +179,65 @@ export class ProcessActions {
       default:
         extras.onextra?.(id);
     }
+  }
+
+  /** 成功したものだけ、覚えている印を付け直す。 */
+  #mark(set: SvelteSet<string>, processes: ProcessInfo[], results: KillResult[], on: boolean): void {
+    for (const r of results) {
+      const p = processes.find((x) => x.pid === r.pid);
+      if (!r.ok || !p) continue;
+      if (on) set.add(processKey(p));
+      else set.delete(processKey(p));
+    }
+  }
+
+  /**
+   * 「効率モード」を選んだとき。すべて入っていれば外し、そうでなければ入れる。
+   * 入れるときは、設定に従って確かめるダイアログを出す（本家と同じく、不安定になることがあるため）。
+   */
+  toggleEfficiency(processes: ProcessInfo[]): void {
+    if (processes.length === 0) return;
+    if (processes.every((p) => this.marks(p).efficient)) {
+      void this.setEfficiency(processes, false);
+    } else if (this.#confirmEfficiency()) {
+      this.dialog = { kind: 'efficiency', processes };
+    } else {
+      void this.setEfficiency(processes, true);
+    }
+  }
+
+  /** ダイアログで確かめた効率モードを入れる。 */
+  async confirmEfficiency(): Promise<void> {
+    const dialog = this.dialog;
+    if (dialog?.kind !== 'efficiency') return;
+    this.dialog = null;
+    await this.setEfficiency(dialog.processes, true);
+  }
+
+  setEfficiency(processes: ProcessInfo[], on: boolean): Promise<void> {
+    return this.#run(async () => {
+      const results = await this.#api.setProcessEfficiency(processes.map(toKillTarget), on);
+      this.#mark(this.efficient, processes, results, on);
+      this.#report(results, '効率モードを切り替えられませんでした。');
+    });
+  }
+
+  /** プロセスを中断する。 */
+  suspend(processes: ProcessInfo[]): Promise<void> {
+    return this.#run(async () => {
+      const results = await this.#api.suspendProcesses(processes.map(toKillTarget));
+      this.#mark(this.suspended, processes, results, true);
+      this.#report(results, '中断できませんでした。');
+    });
+  }
+
+  /** 中断したプロセスを再開する。 */
+  resume(processes: ProcessInfo[]): Promise<void> {
+    return this.#run(async () => {
+      const results = await this.#api.resumeProcesses(processes.map(toKillTarget));
+      this.#mark(this.suspended, processes, results, false);
+      this.#report(results, '再開できませんでした。');
+    });
   }
 
   /** 結果のうち失敗したものを知らせる。 */

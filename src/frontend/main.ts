@@ -20,16 +20,19 @@ async function start(): Promise<void> {
   const monitor = new Monitor(api);
   const toasts = new Toasts();
   const menus = new ContextMenus();
+  const settings = new SettingsStore(window.localStorage);
   mount(App, {
     target,
     props: {
       api,
-      settings: new SettingsStore(window.localStorage),
+      settings,
       monitor,
       toasts,
       icons: new IconStore(api),
       menus,
-      processActions: new ProcessActions(api, monitor, toasts, menus),
+      processActions: new ProcessActions(api, monitor, toasts, menus, {
+        confirmEfficiency: () => settings.value.confirmEfficiency,
+      }),
     },
   });
 }

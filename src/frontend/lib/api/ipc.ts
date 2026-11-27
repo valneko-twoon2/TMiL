@@ -53,6 +53,9 @@ export interface Api {
   setProcessAffinity(targets: KillTarget[], cpus: number[]): Promise<KillResult[]>;
   processControls(pid: number): Promise<ProcessControls>;
   searchOnline(query: string): Promise<void>;
+  suspendProcesses(targets: KillTarget[]): Promise<KillResult[]>;
+  resumeProcesses(targets: KillTarget[]): Promise<KillResult[]>;
+  setProcessEfficiency(targets: KillTarget[], enabled: boolean): Promise<KillResult[]>;
 }
 
 /** invoke を差し替えられる形で API を作る（テストではモックを渡す）。 */
@@ -93,6 +96,10 @@ export function createApi(call: Invoke): Api {
     searchOnline: async (query) => {
       await request('search_online', isNull, { query });
     },
+    suspendProcesses: (targets) => request('suspend_processes', isKillResults, { targets }),
+    resumeProcesses: (targets) => request('resume_processes', isKillResults, { targets }),
+    setProcessEfficiency: (targets, enabled) =>
+      request('set_process_efficiency', isKillResults, { targets, enabled }),
   };
 }
 

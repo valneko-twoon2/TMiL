@@ -15,8 +15,13 @@ export function processStateLabel(state: ProcessState): string {
 }
 
 /** プロセス タブの「状態」列。本家と同じく通常時は空欄にする。 */
-export function processStatusBadge(state: ProcessState): string {
-  return state === 'stopped' || state === 'zombie' ? PROCESS_STATE_LABEL[state] : '';
+export function processStatusBadge(
+  state: ProcessState,
+  marks: { efficient?: boolean; suspended?: boolean } = {},
+): string {
+  if (marks.suspended === true) return PROCESS_STATE_LABEL.stopped;
+  if (state === 'stopped' || state === 'zombie') return PROCESS_STATE_LABEL[state];
+  return marks.efficient === true ? '効率モード' : '';
 }
 
 const STARTUP_LOCATION_LABEL: Record<StartupLocation, string> = {

@@ -109,6 +109,20 @@
     </div>
   </section>
 
+  <section>
+    <h2>その他のオプション</h2>
+    <label>
+      <input
+        type="checkbox"
+        checked={settings.value.confirmEfficiency}
+        onchange={(e) => {
+          settings.update({ confirmEfficiency: e.currentTarget.checked });
+        }}
+      />
+      効率モードを適用する前に確認する
+    </label>
+  </section>
+
   {#if replacement?.supported}
     <section>
       <h2>Windows のタスク マネージャーを置き換える</h2>

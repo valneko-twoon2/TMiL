@@ -67,6 +67,34 @@ pub(crate) async fn set_process_affinity(
     blocking(app, move |b| b.set_affinity(&targets, &cpus)).await
 }
 
+/// プロセスを中断する。
+#[tauri::command]
+pub(crate) async fn suspend_processes(
+    app: AppHandle,
+    targets: Vec<KillTarget>,
+) -> Result<Vec<KillResult>, String> {
+    blocking(app, move |b| b.suspend(&targets)).await
+}
+
+/// 中断したプロセスを再開する。
+#[tauri::command]
+pub(crate) async fn resume_processes(
+    app: AppHandle,
+    targets: Vec<KillTarget>,
+) -> Result<Vec<KillResult>, String> {
+    blocking(app, move |b| b.resume(&targets)).await
+}
+
+/// 効率モードを入れる・外す。
+#[tauri::command]
+pub(crate) async fn set_process_efficiency(
+    app: AppHandle,
+    targets: Vec<KillTarget>,
+    enabled: bool,
+) -> Result<Vec<KillResult>, String> {
+    blocking(app, move |b| b.set_efficiency(&targets, enabled)).await
+}
+
 /// プロセスの今の優先度と関係（読むだけなので状態機械は通さない）。
 #[tauri::command]
 pub(crate) async fn process_controls(pid: u32) -> Result<ProcessControls, String> {

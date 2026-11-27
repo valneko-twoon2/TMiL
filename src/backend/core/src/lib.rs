@@ -1,6 +1,7 @@
 //! TaskManagerLite のコア機能。Tauri に依存しない処理（システム情報の取得、スタートアップ管理など）をまとめる。
 
 pub mod backend;
+pub mod base64;
 pub mod collector;
 pub mod gpu;
 pub mod icons;

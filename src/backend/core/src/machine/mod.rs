@@ -108,6 +108,12 @@ pub enum ProcessAction {
     SetPriority(Priority),
     /// 動かしてよい CPU のビットの並び（0 番の CPU が最下位ビット）
     SetAffinity(u64),
+    /// 中断する（すべてのスレッドを止める）
+    Suspend,
+    /// 中断したものを再開する
+    Resume,
+    /// 効率モードを入れる（`true`）・外す（`false`）
+    SetEfficiency(bool),
 }
 
 /// 状態機械に伝える出来事。
@@ -131,7 +137,7 @@ pub enum Event {
     },
     /// 管理者として切り替えを試み終え、改めて状態を確かめた
     ElevationFinished(Registry),
-    /// プロセスへの操作（終了・優先度・関係）を頼まれた。`observed` は今その PID で動いているプロセス
+    /// プロセスへの操作（終了・優先度・関係・中断・再開・効率モード）を頼まれた。`observed` は今その PID で動いているプロセス
     ProcessActionRequested {
         target: KillTarget,
         observed: Option<ObservedProcess>,

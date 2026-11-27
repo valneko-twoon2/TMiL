@@ -1,4 +1,4 @@
-//! 画像を data URL にするための Base64（RFC 4648、パディングあり）。依存を増やさないよう自前で持つ。
+//! 画像の data URL や PowerShell に渡すスクリプトに使う Base64（RFC 4648、パディングあり）。依存を増やさないよう自前で持つ。
 
 const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 

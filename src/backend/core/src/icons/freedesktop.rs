@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use super::base64;
+use crate::base64;
 
 /// 画像として読み込む大きさの上限。
 const MAX_IMAGE_BYTES: u64 = 512 * 1024;

@@ -1,7 +1,8 @@
-//! プロセスの優先度と関係（動かしてよい CPU）の読み書き。
+//! プロセスの優先度・関係（動かしてよい CPU）・中断と再開・効率モードの読み書き。
 //! 変えてよいかは状態機械が決める（[`crate::machine::ProcessAction`]）。ここは OS ごとのやり方だけを持つ。
-//! - Windows: PowerShell（`Get-Process` の `PriorityClass` と `ProcessorAffinity`）
-//! - Linux: 読むのは `/proc`、変えるのは `renice` と `taskset`
+//! - Windows: PowerShell（`Get-Process` の `PriorityClass` と `ProcessorAffinity`）。
+//!   中断・再開・効率モードは Win32 API を C# 経由で呼ぶ（[`WINDOWS_NATIVE`]）
+//! - Linux: 読むのは `/proc`、変えるのは `renice`・`taskset`・`kill`・`chrt`
 
 use crate::model::{Priority, ProcessControls};
 
@@ -123,6 +124,99 @@ pub fn windows_affinity_script(pid: u32, mask: u64) -> String {
     )
 }
 
+/// Windows: 中断・再開・効率モードに使う C#（PowerShell の `Add-Type` で読み込む）。
+/// 二重引用符と改行を含むので、[`crate::powershell::run_encoded`] で渡す。
+pub const WINDOWS_NATIVE: &str = r#"Add-Type -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+public static class TaskManagerLiteNative {
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
+    [DllImport("kernel32.dll")]
+    static extern bool CloseHandle(IntPtr handle);
+    [DllImport("ntdll.dll")]
+    static extern int NtSuspendProcess(IntPtr handle);
+    [DllImport("ntdll.dll")]
+    static extern int NtResumeProcess(IntPtr handle);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool SetProcessInformation(IntPtr handle, int infoClass, ref Throttling info, uint size);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool SetPriorityClass(IntPtr handle, uint priorityClass);
+    [StructLayout(LayoutKind.Sequential)]
+    struct Throttling { public uint Version; public uint ControlMask; public uint StateMask; }
+    const uint SuspendResume = 0x0800;
+    const uint SetInformation = 0x0200;
+    const int PowerThrottling = 4;
+    static IntPtr Open(uint pid, uint access) {
+        IntPtr handle = OpenProcess(access, false, pid);
+        if (handle == IntPtr.Zero) throw new Win32Exception();
+        return handle;
+    }
+    public static void Suspend(uint pid) {
+        IntPtr handle = Open(pid, SuspendResume);
+        try { if (NtSuspendProcess(handle) != 0) throw new InvalidOperationException(); }
+        finally { CloseHandle(handle); }
+    }
+    public static void Resume(uint pid) {
+        IntPtr handle = Open(pid, SuspendResume);
+        try { if (NtResumeProcess(handle) != 0) throw new InvalidOperationException(); }
+        finally { CloseHandle(handle); }
+    }
+    // 効率モード: 実行速度の調整（EcoQoS）を入れ、優先度を「低」にする。外すときは OS 任せと「通常」に戻す
+    public static void Efficiency(uint pid, bool on) {
+        IntPtr handle = Open(pid, SetInformation);
+        try {
+            Throttling state = new Throttling { Version = 1, ControlMask = on ? 1u : 0u, StateMask = on ? 1u : 0u };
+            if (!SetProcessInformation(handle, PowerThrottling, ref state, (uint)Marshal.SizeOf(state))) throw new Win32Exception();
+            if (!SetPriorityClass(handle, on ? 0x40u : 0x20u)) throw new Win32Exception();
+        } finally { CloseHandle(handle); }
+    }
+}
+'@
+"#;
+
+/// Win32 API で行う操作。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NativeOp {
+    Suspend,
+    Resume,
+    Efficiency(bool),
+}
+
+/// Windows: [`WINDOWS_NATIVE`] を読み込んで操作を 1 つ行うスクリプト。
+pub fn windows_native_script(pid: u32, op: NativeOp) -> String {
+    let call = match op {
+        NativeOp::Suspend => format!("Suspend({pid})"),
+        NativeOp::Resume => format!("Resume({pid})"),
+        NativeOp::Efficiency(on) => format!("Efficiency({pid}, ${on})"),
+    };
+    format!("$ErrorActionPreference = 'Stop'\n{WINDOWS_NATIVE}[TaskManagerLiteNative]::{call}\n")
+}
+
+/// Linux: 中断・再開に送るシグナル（`kill` の引数）。
+pub fn linux_signal_args(pid: u32, suspend: bool) -> [String; 2] {
+    [
+        if suspend { "-STOP" } else { "-CONT" }.to_owned(),
+        pid.to_string(),
+    ]
+}
+
+/// Linux: 効率モードの優先度（入れるときは「低」、外すときは「通常」）と、スケジューラーの指定（`chrt` の引数）。
+pub fn linux_efficiency(pid: u32, on: bool) -> (Priority, [String; 4]) {
+    let priority = if on { Priority::Low } else { Priority::Normal };
+    let policy = if on { "--idle" } else { "--other" };
+    (
+        priority,
+        [
+            policy.to_owned(),
+            "-p".to_owned(),
+            "0".to_owned(),
+            pid.to_string(),
+        ],
+    )
+}
+
 const DENIED: &str = "変更できませんでした。権限が足りない可能性があります（管理者として実行すると変えられることがあります）。";
 
 /// 今の優先度と関係。読めないものは `None`。
@@ -151,6 +245,31 @@ pub fn set_affinity(pid: u32, mask: u64) -> Result<(), String> {
     crate::powershell::run(&windows_affinity_script(pid, mask), "")
         .map(|_| ())
         .map_err(|_| DENIED.to_owned())
+}
+
+#[cfg(windows)]
+fn native(pid: u32, op: NativeOp) -> Result<(), String> {
+    crate::powershell::run_encoded(&windows_native_script(pid, op), "")
+        .map(|_| ())
+        .map_err(|_| DENIED.to_owned())
+}
+
+/// プロセスを中断する（すべてのスレッドを止める）。
+#[cfg(windows)]
+pub fn suspend(pid: u32) -> Result<(), String> {
+    native(pid, NativeOp::Suspend)
+}
+
+/// 中断したプロセスを再開する。
+#[cfg(windows)]
+pub fn resume(pid: u32) -> Result<(), String> {
+    native(pid, NativeOp::Resume)
+}
+
+/// 効率モードを入れる・外す。
+#[cfg(windows)]
+pub fn set_efficiency(pid: u32, on: bool) -> Result<(), String> {
+    native(pid, NativeOp::Efficiency(on))
 }
 
 /// 今の優先度と関係。読めないものは `None`。
@@ -195,6 +314,27 @@ pub fn set_affinity(pid: u32, mask: u64) -> Result<(), String> {
         "taskset",
         &["-p".to_owned(), format!("{mask:x}"), pid.to_string()],
     )
+}
+
+/// プロセスを中断する（SIGSTOP）。
+#[cfg(not(windows))]
+pub fn suspend(pid: u32) -> Result<(), String> {
+    run_tool("kill", &linux_signal_args(pid, true))
+}
+
+/// 中断したプロセスを再開する（SIGCONT）。
+#[cfg(not(windows))]
+pub fn resume(pid: u32) -> Result<(), String> {
+    run_tool("kill", &linux_signal_args(pid, false))
+}
+
+/// 効率モードを入れる・外す。優先度を変え、スケジューラーも合わせる（`chrt` が無くても優先度は変える）。
+#[cfg(not(windows))]
+pub fn set_efficiency(pid: u32, on: bool) -> Result<(), String> {
+    let (priority, chrt) = linux_efficiency(pid, on);
+    set_priority(pid, priority)?;
+    let _ = run_tool("chrt", &chrt);
+    Ok(())
 }
 
 #[cfg(test)]
@@ -254,6 +394,52 @@ mod tests {
             assert!(windows_priority_script(8, Priority::Low).ends_with("PriorityClass = 'Idle'"));
             assert!(windows_affinity_script(8, u64::MAX).ends_with("[int64]-1"));
             assert!(windows_read_script(8).contains("Get-Process -Id 8;"));
+        }
+
+        #[test]
+        fn native_script_calls_one_operation_after_loading_helper() {
+            let script = windows_native_script(42, NativeOp::Suspend);
+            assert!(script.starts_with("$ErrorActionPreference = 'Stop'\n"));
+            assert!(script.ends_with("[TaskManagerLiteNative]::Suspend(42)\n"));
+            assert!(windows_native_script(7, NativeOp::Resume).contains("::Resume(7)"));
+            assert!(
+                windows_native_script(7, NativeOp::Efficiency(true))
+                    .contains("::Efficiency(7, $true)")
+            );
+            assert!(
+                windows_native_script(7, NativeOp::Efficiency(false))
+                    .contains("::Efficiency(7, $false)")
+            );
+        }
+
+        // PowerShell のヒアストリングは、閉じる '@ が行の先頭にないと閉じない
+        #[test]
+        fn native_helper_here_string_closes_at_line_start() {
+            assert!(WINDOWS_NATIVE.starts_with("Add-Type -TypeDefinition @'\n"));
+            assert!(WINDOWS_NATIVE.ends_with("\n'@\n"));
+        }
+
+        #[test]
+        fn linux_suspend_and_resume_send_stop_and_cont() {
+            assert_eq!(
+                linux_signal_args(9, true),
+                ["-STOP".to_owned(), "9".to_owned()]
+            );
+            assert_eq!(
+                linux_signal_args(9, false),
+                ["-CONT".to_owned(), "9".to_owned()]
+            );
+        }
+
+        #[test]
+        fn linux_efficiency_lowers_priority_and_uses_idle_policy() {
+            let (on, chrt_on) = linux_efficiency(5, true);
+            assert_eq!(on, Priority::Low);
+            assert_eq!(chrt_on.first().map(String::as_str), Some("--idle"));
+            let (off, chrt_off) = linux_efficiency(5, false);
+            assert_eq!(off, Priority::Normal);
+            assert_eq!(chrt_off.first().map(String::as_str), Some("--other"));
+            assert_eq!(chrt_off.last().map(String::as_str), Some("5"));
         }
 
         #[test]

@@ -246,7 +246,11 @@
               <span class="text">{group.name}{multi ? ` (${String(group.children.length)})` : ''}</span>
             </span>
           </td>
-          <td class="status-col">{multi ? '' : processStatusBadge(group.children[0]?.state ?? 'other')}</td>
+          <td class="status-col">
+            {#if !multi && group.children[0]}
+              {processStatusBadge(group.children[0].state, processActions.marks(group.children[0]))}
+            {/if}
+          </td>
           <td class="num heat-{heatLevel(group.cpu)}">{formatPercent(group.cpu)}</td>
           <td class="num heat-{heatLevel(shareOf(group.memory, memoryTotal))}">
             {formatBytes(group.memory)}
@@ -274,7 +278,7 @@
                   <span class="text">{displayName(child.name)} ({child.pid})</span>
                 </span>
               </td>
-              <td class="status-col">{processStatusBadge(child.state)}</td>
+              <td class="status-col">{processStatusBadge(child.state, processActions.marks(child))}</td>
               <td class="num heat-{heatLevel(child.cpu)}">{formatPercent(child.cpu)}</td>
               <td class="num heat-{heatLevel(shareOf(child.memory, memoryTotal))}">
                 {formatBytes(child.memory)}

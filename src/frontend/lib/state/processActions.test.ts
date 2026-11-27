@@ -16,7 +16,10 @@ function proc(pid: number, parentPid: number | null, exe = 'C:\\a.exe'): Process
   return { ...base, pid, parentPid, exe, name: `p${String(pid)}`, startTime: 1000 + pid };
 }
 
-function setup(answers: Record<string, (args: Record<string, unknown>) => unknown> = {}) {
+function setup(
+  answers: Record<string, (args: Record<string, unknown>) => unknown> = {},
+  confirmEfficiency = true,
+) {
   const calls: { cmd: string; args: Record<string, unknown> }[] = [];
   const call: Invoke = (cmd, args = {}) => {
     calls.push({ cmd, args });
@@ -34,7 +37,9 @@ function setup(answers: Record<string, (args: Record<string, unknown>) => unknow
   monitor.systemInfo = { ...systemInfoFixture(), logicalCores: 4 };
   const toasts = new Toasts();
   const menus = new ContextMenus();
-  const actions = new ProcessActions(api, monitor, toasts, menus);
+  const actions = new ProcessActions(api, monitor, toasts, menus, {
+    confirmEfficiency: () => confirmEfficiency,
+  });
   return { actions, calls, monitor, toasts, menus };
 }
 
@@ -58,6 +63,7 @@ describe('プロセスへの操作', () => {
       expect(labels(processMenuEntries(proc(1, null), 'normal', false))).toEqual([
         'タスクの終了',
         'プロセス ツリーの終了',
+        '効率モード',
         '優先度の設定',
         '関係の設定',
         'ファイルの場所を開く',
@@ -81,6 +87,54 @@ describe('プロセスへの操作', () => {
       const names = labels(entries);
       expect(names[0]).toBe('展開する');
       expect(names.indexOf('詳細の表示に移動')).toBe(names.indexOf('ファイルの場所を開く') - 1);
+    });
+
+    it('効率モードは確かめてから入れ、もう一度選ぶと外す', async () => {
+      const { actions, calls } = setup({ set_process_efficiency: ok });
+      const p = proc(5, null);
+      actions.toggleEfficiency([p]);
+      expect(actions.dialog?.kind).toBe('efficiency');
+      expect(calls.some((c) => c.cmd === 'set_process_efficiency')).toBe(false);
+      await actions.confirmEfficiency();
+      expect(actions.marks(p).efficient).toBe(true);
+      const efficient = processMenuEntries(p, null, false, {}, true).find(
+        (e) => isItem(e) && e.id === 'efficiency',
+      ) as MenuItem;
+      expect(efficient.checked).toBe(true);
+      actions.toggleEfficiency([p]);
+      await vi.waitFor(() => {
+        expect(actions.marks(p).efficient).toBe(false);
+      });
+      expect(calls.filter((c) => c.cmd === 'set_process_efficiency').map((c) => c.args.enabled)).toEqual([
+        true,
+        false,
+      ]);
+    });
+
+    it('設定で確認を切ると、すぐに効率モードを入れる', async () => {
+      const { actions, calls } = setup({ set_process_efficiency: ok }, false);
+      actions.toggleEfficiency([proc(5, null)]);
+      expect(actions.dialog).toBeNull();
+      await vi.waitFor(() => {
+        expect(calls.some((c) => c.cmd === 'set_process_efficiency')).toBe(true);
+      });
+    });
+
+    it('中断と再開は成功したものだけ印を付け外しする', async () => {
+      const failSecond = (args: Record<string, unknown>) =>
+        (args.targets as { pid: number }[]).map(({ pid }) => ({
+          pid,
+          ok: pid !== 2,
+          error: pid === 2 ? '権限がありません' : null,
+        }));
+      const { actions, toasts } = setup({ suspend_processes: failSecond, resume_processes: ok });
+      const [a, b] = [proc(1, null), proc(2, null)];
+      await actions.suspend([a, b]);
+      expect(actions.marks(a).suspended).toBe(true);
+      expect(actions.marks(b).suspended).toBe(false);
+      expect(toasts.items.at(-1)?.text).toBe('権限がありません');
+      await actions.resume([a]);
+      expect(actions.marks(a).suspended).toBe(false);
     });
 
     it('ツリーの終了は子から先に送る', async () => {

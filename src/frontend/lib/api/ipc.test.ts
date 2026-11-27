@@ -111,6 +111,24 @@ describe('createApi（新しいコマンド）', () => {
         ],
         [{ priority: 'low', affinity: [0] }, (api) => api.processControls(7), 'process_controls', { pid: 7 }],
         [null, (api) => api.searchOnline('chrome.exe'), 'search_online', { query: 'chrome.exe' }],
+        [
+          fixture('kill-results'),
+          (api) => api.suspendProcesses([target]),
+          'suspend_processes',
+          { targets: [target] },
+        ],
+        [
+          fixture('kill-results'),
+          (api) => api.resumeProcesses([target]),
+          'resume_processes',
+          { targets: [target] },
+        ],
+        [
+          fixture('kill-results'),
+          (api) => api.setProcessEfficiency([target], true),
+          'set_process_efficiency',
+          { targets: [target], enabled: true },
+        ],
       ];
       for (const [value, run, name, args] of cases) {
         const { api, call } = apiReturning(value);
