@@ -16,6 +16,7 @@
   } from '../process/columns';
   import { filterProcesses, nextSort, sortBy, type SortState } from '../process/process';
   import { ColumnSizer } from '../state/columnSizer.svelte';
+  import { ProgressiveRows } from '../state/progressiveRows.svelte';
   import type { IconStore } from '../state/icons.svelte';
   import type { ContextMenus } from '../state/menus.svelte';
   import type { Monitor } from '../state/monitor.svelte';
@@ -62,6 +63,10 @@
     ),
   );
   const target = $derived(rows.find((r) => r.pid === selected));
+  // 画面を開いたときは見える分だけ先に描き、残りは次のフレームから足す。
+  // ほかのタブから移ってきたときは、その行まで動かせるよう全部描く
+  const progressive = new ProgressiveRows(() => rows.length);
+  const shown = $derived(focusPid === null ? progressive.take(rows) : rows);
 
   // 「詳細の表示に移動」で来たときは、その行が見える位置まで動かす
   $effect(() => {
@@ -153,7 +158,7 @@
       </tr>
     </thead>
     <tbody>
-      {#each rows as p (p.pid)}
+      {#each shown as p (p.pid)}
         <tr
           class:selected={selected === p.pid}
           tabindex="0"

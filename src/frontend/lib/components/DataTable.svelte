@@ -3,6 +3,7 @@
   import { untrack } from 'svelte';
   import { nextSort, type SortState } from '../process/process';
   import { ColumnSizer } from '../state/columnSizer.svelte';
+  import { ProgressiveRows } from '../state/progressiveRows.svelte';
   import type { SettingsStore } from '../state/settings.svelte';
   import {
     activeSort,
@@ -41,6 +42,8 @@
     /** 選んだ行で Delete を押したとき */
     ondelete?: (row: T) => void;
     testid?: string;
+    /** 表が見える高さ（px）。最初に描く行の数を決める。省くとウィンドウの高さ */
+    viewportHeight?: number;
   }
 
   const {
@@ -61,6 +64,7 @@
     onheadercontextmenu,
     ondelete,
     testid,
+    viewportHeight,
   }: Props = $props();
 
   let sort = $state<SortState<string>>(
@@ -71,6 +75,9 @@
   const current = $derived(activeSort(columns, sort));
   // チェックした行は上にまとめる（本家のリソース モニターと同じ）
   const sorted = $derived(sortRowsPinned(rows, columns, current, checked));
+  // 画面を開いたときは見える分だけ先に描き、残りは次のフレームから足す
+  const progressive = untrack(() => new ProgressiveRows(() => sorted.length, viewportHeight));
+  const shown = $derived(progressive.take(sorted));
   const numeric = $derived(numericKeys(columns));
   const keys = $derived(columns.map((c) => c.key));
   const checkWidth = $derived(checked ? 32 : 0);
@@ -116,7 +123,7 @@
       </tr>
     </thead>
     <tbody>
-      {#each sorted as row (rowKey(row))}
+      {#each shown as row (rowKey(row))}
         {@const key = rowKey(row)}
         <tr
           class:selected={selected === key}

@@ -27,6 +27,7 @@
     groupValue,
     heatOf,
     kindLabel,
+    limitSections,
     PROCESS_COLUMNS,
     PROCESS_NUMERIC,
     processColumnLabel,
@@ -40,6 +41,7 @@
   import { REFRESH_OPTIONS } from '../settings/settings';
   import type { AppWindows } from '../state/appWindows.svelte';
   import { ColumnSizer } from '../state/columnSizer.svelte';
+  import { ProgressiveRows } from '../state/progressiveRows.svelte';
   import type { IconStore } from '../state/icons.svelte';
   import type { ContextMenus } from '../state/menus.svelte';
   import type { Monitor } from '../state/monitor.svelte';
@@ -106,6 +108,9 @@
     ),
   );
   const sections = $derived(tableSections(groups, grouped, ctx.kind));
+  // 画面を開いたときは見える分だけ先に描き、残りは次のフレームから足す
+  const progressive = new ProgressiveRows(() => groups.length);
+  const shownSections = $derived(limitSections(sections, progressive.limit));
   const totals = $derived<Partial<Record<ProcessColumn, string>>>({
     cpu: formatPercent(snapshot?.cpu.usage ?? 0, 0),
     memory: formatPercent(shareOf(snapshot?.memory.used ?? 0, memoryTotal), 0),
@@ -319,10 +324,10 @@
       </tr>
     </thead>
     <tbody>
-      {#each sections as section (section.kind ?? 'all')}
+      {#each shownSections as section (section.kind ?? 'all')}
         {#if section.kind !== null}
           <tr class="section" data-testid="process-section">
-            <td {colspan}>{kindLabel(section.kind, windows)} ({section.groups.length})</td>
+            <td {colspan}>{kindLabel(section.kind, windows)} ({section.count})</td>
           </tr>
         {/if}
         {#each section.groups as group (group.key)}

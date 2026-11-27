@@ -17,6 +17,7 @@ import {
   processKind,
   processUsage,
   sectionsOf,
+  limitSections,
   tableSections,
   toggleProcessColumn,
   type ProcessCellContext,
@@ -108,6 +109,20 @@ describe('プロセスの種類', () => {
     it('一部だけ OS のものならバックグラウンド', () => {
       const g = group(proc(1, 'a.exe', { exe: 'C:\\Windows\\a.exe' }), proc(2, 'a.exe'));
       expect(processKind(g, new Set(), true)).toBe('background');
+    });
+
+    it('少しずつ描くときは先頭から数え、見出しの数は元のまま。0 なら何も出さない', () => {
+      const [a, b, c] = [1, 2, 3].map((pid) => group(proc(pid, `p${String(pid)}.exe`)));
+      if (!a || !b || !c) throw new Error('group');
+      const sections = [
+        { kind: 'app' as const, groups: [a, b] },
+        { kind: 'system' as const, groups: [c] },
+      ];
+      expect(limitSections(sections, 1)).toEqual([{ kind: 'app', groups: [a], count: 2 }]);
+      expect(limitSections(sections, 3).map((s) => s.count)).toEqual([2, 1]);
+      expect(limitSections(sections, Number.POSITIVE_INFINITY)).toHaveLength(2);
+      expect(limitSections(sections, 0)).toEqual([]);
+      expect(limitSections(sections, -1)).toEqual([]);
     });
   });
 });

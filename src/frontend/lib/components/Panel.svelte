@@ -1,3 +1,8 @@
+<script lang="ts" module>
+  /** 中身の高さ（px）。中の表はこの高さでスクロールする */
+  export const PANEL_HEIGHT = 210;
+</script>
+
 <script lang="ts">
   // 見出しを押すと開閉できるまとまり（リソース モニターの表に使う）。
   import type { Snippet } from 'svelte';
@@ -22,7 +27,7 @@
     <span class="summary">{summary}</span>
   </button>
   {#if open}
-    <div class="body">{@render children()}</div>
+    <div class="body" style:height="{PANEL_HEIGHT}px">{@render children()}</div>
   {/if}
 </section>
 
@@ -58,6 +63,5 @@
   .body {
     display: flex;
     flex-direction: column;
-    height: 210px;
   }
 </style>

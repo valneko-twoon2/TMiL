@@ -214,3 +214,22 @@ export function tableSections(
 ): TableSection[] {
   return grouped ? sectionsOf(groups, kindOf) : [{ kind: null, groups }];
 }
+
+/**
+ * 先頭から `limit` 個のまとまりだけを残す（少しずつ描くため）。見出しの数は元のまま `count` に残す。
+ * まとまりが 1 つも残らない区分は除く。
+ */
+export function limitSections(
+  sections: readonly TableSection[],
+  limit: number,
+): (TableSection & { count: number })[] {
+  let left = Math.max(0, limit);
+  const result: (TableSection & { count: number })[] = [];
+  for (const section of sections) {
+    if (left <= 0) break;
+    const groups = left >= section.groups.length ? section.groups : section.groups.slice(0, left);
+    left -= groups.length;
+    if (groups.length > 0) result.push({ kind: section.kind, groups, count: section.groups.length });
+  }
+  return result;
+}

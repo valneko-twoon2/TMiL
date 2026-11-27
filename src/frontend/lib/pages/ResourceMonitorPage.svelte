@@ -5,7 +5,7 @@
   import DataTable from '../components/DataTable.svelte';
   import LineChart from '../components/LineChart.svelte';
   import PageHeader from '../components/PageHeader.svelte';
-  import Panel from '../components/Panel.svelte';
+  import Panel, { PANEL_HEIGHT } from '../components/Panel.svelte';
   import ResizeHandle from '../components/ResizeHandle.svelte';
   import { niceMax } from '../chart/chart';
   import { formatBits, formatBytes, formatFrequency, formatPercent, formatRate } from '../format/format';
@@ -276,6 +276,7 @@
   testid: string,
 )}
   <DataTable
+    viewportHeight={PANEL_HEIGHT}
     {label}
     {table}
     columns={cols}
@@ -362,6 +363,7 @@
         summary={checked.size > 0 ? '選んだプロセスのサービス' : `${String(services.list.length)} 個`}
       >
         <DataTable
+          viewportHeight={PANEL_HEIGHT}
           label="サービス"
           table="rmservices"
           columns={serviceColumns}
@@ -399,6 +401,7 @@
           <button type="submit" disabled={resmon.searchingHandles}>検索</button>
         </form>
         <DataTable
+          viewportHeight={PANEL_HEIGHT}
           label="関連付けられたハンドル"
           table="rmhandles"
           columns={handleColumns(image)}
@@ -416,6 +419,7 @@
         summary={checked.size > 0 ? '' : 'プロセスにチェックを付けると表示します'}
       >
         <DataTable
+          viewportHeight={PANEL_HEIGHT}
           label="関連付けられたモジュール"
           table="rmmodules"
           columns={MODULE_COLUMNS}
@@ -473,6 +477,7 @@
       </Panel>
       <Panel title="記憶域" summary="{String(snapshot?.disks.length ?? 0)} 台">
         <DataTable
+          viewportHeight={PANEL_HEIGHT}
           label="記憶域"
           table="rmstorage"
           columns={STORAGE_COLUMNS}
@@ -515,6 +520,7 @@
       {/if}
       <Panel title="TCP 接続" summary="{String(tcp.length)} 件">
         <DataTable
+          viewportHeight={PANEL_HEIGHT}
           label="TCP 接続"
           table="rmtcp"
           columns={tcpColumns(image)}
@@ -528,6 +534,7 @@
       </Panel>
       <Panel title="リッスン ポート" summary="{String(listening.length)} 件">
         <DataTable
+          viewportHeight={PANEL_HEIGHT}
           label="リッスン ポート"
           table="rmlisten"
           columns={listenColumns(image)}
