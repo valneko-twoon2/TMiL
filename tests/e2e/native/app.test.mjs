@@ -85,6 +85,38 @@ describe('実アプリ', () => {
     }, TIMEOUT);
   });
 
+  it('サービスの一覧を OS から読める', async () => {
+    await navigate('サービス');
+    await driver.wait(async () => {
+      const rows = await driver.findElements(By.css('[data-testid="services-table"] tbody tr[data-key]'));
+      return rows.length > 0;
+    }, TIMEOUT);
+  });
+
+  it('リソース モニターで実際の待ち受けポートとモジュールが出る', async () => {
+    await navigate('リソース モニター');
+    await driver.findElement(By.xpath('//button[@role="tab" and normalize-space()="ネットワーク"]')).click();
+    await driver.wait(async () => {
+      const rows = await driver.findElements(By.css('[data-testid="resmon-listen"] tbody tr[data-key]'));
+      return rows.length > 0;
+    }, TIMEOUT);
+    // 自分自身にチェックを付けると、読み込んでいるモジュールが出る
+    await driver.findElement(By.xpath('//button[@role="tab" and normalize-space()="CPU"]')).click();
+    const mine = await driver.wait(
+      until.elementLocated(
+        By.xpath(
+          '//*[@data-testid="resmon-cpu"]//tr[.//td[contains(translate(., "TASKMANAGERLITE", "taskmanagerlite"), "taskmanagerlite")]]//input[@type="checkbox"]',
+        ),
+      ),
+      TIMEOUT,
+    );
+    await mine.click();
+    await driver.wait(async () => {
+      const rows = await driver.findElements(By.css('[data-testid="resmon-modules"] tbody tr[data-key]'));
+      return rows.length > 0;
+    }, TIMEOUT);
+  });
+
   it('設定にバージョンが出る', async () => {
     await navigate('設定');
     const body = await driver.wait(
