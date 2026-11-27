@@ -3,10 +3,11 @@
 //   node scripts/test/mutation.mjs --backend    cargo-mutants（cargo install cargo-mutants が必要）
 //   node scripts/test/mutation.mjs --frontend   Stryker（npx で一時的に取得する）
 // 結果は reports/mutation/ に出る。
+import { availableParallelism } from 'node:os';
 import { join } from 'node:path';
+import { cargoMutantsArgs, strykerArgs } from '../lib/mutation.mjs';
 import { BACKEND, combineStatus, FRONTEND, ROOT, run } from '../lib/proc.mjs';
 
-const STRYKER_VERSION = '10';
 const args = process.argv.slice(2);
 const backend = args.includes('--backend');
 const frontend = args.includes('--frontend');
@@ -20,7 +21,9 @@ if (!backend && !frontend) {
 const statuses = [];
 if (backend) {
   const output = join(ROOT, 'reports', 'mutation', 'backend');
-  statuses.push(run('cargo', ['mutants', '-p', 'tmil-core', '--output', output], { cwd: BACKEND }).status);
+  // 変異ごとのビルドを速くするため、ここだけ増分ビルドを使う（target は変異ごとの作業用の写しにできる）
+  const cargoArgs = cargoMutantsArgs(output, availableParallelism());
+  statuses.push(run('cargo', cargoArgs, { cwd: BACKEND, env: { CARGO_INCREMENTAL: '1' } }).status);
 }
 if (frontend) {
   // npx は Windows だと .cmd になり直接起動できないので、npm 本体を node で動かす
@@ -29,23 +32,6 @@ if (frontend) {
     console.error('npm run test:mutation -- --frontend から実行してください。');
     process.exit(1);
   }
-  statuses.push(
-    run(
-      process.execPath,
-      [
-        npmCli,
-        'exec',
-        '--yes',
-        '-p',
-        `@stryker-mutator/core@${STRYKER_VERSION}`,
-        '-p',
-        `@stryker-mutator/vitest-runner@${STRYKER_VERSION}`,
-        '--',
-        'stryker',
-        'run',
-      ],
-      { cwd: FRONTEND },
-    ).status,
-  );
+  statuses.push(run(process.execPath, strykerArgs(npmCli), { cwd: FRONTEND }).status);
 }
 process.exit(combineStatus(statuses));
