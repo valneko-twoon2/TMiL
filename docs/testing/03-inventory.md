@@ -3,25 +3,25 @@
 > 自動生成です。手で編集せず `npm run docs:tests` で更新してください。
 > 種類の決め方は [02-tags.md](02-tags.md) を参照。
 
-合計 **754** 件
+合計 **972** 件
 
 ## 種類 × 対象
 
 | 種類 | フロント | バック | ツール | アプリ全体 | 合計 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| 単体（同値分割） | 104 | 103 | 73 | 0 | 280 |
-| 単体（境界値） | 132 | 98 | 35 | 0 | 265 |
+| 単体（同値分割） | 167 | 142 | 73 | 0 | 382 |
+| 単体（境界値） | 176 | 125 | 35 | 0 | 336 |
 | 単体（回帰） | 10 | 24 | 10 | 0 | 44 |
-| 単体（その他） | 0 | 14 | 0 | 0 | 14 |
-| スナップショット | 16 | 1 | 0 | 0 | 17 |
-| 契約 | 22 | 8 | 0 | 0 | 30 |
-| プロパティベース | 14 | 11 | 0 | 0 | 25 |
+| 単体（その他） | 0 | 20 | 0 | 0 | 20 |
+| スナップショット | 22 | 1 | 0 | 0 | 23 |
+| 契約 | 28 | 12 | 0 | 0 | 40 |
+| プロパティベース | 19 | 12 | 0 | 0 | 31 |
 | ファジング | 10 | 6 | 0 | 0 | 16 |
 | 形式検証 | 0 | 21 | 0 | 0 | 21 |
 | VRT | 10 | 0 | 0 | 0 | 10 |
-| E2E（モック） | 27 | 0 | 0 | 0 | 27 |
-| E2E（実アプリ） | 0 | 0 | 0 | 5 | 5 |
-| **合計** | **345** | **286** | **118** | **5** | **754** |
+| E2E（モック） | 42 | 0 | 0 | 0 | 42 |
+| E2E（実アプリ） | 0 | 0 | 0 | 7 | 7 |
+| **合計** | **484** | **363** | **118** | **7** | **972** |
 
 ## フロントの内訳
 
@@ -29,27 +29,38 @@
 | --- | ---: | --- |
 | `src/frontend/lib/api/ipc.test.ts` | 8 | 単体（同値分割） 6 / 単体（境界値） 2 |
 | `src/frontend/lib/chart/chart.test.ts` | 13 | 単体（同値分割） 7 / 単体（境界値） 6 |
-| `src/frontend/lib/components/render.test.ts` | 14 | スナップショット 14 |
-| `src/frontend/lib/format/format.test.ts` | 64 | 単体（同値分割） 19 / 単体（境界値） 43 / 単体（回帰） 1 / スナップショット 1 |
+| `src/frontend/lib/components/render.test.ts` | 20 | スナップショット 20 |
+| `src/frontend/lib/format/format.test.ts` | 69 | 単体（同値分割） 22 / 単体（境界値） 45 / 単体（回帰） 1 / スナップショット 1 |
 | `src/frontend/lib/fuzz.test.ts` | 10 | ファジング 10 |
+| `src/frontend/lib/history/appHistory.test.ts` | 16 | 単体（同値分割） 6 / 単体（境界値） 9 / プロパティベース 1 |
 | `src/frontend/lib/history/history.test.ts` | 12 | 単体（同値分割） 3 / 単体（境界値） 7 / 単体（回帰） 2 |
 | `src/frontend/lib/menu/menu.test.ts` | 17 | 単体（同値分割） 8 / 単体（境界値） 9 |
 | `src/frontend/lib/mock/backend.test.ts` | 5 | 単体（同値分割） 2 / 単体（境界値） 2 / 単体（回帰） 1 |
-| `src/frontend/lib/model/contract.test.ts` | 14 | 契約 14 |
-| `src/frontend/lib/model/guards.test.ts` | 19 | 単体（同値分割） 6 / 単体（境界値） 5 / 契約 8 |
-| `src/frontend/lib/performance/resources.test.ts` | 18 | 単体（同値分割） 7 / 単体（境界値） 8 / 単体（回帰） 2 / スナップショット 1 |
+| `src/frontend/lib/mock/system.test.ts` | 7 | 単体（同値分割） 4 / 単体（境界値） 3 |
+| `src/frontend/lib/model/contract.test.ts` | 20 | 契約 20 |
+| `src/frontend/lib/model/guards.test.ts` | 24 | 単体（同値分割） 6 / 単体（境界値） 10 / 契約 8 |
+| `src/frontend/lib/performance/resources.test.ts` | 23 | 単体（同値分割） 10 / 単体（境界値） 10 / 単体（回帰） 2 / スナップショット 1 |
 | `src/frontend/lib/process/process.property.test.ts` | 8 | プロパティベース 8 |
 | `src/frontend/lib/process/process.test.ts` | 32 | 単体（同値分割） 18 / 単体（境界値） 14 |
+| `src/frontend/lib/process/processColumns.test.ts` | 14 | 単体（同値分割） 9 / 単体（境界値） 5 |
+| `src/frontend/lib/process/processTable.test.ts` | 4 | 単体（同値分割） 2 / 単体（境界値） 2 |
 | `src/frontend/lib/process/tree.test.ts` | 5 | 単体（同値分割） 2 / 単体（境界値） 3 |
-| `src/frontend/lib/settings/settings.test.ts` | 16 | 単体（同値分割） 6 / 単体（境界値） 10 |
+| `src/frontend/lib/resmon/resmon.test.ts` | 16 | 単体（同値分割） 10 / 単体（境界値） 4 / プロパティベース 2 |
+| `src/frontend/lib/services/services.test.ts` | 7 | 単体（同値分割） 5 / 単体（境界値） 2 |
+| `src/frontend/lib/settings/settings.test.ts` | 17 | 単体（同値分割） 6 / 単体（境界値） 11 |
+| `src/frontend/lib/shortcuts/shortcuts.test.ts` | 3 | 単体（同値分割） 2 / 単体（境界値） 1 |
 | `src/frontend/lib/startup/startup.test.ts` | 4 | 単体（同値分割） 2 / 単体（境界値） 2 |
 | `src/frontend/lib/state/icons.test.ts` | 8 | 単体（同値分割） 3 / 単体（境界値） 5 |
 | `src/frontend/lib/state/monitor.test.ts` | 6 | 単体（同値分割） 2 / 単体（境界値） 1 / 単体（回帰） 3 |
-| `src/frontend/lib/state/processActions.test.ts` | 16 | 単体（同値分割） 9 / 単体（境界値） 7 |
+| `src/frontend/lib/state/newStates.test.ts` | 10 | 単体（同値分割） 7 / 単体（境界値） 3 |
+| `src/frontend/lib/state/processActions.test.ts` | 19 | 単体（同値分割） 12 / 単体（境界値） 7 |
+| `src/frontend/lib/table/table.test.ts` | 8 | 単体（同値分割） 5 / 単体（境界値） 2 / プロパティベース 1 |
 | `src/frontend/lib/table/widths.property.test.ts` | 6 | プロパティベース 6 |
-| `src/frontend/lib/table/widths.test.ts` | 12 | 単体（同値分割） 4 / 単体（境界値） 8 |
+| `src/frontend/lib/table/widths.test.ts` | 13 | 単体（同値分割） 5 / 単体（境界値） 8 |
+| `src/frontend/lib/users/users.test.ts` | 7 | 単体（同値分割） 3 / 単体（境界値） 3 / プロパティベース 1 |
 | `src/frontend/test/config.test.ts` | 1 | 単体（回帰） 1 |
 | `tests/e2e/mock/app.spec.ts` | 27 | E2E（モック） 27 |
+| `tests/e2e/mock/features.spec.ts` | 15 | E2E（モック） 15 |
 | `tests/vrt/pages.spec.ts` | 10 | VRT 10 |
 
 ## バックの内訳
@@ -57,25 +68,32 @@
 | ファイル / モジュール | 件数 | 内訳 |
 | --- | ---: | --- |
 | `backend::boundary` | 8 | 単体（境界値） 8 |
-| `backend::equivalence` | 11 | 単体（同値分割） 11 |
+| `backend::equivalence` | 14 | 単体（同値分割） 14 |
 | `backend::regression` | 7 | 単体（回帰） 7 |
-| `collector::boundary` | 3 | 単体（境界値） 3 |
+| `base64::boundary` | 3 | 単体（境界値） 3 |
+| `base64::equivalence` | 3 | 単体（同値分割） 3 |
+| `base64::property` | 1 | プロパティベース 1 |
+| `collector::boundary` | 6 | 単体（境界値） 6 |
 | `collector::environment` | 3 | 単体（その他） 3 |
-| `collector::equivalence` | 6 | 単体（同値分割） 6 |
+| `collector::equivalence` | 8 | 単体（同値分割） 8 |
 | `collector::regression` | 2 | 単体（回帰） 2 |
-| `collector::system` | 7 | 単体（その他） 7 |
-| `contract` | 8 | 契約 8 |
-| `icons::base64::boundary` | 3 | 単体（境界値） 3 |
-| `icons::base64::equivalence` | 3 | 単体（同値分割） 3 |
-| `icons::base64::property` | 1 | プロパティベース 1 |
+| `collector::system` | 8 | 単体（その他） 8 |
+| `connections::boundary` | 4 | 単体（境界値） 4 |
+| `connections::equivalence` | 5 | 単体（同値分割） 5 |
+| `connections::system` | 1 | 単体（その他） 1 |
+| `contract` | 12 | 契約 12 |
+| `gpu::system` | 1 | 単体（その他） 1 |
 | `icons::boundary` | 5 | 単体（境界値） 5 |
 | `icons::equivalence` | 3 | 単体（同値分割） 3 |
-| `icons::freedesktop::boundary` | 8 | 単体（境界値） 8 |
-| `icons::freedesktop::equivalence` | 6 | 単体（同値分割） 6 |
+| `icons::freedesktop::boundary` | 10 | 単体（境界値） 10 |
+| `icons::freedesktop::equivalence` | 8 | 単体（同値分割） 8 |
 | `icons::property` | 1 | プロパティベース 1 |
-| `icons::script::boundary` | 3 | 単体（境界値） 3 |
-| `icons::script::equivalence` | 3 | 単体（同値分割） 3 |
+| `icons::script::boundary` | 4 | 単体（境界値） 4 |
+| `icons::script::equivalence` | 4 | 単体（同値分割） 4 |
 | `icons::windows_load` | 1 | 単体（その他） 1 |
+| `launch::boundary` | 4 | 単体（境界値） 4 |
+| `launch::equivalence` | 6 | 単体（同値分割） 6 |
+| `launch::property` | 1 | プロパティベース 1 |
 | `machine::boundary` | 8 | 単体（境界値） 8 |
 | `machine::equivalence` | 10 | 単体（同値分割） 10 |
 | `machine::formal` | 6 | 形式検証 6 |
@@ -84,14 +102,23 @@
 | `metrics::equivalence` | 5 | 単体（同値分割） 5 |
 | `model::boundary` | 2 | 単体（境界値） 2 |
 | `model::equivalence` | 2 | 単体（同値分割） 2 |
+| `modules::boundary` | 2 | 単体（境界値） 2 |
+| `modules::equivalence` | 3 | 単体（同値分割） 3 |
+| `modules::system` | 1 | 単体（その他） 1 |
 | `open::boundary` | 6 | 単体（境界値） 6 |
 | `open::equivalence` | 6 | 単体（同値分割） 6 |
 | `open::property` | 3 | プロパティベース 3 |
-| `powershell::boundary` | 1 | 単体（境界値） 1 |
-| `powershell::equivalence` | 1 | 単体（同値分割） 1 |
+| `powershell::boundary` | 2 | 単体（境界値） 2 |
+| `powershell::equivalence` | 2 | 単体（同値分割） 2 |
 | `process_control::boundary` | 6 | 単体（境界値） 6 |
-| `process_control::equivalence` | 8 | 単体（同値分割） 8 |
+| `process_control::equivalence` | 12 | 単体（同値分割） 12 |
 | `process_control::property` | 3 | プロパティベース 3 |
+| `procfs::boundary` | 3 | 単体（境界値） 3 |
+| `procfs::equivalence` | 2 | 単体（同値分割） 2 |
+| `procfs::system` | 1 | 単体（その他） 1 |
+| `services::boundary` | 4 | 単体（境界値） 4 |
+| `services::equivalence` | 7 | 単体（同値分割） 7 |
+| `services::system` | 1 | 単体（その他） 1 |
 | `startup::approval::boundary` | 3 | 単体（境界値） 3 |
 | `startup::approval::equivalence` | 3 | 単体（同値分割） 3 |
 | `startup::boundary` | 2 | 単体（境界値） 2 |
@@ -129,6 +156,8 @@
 | `tests/fuzz/fuzz_targets/command_line.rs` | 1 | ファジング 1 |
 | `tests/fuzz/fuzz_targets/desktop_entry.rs` | 1 | ファジング 1 |
 | `tests/fuzz/fuzz_targets/windows_quote.rs` | 1 | ファジング 1 |
+| `windows_list::boundary` | 3 | 単体（境界値） 3 |
+| `windows_list::equivalence` | 3 | 単体（同値分割） 3 |
 
 ## ツールの内訳
 
@@ -154,4 +183,4 @@
 
 | ファイル / モジュール | 件数 | 内訳 |
 | --- | ---: | --- |
-| `tests/e2e/native/app.test.mjs` | 5 | E2E（実アプリ） 5 |
+| `tests/e2e/native/app.test.mjs` | 7 | E2E（実アプリ） 7 |
