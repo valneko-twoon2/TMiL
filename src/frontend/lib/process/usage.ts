@@ -43,20 +43,22 @@ export function recordUsage(
 
 const mean = (values: readonly number[]) => values.reduce((sum, v) => sum + v, 0) / values.length;
 
+function quarterMeans(values: readonly number[]): [number, number, number, number] {
+  const quarter = Math.floor(values.length / 4);
+  return [
+    mean(values.slice(0, quarter)),
+    mean(values.slice(quarter, quarter * 2)),
+    mean(values.slice(quarter * 2, quarter * 3)),
+    mean(values.slice(values.length - quarter)),
+  ];
+}
+
 export function memoryGrowth(memory: readonly number[]): number | null {
   if (memory.length < LEAK_MIN_SAMPLES) return null;
-  const quarter = Math.floor(memory.length / 4);
-  const parts = [
-    memory.slice(0, quarter),
-    memory.slice(quarter, quarter * 2),
-    memory.slice(quarter * 2, quarter * 3),
-    memory.slice(memory.length - quarter),
-  ].map(mean);
-  for (let i = 1; i < parts.length; i += 1) {
-    if ((parts[i] ?? 0) <= (parts[i - 1] ?? 0)) return null;
-  }
-  const first = parts[0] ?? 0;
-  const growth = (parts[3] ?? 0) - first;
+  const [first, second, third, last] = quarterMeans(memory);
+  const risesEveryQuarter = first < second && second < third && third < last;
+  if (!risesEveryQuarter) return null;
+  const growth = last - first;
   return growth >= Math.max(LEAK_MIN_BYTES, first * LEAK_MIN_RATIO) ? growth : null;
 }
 
