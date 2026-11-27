@@ -16,6 +16,7 @@ const configs = defineConfig(
     ignores: [
       'src/frontend/dist/',
       'src/frontend/dist-mock/',
+      '.claude/worktrees/',
       'src/frontend/.stryker-tmp/',
       'src/backend/',
       'coverage/',
