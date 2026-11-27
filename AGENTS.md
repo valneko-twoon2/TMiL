@@ -62,3 +62,18 @@ cargo を直接使うときは `src/backend` で実行します。Rust のコマ
 | `pr-review`              | PR を出したあと、CI の間にレビューするとき           |
 | `docs`                   | docs/ に文書を足す・直すとき（番号と README）        |
 | `verify-taskmanagerlite` | 実アプリを起動して画面を操作し、動作の証拠を残すとき |
+
+## ルールと、それを守らせる仕組み
+
+文章だけのルールは破られるので、止まる仕組みがあるものを書いておく。仕組みの無いものは判断に任せている。
+
+| ルール                           | 守らせる仕組み                                                                                                              |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 返答は日本語                     | Stop フック（`scripts/hooks/claude/stop.mjs`）が、英語だけの長い返答を止めて書き直させる                                    |
+| コメントは「なぜ」だけ           | pre-commit と CI（`scripts/lint/comments.mjs`）が、`なぜ:` `契約:` の無い新しいコメントを止める。対象は `src/` のテスト以外 |
+| コミットの形式・`Co-Authored-By` | commit-msg フックと `scripts/lib/command-guard.mjs`                                                                         |
+| LF だけ                          | pre-commit フックと `.gitattributes`                                                                                        |
+| 編集のたびの整形と Lint          | PostToolUse フック（`post-edit.mjs`）と pre-commit                                                                          |
+| 層をまたぐ値の食い違い           | 契約の見本（`tests/contract/fixtures/`）を Rust と TS の両方のテストが読む                                                  |
+| main への push・フックを飛ばす   | PreToolUse フック（`pre-bash.mjs`）                                                                                         |
+| 未コミット・未 push を残さない   | Stop フック                                                                                                                 |
