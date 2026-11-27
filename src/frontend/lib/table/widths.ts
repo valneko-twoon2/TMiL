@@ -24,6 +24,10 @@ export const DEFAULT_WIDTHS: Record<string, Record<string, number> | undefined> 
     memory: 110,
     disk: 110,
     gpu: 80,
+    gpuEngine: 120,
+    power: 110,
+    powerTrend: 150,
+    isolation: 110,
   },
   details: {
     name: 220,

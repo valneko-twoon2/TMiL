@@ -1,3 +1,4 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { PROCESS_EXTRAS } from '../../test/fixtures';
 import type { ProcessInfo } from '../model/types';
@@ -18,6 +19,8 @@ import {
   processUsage,
   sectionsOf,
   limitSections,
+  POWER_LEVELS,
+  powerLevel,
   tableSections,
   toggleProcessColumn,
   type ProcessCellContext,
@@ -187,6 +190,30 @@ describe('プロセス タブの列', () => {
       expect(heatOf('name', usage, 1000)).toBe(0);
     });
 
+    it('GPU エンジンはいちばん使っている子のもの、分離は全部が AppContainer のときだけ', () => {
+      const g = group(
+        proc(1, 'a.exe', { gpu: 2, gpuEngine: 'GPU 0 - Copy', appContainer: true }),
+        proc(2, 'a.exe', { gpu: 30, gpuEngine: 'GPU 0 - 3D', appContainer: true }),
+      );
+      expect(groupText(g, 'gpuEngine', ctx())).toBe('GPU 0 - 3D');
+      expect(groupText(g, 'isolation', ctx())).toBe('AppContainer');
+      const mixed = group(proc(3, 'b.exe', { appContainer: true }), proc(4, 'b.exe'));
+      expect(groupText(mixed, 'isolation', ctx())).toBe('');
+      expect(groupText(mixed, 'gpuEngine', ctx())).toBe('');
+    });
+
+    it('電力消費は今の使用量、傾向は直近の平均から 5 段階で出す', () => {
+      const busy = group(proc(1, 'a.exe', { cpu: 30 }));
+      expect(groupText(busy, 'power', ctx())).toBe('高い');
+      expect(groupText(busy, 'powerTrend', ctx({ averageCpu: () => 0.1 }))).toBe('非常に低い');
+      expect(groupText(busy, 'powerTrend', ctx())).toBe('高い');
+      expect(groupValue(busy, 'power', ctx())).toBe(3);
+      expect(powerLevel(0, 0, 0)).toBe(0);
+      expect(powerLevel(1, 0, 0)).toBe(1);
+      expect(powerLevel(0, 10, 0)).toBe(2);
+      expect(powerLevel(0, 0, 500 * 1024 ** 2)).toBe(4);
+    });
+
     it('列は決まった順に並べ、名前は外せない', () => {
       expect(toggleProcessColumn(['name', 'cpu'], 'pid')).toEqual(['name', 'pid', 'cpu']);
       expect(toggleProcessColumn(['name', 'pid', 'cpu'], 'pid')).toEqual(['name', 'cpu']);
@@ -195,6 +222,17 @@ describe('プロセス タブの列', () => {
   });
 
   describe('boundary', () => {
+    it('電力の段階の境目と、壊れた値は数えない', () => {
+      expect(powerLevel(0.49, 0, 0)).toBe(0);
+      expect(powerLevel(0.5, 0, 0)).toBe(1);
+      expect(powerLevel(4.99, 0, 0)).toBe(1);
+      expect(powerLevel(5, 0, 0)).toBe(2);
+      expect(powerLevel(15, 0, 0)).toBe(3);
+      expect(powerLevel(40, 0, 0)).toBe(4);
+      expect(powerLevel(Number.NaN, -5, Number.POSITIVE_INFINITY)).toBe(0);
+      expect(POWER_LEVELS).toHaveLength(5);
+    });
+
     it('GPU が取れないプロセスだけなら空、説明が無ければ名前', () => {
       const g = group(proc(1, 'a.exe'));
       expect(groupText(g, 'gpu', ctx())).toBe('');
@@ -219,6 +257,22 @@ describe('プロセス タブの列', () => {
       };
       expect(groupStatus(empty, ctx())).toBe('');
       expect(groupText(empty, 'publisher', ctx())).toBe('');
+    });
+  });
+});
+
+describe('電力消費の見積もり', () => {
+  describe('property', () => {
+    it('使用量が増えても段階は下がらず、0〜4 に収まる', () => {
+      const usage = fc.double({ min: 0, max: 200, noNaN: true });
+      fc.assert(
+        fc.property(usage, usage, usage, usage, (cpu, gpu, disk, more) => {
+          const level = powerLevel(cpu, gpu, disk * 1024 ** 2);
+          expect(level).toBeGreaterThanOrEqual(0);
+          expect(level).toBeLessThanOrEqual(4);
+          expect(powerLevel(cpu + more, gpu, disk * 1024 ** 2)).toBeGreaterThanOrEqual(level);
+        }),
+      );
     });
   });
 });

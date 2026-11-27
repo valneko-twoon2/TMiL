@@ -62,7 +62,30 @@ export const PROCESS_COLUMNS = [
   { key: 'memory', label: 'メモリ', numeric: true },
   { key: 'disk', label: 'ディスク', numeric: true },
   { key: 'gpu', label: 'GPU', numeric: true },
+  { key: 'gpuEngine', label: 'GPU エンジン', numeric: false },
+  { key: 'power', label: '電力消費', numeric: false },
+  { key: 'powerTrend', label: '電源の使用率の傾向', numeric: false },
+  { key: 'isolation', label: '分離', numeric: false },
 ] as const;
+
+/** 電力消費の目安（本家と同じ 5 段階）。 */
+export const POWER_LEVELS = ['非常に低い', '低い', '中', '高い', '非常に高い'] as const;
+const MB_PER_SEC = 1024 ** 2;
+
+/**
+ * CPU・GPU の使用率（%）とディスクの転送量（バイト/秒）から、電力消費の段階（0〜4）を見積もる。
+ * 本家の計算は公開されていないので、使用率の合計（ディスクは 10 MB/秒 を 1% とみなす）で区切る。
+ */
+export function powerLevel(cpu: number, gpu: number, diskPerSec: number): number {
+  const score = [cpu, gpu, diskPerSec / (10 * MB_PER_SEC)]
+    .filter((v) => Number.isFinite(v) && v > 0)
+    .reduce((sum, v) => sum + v, 0);
+  if (score < 0.5) return 0;
+  if (score < 5) return 1;
+  if (score < 15) return 2;
+  if (score < 40) return 3;
+  return 4;
+}
 
 export type ProcessColumn = (typeof PROCESS_COLUMNS)[number]['key'];
 export const PROCESS_NUMERIC: readonly ProcessColumn[] = PROCESS_COLUMNS.filter((c) => c.numeric).map(
@@ -100,6 +123,8 @@ export interface ProcessCellContext {
   company: (exe: string) => string;
   marks: (p: ProcessInfo) => { efficient: boolean; suspended: boolean; growing?: boolean };
   memoryTotal: number;
+  /** 直近の CPU 使用率の平均（電源の使用率の傾向に使う）。分からなければ今の値 */
+  averageCpu?: (p: ProcessInfo) => number;
 }
 
 const single = (g: ProcessGroup): ProcessInfo | undefined =>
@@ -110,6 +135,24 @@ const gpuOf = (g: ProcessGroup) =>
     g.children.reduce((sum, c) => sum + (c.gpu ?? 0), 0),
   );
 const hasGpu = (g: ProcessGroup) => g.children.some((c) => c.gpu !== null);
+/** いちばん GPU を使っている子の GPU エンジン。 */
+const engineOf = (g: ProcessGroup): string =>
+  g.children
+    .filter((c) => c.gpuEngine !== null)
+    .reduce<ProcessInfo | null>(
+      (best, c) => (best === null || (c.gpu ?? 0) > (best.gpu ?? 0) ? c : best),
+      null,
+    )?.gpuEngine ?? '';
+/** 全部が AppContainer なら「AppContainer」。 */
+const isolationOf = (g: ProcessGroup): string =>
+  g.children.length > 0 && g.children.every((c) => c.appContainer) ? 'AppContainer' : '';
+const powerOf = (g: ProcessGroup) => powerLevel(g.cpu, gpuOf(g), g.diskPerSec);
+const trendOf = (g: ProcessGroup, ctx: Pick<ProcessCellContext, 'averageCpu'>) =>
+  powerLevel(
+    g.children.reduce((sum, c) => sum + (ctx.averageCpu?.(c) ?? c.cpu), 0),
+    0,
+    0,
+  );
 
 /** まとめた行の名前（説明があれば説明。本家のように「Google Chrome」などと出す）。 */
 export function groupName(g: ProcessGroup, ctx: Pick<ProcessCellContext, 'description'>): string {
@@ -146,6 +189,10 @@ export function groupValue(g: ProcessGroup, column: ProcessColumn, ctx: ProcessC
     memory: () => g.memory,
     disk: () => g.diskPerSec,
     gpu: () => gpuOf(g),
+    gpuEngine: () => engineOf(g),
+    power: () => powerOf(g),
+    powerTrend: () => trendOf(g, ctx),
+    isolation: () => isolationOf(g),
   };
   return values[column]();
 }
@@ -159,6 +206,8 @@ export function groupText(g: ProcessGroup, column: ProcessColumn, ctx: ProcessCe
     memory: () => formatBytes(g.memory),
     disk: () => formatRate(g.diskPerSec),
     gpu: () => (hasGpu(g) ? formatPercent(gpuOf(g)) : ''),
+    power: () => POWER_LEVELS[powerOf(g)] ?? '',
+    powerTrend: () => POWER_LEVELS[trendOf(g, ctx)] ?? '',
   };
   return numbers[column]?.() ?? String(groupValue(g, column, ctx));
 }

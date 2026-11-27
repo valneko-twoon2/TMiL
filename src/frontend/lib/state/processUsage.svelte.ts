@@ -5,6 +5,7 @@ import {
   NO_GROWTH,
   NO_USAGE,
   processKey,
+  recentAverage,
   recordUsage,
   USAGE_CAPACITY,
   type UsageSamples,
@@ -28,6 +29,11 @@ export class ProcessUsage {
   /** そのプロセスの推移（まだ無ければ空）。 */
   series(p: Pick<ProcessInfo, 'pid' | 'startTime'>): UsageSeries {
     return this.#samples.get(processKey(p)) ?? { cpu: [], memory: [] };
+  }
+
+  /** 直近 2 分ほどの CPU 使用率の平均（まだ計測が無ければ null）。 */
+  averageCpu(p: Pick<ProcessInfo, 'pid' | 'startTime'>): number | null {
+    return recentAverage(this.series(p).cpu);
   }
 
   /** メモリが増え続けていれば増えた量。 */

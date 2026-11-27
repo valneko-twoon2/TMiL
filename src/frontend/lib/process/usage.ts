@@ -94,3 +94,13 @@ export function spanLabel(seconds: number): string {
 }
 
 export const NO_GROWTH: ReadonlyMap<string, number> = new Map<string, number>();
+
+/** 電源の使用率の傾向に使う、直近の計測の数（標準の速さで 2 分） */
+export const TREND_SAMPLES = 120;
+
+/** 直近 `count` 個の平均。値が無ければ null。 */
+export function recentAverage(values: readonly number[], count = TREND_SAMPLES): number | null {
+  const recent = count <= 0 ? [] : values.slice(-count);
+  if (recent.length === 0) return null;
+  return recent.reduce((sum, v) => sum + v, 0) / recent.length;
+}

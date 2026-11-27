@@ -9,6 +9,7 @@ import {
   memoryGrowth,
   NO_USAGE,
   processKey,
+  recentAverage,
   recordUsage,
   spanLabel,
   spanSeconds,
@@ -88,6 +89,13 @@ describe('プロセスごとの使用状況', () => {
       expect(memoryGrowth([])).toBeNull();
       expect(memoryGrowth(rising(LEAK_MIN_SAMPLES - 1, 0, 10 * MB))).toBeNull();
       expect(memoryGrowth(rising(LEAK_MIN_SAMPLES, 0, 10 * MB))).not.toBeNull();
+    });
+
+    it('直近の平均は、数が足りなければあるだけで、無ければ null', () => {
+      expect(recentAverage([1, 2, 3, 6], 2)).toBe(4.5);
+      expect(recentAverage([4], 10)).toBe(4);
+      expect(recentAverage([])).toBeNull();
+      expect(recentAverage([1, 2], 0)).toBeNull();
     });
 
     it('長さの表示は 0 と負の値と不正な値を 0 秒にする', () => {

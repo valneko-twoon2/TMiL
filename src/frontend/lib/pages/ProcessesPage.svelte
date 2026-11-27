@@ -83,6 +83,7 @@
     company: (exe: string) => icons.company(exe),
     marks: (p: ProcessInfo) => processActions.marks(p),
     memoryTotal,
+    averageCpu: (p: ProcessInfo) => processActions.usage.averageCpu(p) ?? p.cpu,
   });
   // 隠した列で並べていたら CPU の順に戻す
   const activeSort = $derived<SortState<ProcessColumn>>(

@@ -77,6 +77,25 @@ test.describe('プロセスの種類と列', () => {
     await expect(groupRow(page, 'Google Chrome')).toContainText('Google LLC');
   });
 
+  test('本家と同じ GPU エンジン・電力消費・電源の使用率の傾向・分離の列を足せる', async ({ page }) => {
+    await open(page);
+    for (const name of ['GPU エンジン', '電力消費', '電源の使用率の傾向', '分離']) {
+      await page.getByRole('columnheader', { name: /名前/ }).click({ button: 'right' });
+      await page.getByRole('menuitemcheckbox', { name }).click();
+      await expect(page.getByRole('columnheader', { name })).toBeVisible();
+    }
+    await expect(groupRow(page, 'Google Chrome')).toContainText('GPU 0 - 3D');
+    await expect(groupRow(page, 'RuntimeBroker')).toContainText('AppContainer');
+    await expect(groupRow(page, 'Antimalware Service Executable')).toContainText(/非常に低い|低い|中|高い/);
+  });
+
+  test('ほかのアプリが自分で入れた効率モードも状態に出る', async ({ page }) => {
+    await open(page);
+    // モックでは chrome の裏のプロセスの一部が、自分で効率モードに入っている
+    await groupRow(page, 'Google Chrome').getByRole('button', { name: '展開する' }).click();
+    await expect(page.locator('tr.child', { hasText: '効率モード' })).toHaveCount(3);
+  });
+
   test('効率モードは確かめてから入れ、状態に出る', async ({ page }) => {
     await open(page);
     await groupRow(page, 'Discord').click();
