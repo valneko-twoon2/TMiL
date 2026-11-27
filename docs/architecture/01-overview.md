@@ -25,7 +25,7 @@ src/
 tests/                  E2E・VRT・契約の見本・cargo-fuzz・TLA+（formal/）。tsconfig.json は TypeScript のテスト用
 scripts/                開発用スクリプト（種類ごとにフォルダー分け。Node だけで動く）
 docs/                   ドキュメント
-assets/                 ロゴ（画面の public フォルダーも兼ねる）
+assets/                 ロゴ（画面の public フォルダーと、アプリのアイコンの元を兼ねる。アイコンは scripts/dev/icons.mjs で作り直す）
 ```
 
 設定ファイルは、それぞれの層（`src/frontend`・`src/backend`・`tests`）に置いています。リポジトリ直下にあるのは、全体に効くもの（`.editorconfig`・`.gitattributes`・`.gitignore`・Prettier の設定）だけです。
