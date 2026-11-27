@@ -24,6 +24,8 @@ import {
 
 const GB = 1024 ** 3;
 const MB = 1024 ** 2;
+const MOCK_LOGICAL_CORES = 8;
+const CPU_MS_PER_PERCENT_SECOND = (MOCK_LOGICAL_CORES * 1000) / 100;
 
 interface ProcessSeed {
   name: string;
@@ -138,7 +140,7 @@ function processExtras(seed: ProcessSeed, s: number, i: number, tick: number) {
   const runTime = 3600 + tick;
   return {
     virtualMemory: Math.round(memory * 1.6),
-    cpuTimeMs: Math.round(seed.cpu * 80 * runTime),
+    cpuTimeMs: Math.round(seed.cpu * CPU_MS_PER_PERCENT_SECOND * runTime),
     diskReadTotal: (s + 1) * 40 * MB + i * MB + tick * 64 * 1024,
     diskWrittenTotal: (s + 1) * 8 * MB + tick * 16 * 1024,
     handles: seed.name === 'System' ? 5200 : 180 + s * 37 + i * 11,
@@ -296,7 +298,7 @@ export const MOCK_SYSTEM_INFO: SystemInfo = {
   hostName: 'MOCK-PC',
   cpuBrand: 'Mock CPU 8-Core Processor',
   physicalCores: 4,
-  logicalCores: 8,
+  logicalCores: MOCK_LOGICAL_CORES,
 };
 
 function kill(state: MockState, targets: KillTarget[]): KillResult[] {

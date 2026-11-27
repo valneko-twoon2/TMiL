@@ -8,6 +8,8 @@ import type {
   ServiceInfo,
 } from '../model/types';
 
+const NOT_FOUND_MARK = 'nosuch';
+
 export interface SystemMockState {
   services: ServiceInfo[];
   launched: { command: string; admin: boolean }[];
@@ -153,7 +155,7 @@ export function modules(pid: number, exe: string | undefined): ModuleInfo[] {
 export function handles(query: unknown, list: readonly Pick<ProcessInfo, 'pid'>[]): HandleInfo[] {
   const text = typeof query === 'string' ? query.trim() : '';
   if (text === '') return [];
-  if (text.includes('nosuch')) {
+  if (text.includes(NOT_FOUND_MARK)) {
     throw new Error(`'${text}' が見つかりません。ファイルかフォルダーの場所を入れてください。`);
   }
   return list.slice(0, 2).map((p) => ({ pid: p.pid, path: text }));
@@ -167,7 +169,7 @@ export function runTask(state: SystemMockState, command: unknown, admin: unknown
     );
   }
   const program = text.split(' ')[0] ?? text;
-  if (program.startsWith('nosuch')) {
+  if (program.startsWith(NOT_FOUND_MARK)) {
     throw new Error(
       `'${program}' が見つかりません。名前を正しく入力したかどうかを確認してから、やり直してください。`,
     );
