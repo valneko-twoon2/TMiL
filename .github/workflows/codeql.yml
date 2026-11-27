@@ -12,7 +12,8 @@ on:
 
 concurrency:
   group: codeql-${{ github.ref }}
-  cancel-in-progress: true
+  # 途中で止めると、結果の送信が中断して「CodeQL is reporting errors」と出る。止めずに順番を待つ
+  cancel-in-progress: false
 
 permissions:
   contents: read

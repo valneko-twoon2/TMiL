@@ -17,7 +17,7 @@ export const isChecked = (file) => SOURCE.test(file) && !TEST.test(file);
 function commentBody(line) {
   const t = line.trim();
   if (!LEADER.test(t) || DIRECTIVE.test(t)) return null;
-  return t.replace(LEADER, '').replace(/\s*(\*\/|-->)\s*$/, '');
+  return t.replace(LEADER, '').replace(/\s*(\*\/|--!?>)\s*$/, '');
 }
 
 /**

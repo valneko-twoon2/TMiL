@@ -41,14 +41,24 @@ function makeRelease(dir, bad) {
 makeRelease(join(work, 'good'), false);
 makeRelease(join(work, 'bad'), true);
 
+/** 読めなければ null（確かめてから読むと、その間に変わるかもしれないので、読んでみて失敗したら null）。 */
+function tryRead(path) {
+  try {
+    return readFileSync(path);
+  } catch {
+    return null;
+  }
+}
+
 // GitHub と同じく、文字コードを付けずに octet-stream で配る
 const server = createServer((req, res) => {
   const path = join(work, decodeURIComponent((req.url ?? '/').split('?')[0] ?? '/'));
-  if (!path.startsWith(work) || !existsSync(path) || statSync(path).isDirectory()) {
+  const body = path.startsWith(work) ? tryRead(path) : null;
+  if (body === null) {
     res.writeHead(404).end();
     return;
   }
-  res.writeHead(200, { 'Content-Type': 'application/octet-stream' }).end(readFileSync(path));
+  res.writeHead(200, { 'Content-Type': 'application/octet-stream' }).end(body);
 });
 await new Promise((resolve) => {
   server.listen(0, '127.0.0.1', () => {
