@@ -20,14 +20,11 @@ export class AppWindows {
   }
 
   async #fetch(): Promise<void> {
-    try {
-      const windows = await this.#api.appWindows();
-      this.titles.clear();
-      for (const w of windows) this.titles.set(w.pid, w.title);
-      this.pids.clear();
-      for (const w of windows) this.pids.add(w.pid);
-    } catch {
-      // 一覧が取れなくても、種類分けが「バックグラウンド」に寄るだけなので知らせない
-    }
+    const windows = await this.#api.appWindows().catch(() => null);
+    if (windows === null) return;
+    this.titles.clear();
+    for (const w of windows) this.titles.set(w.pid, w.title);
+    this.pids.clear();
+    for (const w of windows) this.pids.add(w.pid);
   }
 }
