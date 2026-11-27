@@ -315,7 +315,7 @@
       {#each shownSections as section (section.kind ?? 'all')}
         {#if section.kind !== null}
           <tr class="section" data-testid="process-section">
-            <td {colspan}>{kindLabel(section.kind, windows)} ({section.count})</td>
+            <td {colspan}>{kindLabel(section.kind, windows)} ({section.total})</td>
           </tr>
         {/if}
         {#each section.groups as group (group.key)}

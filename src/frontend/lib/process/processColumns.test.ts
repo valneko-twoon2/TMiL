@@ -121,8 +121,8 @@ describe('プロセスの種類', () => {
         { kind: 'app' as const, groups: [a, b] },
         { kind: 'system' as const, groups: [c] },
       ];
-      expect(limitSections(sections, 1)).toEqual([{ kind: 'app', groups: [a], count: 2 }]);
-      expect(limitSections(sections, 3).map((s) => s.count)).toEqual([2, 1]);
+      expect(limitSections(sections, 1)).toEqual([{ kind: 'app', groups: [a], total: 2 }]);
+      expect(limitSections(sections, 3).map((s) => s.total)).toEqual([2, 1]);
       expect(limitSections(sections, Number.POSITIVE_INFINITY)).toHaveLength(2);
       expect(limitSections(sections, 0)).toEqual([]);
       expect(limitSections(sections, -1)).toEqual([]);
