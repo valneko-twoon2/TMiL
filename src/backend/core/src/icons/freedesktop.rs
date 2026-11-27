@@ -5,7 +5,7 @@ use super::ExeDetails;
 use crate::base64;
 
 const MAX_IMAGE_BYTES: u64 = 512 * 1024;
-const SIZES: [&str; 7] = [
+const PREFERRED_SIZES_FOR_16PX: [&str; 7] = [
     "32x32", "48x48", "24x24", "64x64", "128x128", "256x256", "scalable",
 ];
 const EXTENSIONS: [&str; 2] = ["png", "svg"];
@@ -186,16 +186,20 @@ fn index_by(
     index
 }
 
+fn may_escape_search_dirs(name: &str) -> bool {
+    name.contains(['/', '\\']) || name.starts_with('.')
+}
+
 pub fn find_image(name: &str, dirs: &SearchDirs) -> Option<PathBuf> {
     if name.starts_with('/') {
         let path = PathBuf::from(name);
         return path.is_file().then_some(path);
     }
-    if name.contains(['/', '\\']) || name.starts_with('.') {
+    if may_escape_search_dirs(name) {
         return None;
     }
     let themed = dirs.icons.iter().flat_map(|base| {
-        SIZES.iter().flat_map(move |size| {
+        PREFERRED_SIZES_FOR_16PX.iter().flat_map(move |size| {
             EXTENSIONS.iter().map(move |ext| {
                 base.join("hicolor")
                     .join(size)
