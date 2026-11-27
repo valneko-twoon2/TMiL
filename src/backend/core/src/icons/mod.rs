@@ -47,7 +47,7 @@ impl IconCache {
         }
 
         let missing: Vec<String> = {
-            let known = self.lock();
+            let known = self.lock_ignoring_poison();
             requested
                 .iter()
                 .filter(|e| is_lookup_target(e) && !known.contains_key(*e))
@@ -59,11 +59,11 @@ impl IconCache {
             if loaded.len() != missing.len() {
                 loaded = vec![ExeDetails::default(); missing.len()];
             }
-            let mut known = self.lock();
+            let mut known = self.lock_ignoring_poison();
             known.extend(missing.into_iter().zip(loaded));
         }
 
-        let known = self.lock();
+        let known = self.lock_ignoring_poison();
         requested
             .into_iter()
             .map(|exe| {
@@ -78,7 +78,7 @@ impl IconCache {
             .collect()
     }
 
-    fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<String, ExeDetails>> {
+    fn lock_ignoring_poison(&self) -> std::sync::MutexGuard<'_, HashMap<String, ExeDetails>> {
         self.known
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
