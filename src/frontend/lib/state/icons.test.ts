@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import type { ProcessIcon } from '../model/types';
-import { unknownExes } from '../process/icons';
+import { ICON_REQUEST_LIMIT, unknownExes } from '../process/icons';
 import { IconStore } from './icons.svelte';
 
 function fakeApi(answer: (exes: string[]) => Promise<ProcessIcon[]>) {
@@ -24,6 +25,14 @@ describe('unknownExes', () => {
 
     it('上限を超えた分は次の機会に回す', () => {
       expect(unknownExes(['a', 'b', 'c'], new Map(), new Set(), 2)).toEqual(['a', 'b']);
+    });
+  });
+
+  describe('contract', () => {
+    it('上限はバックエンドの icons::MAX_PER_REQUEST と同じ', () => {
+      const url = new URL('../../../backend/core/src/icons/mod.rs', import.meta.url);
+      const limit = /pub const MAX_PER_REQUEST: usize = (\d+);/.exec(readFileSync(url, 'utf8'))?.[1];
+      expect(Number(limit)).toBe(ICON_REQUEST_LIMIT);
     });
   });
 });
