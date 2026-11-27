@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { readFixture, snapshotFixture } from '../../test/fixtures';
 import type { Api } from '../api/ipc';
 import { APP_HISTORY_STORAGE_KEY } from '../history/appHistory';
-import type { ModuleInfo, ServiceInfo, Snapshot } from '../model/types';
+import type { HandleInfo, ModuleInfo, ServiceInfo, Snapshot } from '../model/types';
 import { AppHistoryStore } from './appHistory.svelte';
 import { AppWindows } from './appWindows.svelte';
 import { ResourceMonitorState } from './resmon.svelte';
@@ -176,7 +176,12 @@ describe('リソース モニターの状態', () => {
           ? Promise.reject(new Error('モジュールを読めませんでした'))
           : Promise.resolve(readFixture('modules') as ModuleInfo[]),
       ),
-    } satisfies Pick<Api, 'networkConnections' | 'processModules'>;
+      findHandles: vi.fn((query: string) =>
+        query.includes('nosuch')
+          ? Promise.reject(new Error(`'${query}' が見つかりません。`))
+          : Promise.resolve(readFixture('handles') as HandleInfo[]),
+      ),
+    } satisfies Pick<Api, 'networkConnections' | 'processModules' | 'findHandles'>;
     return { state: new ResourceMonitorState(api), api };
   }
 
@@ -203,6 +208,18 @@ describe('リソース モニターの状態', () => {
       expect(state.checked.has(424242)).toBe(false);
     });
 
+    it('ハンドルを探し、見つからなければ理由を残す', async () => {
+      const { state, api } = setup();
+      await state.searchHandles('  report.docx ');
+      expect(api.findHandles).toHaveBeenCalledWith('report.docx');
+      expect(state.handlesQuery).toBe('report.docx');
+      expect(state.handles.length).toBe(2);
+      expect(state.searchingHandles).toBe(false);
+      await state.searchHandles('nosuch');
+      expect(state.handles).toEqual([]);
+      expect(state.handlesError).toContain('見つかりません');
+    });
+
     it('接続とモジュールを読み、読めなかったものは理由を残す', async () => {
       const { state } = setup();
       await state.refreshConnections();
@@ -215,10 +232,38 @@ describe('リソース モニターの状態', () => {
   });
 
   describe('boundary', () => {
+    it('空の文字では探さず、結果を消す', async () => {
+      const { state, api } = setup();
+      await state.searchHandles('a');
+      await state.searchHandles('   ');
+      expect(api.findHandles).toHaveBeenCalledTimes(1);
+      expect(state.handles).toEqual([]);
+      expect(state.handlesQuery).toBe('');
+    });
+
+    it('後から始めた検索の結果だけを残す', async () => {
+      const slow: { resolve: (v: HandleInfo[]) => void }[] = [];
+      const state = new ResourceMonitorState({
+        networkConnections: () => Promise.resolve([]),
+        processModules: () => Promise.resolve([]),
+        findHandles: (query) =>
+          query === 'old'
+            ? new Promise((resolve) => slow.push({ resolve }))
+            : Promise.resolve([{ pid: 2, path: 'new' }]),
+      });
+      const first = state.searchHandles('old');
+      await state.searchHandles('new');
+      slow[0]?.resolve([{ pid: 1, path: 'old' }]);
+      await first;
+      expect(state.handles).toEqual([{ pid: 2, path: 'new' }]);
+      expect(state.searchingHandles).toBe(false);
+    });
+
     it('接続の一覧が読めなければ理由を覚える', async () => {
       const state = new ResourceMonitorState({
         networkConnections: () => Promise.reject(new Error('netstat を起動できません')),
         processModules: () => Promise.resolve([]),
+        findHandles: () => Promise.resolve([]),
       });
       await Promise.all([state.refreshConnections(), state.refreshConnections()]);
       expect(state.connectionsError).toBe('netstat を起動できません');

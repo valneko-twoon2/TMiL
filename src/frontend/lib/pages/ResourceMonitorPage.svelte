@@ -1,6 +1,7 @@
 <script lang="ts">
   // リソース モニター。本家（resmon.exe）と同じく、概要・CPU・メモリ・ディスク・ネットワークのタブに分け、
   // チェックしたプロセスでほかの表を絞り込み、右にグラフを並べる。
+  import { untrack } from 'svelte';
   import DataTable from '../components/DataTable.svelte';
   import LineChart from '../components/LineChart.svelte';
   import PageHeader from '../components/PageHeader.svelte';
@@ -16,7 +17,10 @@
   import {
     connectionCounts,
     connectionKey,
+    connectionMatches,
     diskProcesses,
+    handleColumns,
+    handleKey,
     imageNames,
     isListening,
     listenColumns,
@@ -59,14 +63,34 @@
 
   let tab = $state<ResmonTab>('overview');
   let selected = $state<string | null>(null);
+  /** ネットワーク タブの、ポートやアドレスでの絞り込み */
+  let portQuery = $state('');
+  /** CPU タブの、ハンドルの検索欄（前の検索の文字を残す） */
+  let handleInput = $state(untrack(() => resmon.handlesQuery));
 
   const snapshot = $derived(monitor.snapshot);
   const processes = $derived(snapshot?.processes ?? []);
   const memoryTotal = $derived(snapshot?.memory.total ?? 0);
+  const windows = $derived((monitor.systemInfo?.osName ?? 'Windows').toLowerCase().includes('windows'));
   const checked = $derived(resmon.checked);
   const counts = $derived(connectionCounts(resmon.connections));
   const image = $derived(imageNames(processes));
-  const connections = $derived(onlyChecked(uniqueConnections(resmon.connections), (c) => c.pid, checked));
+  const filtering = $derived(portQuery.trim() !== '');
+  const matched = $derived(
+    uniqueConnections(resmon.connections).filter((c) => connectionMatches(c, portQuery, image)),
+  );
+  const connections = $derived(onlyChecked(matched, (c) => c.pid, checked));
+  const handles = $derived(onlyChecked(resmon.handles, (h) => h.pid, checked));
+  const handlesEmpty = $derived(
+    resmon.searchingHandles
+      ? '検索中…'
+      : (resmon.handlesError ??
+          (resmon.handlesQuery === ''
+            ? windows
+              ? 'ファイルかフォルダーの場所を入れて検索してください'
+              : 'ファイルの名前や場所の一部を入れて検索してください'
+            : '開いているプロセスは見つかりませんでした')),
+  );
   const tcp = $derived(connections.filter((c) => c.protocol === 'tcp' && !isListening(c)));
   const listening = $derived(connections.filter(isListening));
   const checkedProcesses = $derived(processes.filter((p) => checked.has(p.pid)));
@@ -346,6 +370,42 @@
         />
       </Panel>
       <Panel
+        title="関連付けられたハンドル"
+        summary={resmon.handlesQuery === '' ? '' : `${String(handles.length)} 件`}
+      >
+        <form
+          class="filter"
+          onsubmit={(e) => {
+            e.preventDefault();
+            void resmon.searchHandles(handleInput);
+          }}
+        >
+          <input
+            type="search"
+            value={handleInput}
+            oninput={(e) => (handleInput = e.currentTarget.value)}
+            placeholder={windows
+              ? 'ファイルかフォルダーの場所（例: C:\\Users\\me\\report.docx）'
+              : 'ファイルの名前や場所の一部（例: report.txt）'}
+            aria-label="ハンドルの検索"
+            data-testid="resmon-handle-search"
+          />
+          <button type="submit" disabled={resmon.searchingHandles}>検索</button>
+        </form>
+        <DataTable
+          label="関連付けられたハンドル"
+          table="rmhandles"
+          columns={handleColumns(image)}
+          rows={handles}
+          rowKey={handleKey}
+          {settings}
+          {selected}
+          {onselect}
+          empty={handlesEmpty}
+          testid="resmon-handles"
+        />
+      </Panel>
+      <Panel
         title="関連付けられたモジュール"
         summary={checked.size > 0 ? '' : 'プロセスにチェックを付けると表示します'}
       >
@@ -419,6 +479,19 @@
         />
       </Panel>
     {:else}
+      <div class="filter">
+        <input
+          type="search"
+          value={portQuery}
+          oninput={(e) => (portQuery = e.currentTarget.value)}
+          placeholder="ポートやアドレスで絞り込み（例: 3000、:443、127.0.0.1）"
+          aria-label="ポートやアドレスで絞り込み"
+          data-testid="resmon-port-filter"
+        />
+        {#if filtering}
+          <span class="count">{matched.length} 件</span>
+        {/if}
+      </div>
       <Panel
         title="ネットワーク アクティビティのあるプロセス"
         summary="ネットワーク I/O {formatBits(networkRate)}"
@@ -427,7 +500,7 @@
           'ネットワーク アクティビティのあるプロセス',
           'rmnetwork',
           networkColumns,
-          networkProcesses(processes, resmon.connections),
+          networkProcesses(processes, filtering ? matched : resmon.connections),
           'resmon-network',
         )}
       </Panel>
@@ -656,6 +729,38 @@
   }
   .legend dd {
     margin: 2px 0 0;
+  }
+  .filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 20px 6px;
+  }
+  .filter input {
+    flex: 1;
+    max-width: 480px;
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+  }
+  .filter button {
+    height: 28px;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+  }
+  .filter button:disabled {
+    opacity: 0.5;
+  }
+  .count {
+    color: var(--text-muted);
   }
   .banner {
     margin: 0 20px 4px;

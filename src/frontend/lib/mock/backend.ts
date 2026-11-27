@@ -16,6 +16,7 @@ import {
   connections,
   controlService,
   createSystemMock,
+  handles,
   modules,
   runTask,
   type SystemMockState,
@@ -401,6 +402,7 @@ const HANDLERS: Record<string, Handler> = {
     const pid = pidOf(args);
     return modules(pid, processes(state.tick, state.killed).find((p) => p.pid === pid)?.exe);
   },
+  find_handles: (state, args) => handles(args.query, processes(state.tick, state.killed)),
   set_always_on_top: (state, args) => {
     state.alwaysOnTop = args.enabled === true;
     return null;

@@ -1,7 +1,7 @@
-// リソース モニターの状態: 選んだプロセス（チェック）、平均 CPU、接続の一覧、モジュール。
+// リソース モニターの状態: 選んだプロセス（チェック）、平均 CPU、接続の一覧、ハンドルの検索、モジュール。
 import { SvelteSet } from 'svelte/reactivity';
 import type { Api } from '../api/ipc';
-import type { Connection, ModuleInfo, ProcessInfo, Snapshot } from '../model/types';
+import type { Connection, HandleInfo, ModuleInfo, ProcessInfo, Snapshot } from '../model/types';
 import {
   averageCpu,
   goneProcesses,
@@ -24,13 +24,19 @@ export class ResourceMonitorState {
   connections = $state.raw<Connection[]>([]);
   connectionsError = $state<string | null>(null);
   modules = $state.raw<ProcessModules[]>([]);
+  /** ハンドルの検索結果と、検索した文字 */
+  handles = $state.raw<HandleInfo[]>([]);
+  handlesError = $state<string | null>(null);
+  handlesQuery = $state('');
+  searchingHandles = $state(false);
+  #handleSearch = 0;
   /** 選んだプロセスの CPU 使用率の合計の推移 */
   selectedHistory = $state.raw<number[]>([]);
   #samples = $state.raw<CpuSamples>(NO_SAMPLES);
-  readonly #api: Pick<Api, 'networkConnections' | 'processModules'>;
+  readonly #api: Pick<Api, 'networkConnections' | 'processModules' | 'findHandles'>;
   #loadingConnections: Promise<void> | null = null;
 
-  constructor(api: Pick<Api, 'networkConnections' | 'processModules'>) {
+  constructor(api: Pick<Api, 'networkConnections' | 'processModules' | 'findHandles'>) {
     this.#api = api;
   }
 
@@ -66,6 +72,32 @@ export class ResourceMonitorState {
       this.connectionsError = null;
     } catch (cause) {
       this.connectionsError = cause instanceof Error ? cause.message : String(cause);
+    }
+  }
+
+  /** ファイルやフォルダーを開いているプロセスを探す（後から始めた検索の結果だけを残す）。 */
+  async searchHandles(query: string): Promise<void> {
+    const q = query.trim();
+    const id = ++this.#handleSearch;
+    this.handlesQuery = q;
+    if (q === '') {
+      this.handles = [];
+      this.handlesError = null;
+      this.searchingHandles = false;
+      return;
+    }
+    this.searchingHandles = true;
+    try {
+      const found = await this.#api.findHandles(q);
+      if (id !== this.#handleSearch) return;
+      this.handles = found;
+      this.handlesError = null;
+    } catch (cause) {
+      if (id !== this.#handleSearch) return;
+      this.handles = [];
+      this.handlesError = cause instanceof Error ? cause.message : String(cause);
+    } finally {
+      if (id === this.#handleSearch) this.searchingHandles = false;
     }
   }
 

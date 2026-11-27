@@ -5,6 +5,7 @@ import { toKillTarget } from '../process/columns';
 import {
   isAppWindows,
   isConnections,
+  isHandles,
   isModules,
   isServices,
   isKillResults,
@@ -53,6 +54,7 @@ describe('バックエンドとの契約', () => {
       ['services', isServices],
       ['connections', isConnections],
       ['modules', isModules],
+      ['handles', isHandles],
     ] as const)('%s を受け取れる', (name, guard) => {
       expect(guard(fixture(name))).toBe(true);
     });

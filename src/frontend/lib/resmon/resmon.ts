@@ -1,6 +1,6 @@
 // リソース モニターの表の行と列（純粋関数）。チェックしたプロセスでほかの表を絞り込む。
 import { formatBytes, formatPercent } from '../format/format';
-import type { Connection, DiskStats, ModuleInfo, ProcessInfo, TcpState } from '../model/types';
+import type { Connection, DiskStats, HandleInfo, ModuleInfo, ProcessInfo, TcpState } from '../model/types';
 import type { TableColumn } from '../table/table';
 
 export const RESMON_TABS = [
@@ -56,6 +56,25 @@ export function connectionCounts(connections: readonly Connection[]): Map<number
     counts.set(c.pid, (counts.get(c.pid) ?? 0) + 1);
   }
   return counts;
+}
+
+/**
+ * 接続が探す文字に合うか。数字だけ（先頭の「:」は省ける）ならローカルかリモートのポートが同じもの、
+ * それ以外はアドレス・イメージ名・PID に含まれるもの。空なら全部。
+ */
+export function connectionMatches(
+  c: Connection,
+  query: string,
+  image: (pid: number | null) => string,
+): boolean {
+  const q = query.trim().toLowerCase().replace(/^:/, '');
+  if (q === '') return true;
+  if (/^\d+$/.test(q)) {
+    const port = Number(q);
+    return c.localPort === port || c.remotePort === port;
+  }
+  const texts = [c.localAddress, c.remoteAddress, image(c.pid), c.pid === null ? '' : String(c.pid)];
+  return texts.some((t) => t.toLowerCase().includes(q));
 }
 
 /** 接続か待ち受けのあるプロセス。 */
@@ -128,6 +147,20 @@ export function listenColumns(image: (pid: number | null) => string): TableColum
     { key: 'port', label: 'ポート', numeric: true, width: 80, value: (c) => c.localPort },
     { key: 'protocol', label: 'プロトコル', width: 90, value: (c) => c.protocol.toUpperCase() },
   ];
+}
+
+/** 関連付けられたハンドルの表の列。 */
+export function handleColumns(image: (pid: number | null) => string): TableColumn<HandleInfo>[] {
+  return [
+    { key: 'image', label: 'イメージ', width: 160, value: (h) => image(h.pid) },
+    { key: 'pid', label: 'PID', numeric: true, width: 70, value: (h) => h.pid },
+    { key: 'path', label: 'ハンドル名', width: 420, value: (h) => h.path, muted: true },
+  ];
+}
+
+/** ハンドルの行を見分ける鍵。 */
+export function handleKey(h: HandleInfo): string {
+  return `${String(h.pid)}:${h.path}`;
 }
 
 export interface ModuleRow extends ModuleInfo {

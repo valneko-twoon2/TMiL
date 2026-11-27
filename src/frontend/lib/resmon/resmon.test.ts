@@ -7,7 +7,10 @@ import { averageCpu, goneProcesses, NO_SAMPLES, pushSelectedTotal, recordCpu } f
 import {
   connectionCounts,
   connectionKey,
+  connectionMatches,
   diskProcesses,
+  handleColumns,
+  handleKey,
   imageNames,
   isListening,
   listenColumns,
@@ -47,6 +50,24 @@ const snap = (at: number, processes: ProcessInfo[]): Snapshot => ({
 
 describe('リソース モニター', () => {
   describe('equivalence', () => {
+    it('数字はポート、それ以外はアドレス・イメージ名・PID で接続を探す', () => {
+      const image = (pid: number | null) => (pid === 7 ? 'node.exe' : '');
+      const c = conn({ localPort: 3000, remotePort: 443, pid: 7, localAddress: '127.0.0.1' });
+      expect(connectionMatches(c, '3000', image)).toBe(true);
+      expect(connectionMatches(c, ':443', image)).toBe(true);
+      expect(connectionMatches(c, '30', image)).toBe(false);
+      expect(connectionMatches(c, '127.0.0', image)).toBe(true);
+      expect(connectionMatches(c, 'NODE', image)).toBe(true);
+      expect(connectionMatches(c, 'python', image)).toBe(false);
+    });
+
+    it('ハンドルの表はイメージ名・PID・場所を出し、鍵は PID と場所', () => {
+      const h = { pid: 7, path: '/home/me/a.txt' };
+      const cols = handleColumns(() => 'node');
+      expect(cols.map((col) => cellText(col, h))).toEqual(['node', '7', '/home/me/a.txt']);
+      expect(handleKey(h)).toBe('7:/home/me/a.txt');
+    });
+
     it('チェックしたものがあれば、そのプロセスの行だけにする', () => {
       const rows = [conn({ pid: 1 }), conn({ pid: 2 }), conn({ pid: null })];
       expect(onlyChecked(rows, (c) => c.pid, new Set())).toHaveLength(3);
@@ -161,6 +182,15 @@ describe('リソース モニター', () => {
       expect(moduleRows([])).toEqual([]);
     });
 
+    it('空の検索は全部に合い、PID の分からない接続は PID では合わない', () => {
+      const none = () => '';
+      expect(connectionMatches(conn(), '   ', none)).toBe(true);
+      expect(connectionMatches(conn(), ':', none)).toBe(true);
+      expect(connectionMatches(conn({ pid: null }), '1', none)).toBe(false);
+      expect(connectionMatches(conn({ localPort: 0, remotePort: 0 }), '0', none)).toBe(true);
+      expect(connectionMatches(conn({ localPort: 65535 }), '65535', none)).toBe(true);
+    });
+
     it('ちょうど 60 秒前の記録は平均に入れない', () => {
       let samples = recordCpu(NO_SAMPLES, snap(0, [proc(1, { cpu: 100 })]));
       samples = recordCpu(samples, snap(60_000, [proc(1, { cpu: 0 })]));
@@ -189,6 +219,24 @@ describe('リソース モニター', () => {
             expect(sum).toHaveLength(Math.max(0, ...series.map((s) => s.length)));
             const last = series.reduce((total, s) => total + (s.at(-1) ?? 0), 0);
             if (sum.length > 0) expect(sum.at(-1)).toBe(last);
+          },
+        ),
+      );
+    });
+
+    it('ポートで探すと、合う接続はどれもそのポートを持つ', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.record({ localPort: fc.nat({ max: 65535 }), remotePort: fc.nat({ max: 65535 }) })),
+          fc.nat({ max: 65535 }),
+          (ports, port) => {
+            const rows = ports
+              .map((p) => conn(p))
+              .filter((c) => connectionMatches(c, String(port), () => ''));
+            expect(rows.every((c) => c.localPort === port || c.remotePort === port)).toBe(true);
+            expect(rows).toHaveLength(
+              ports.filter((p) => p.localPort === port || p.remotePort === port).length,
+            );
           },
         ),
       );

@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import {
   isAppWindows,
   isConnections,
+  isHandles,
   isModules,
   isServices,
   isKillResults,
@@ -17,6 +18,7 @@ import {
 import type {
   AppWindow,
   Connection,
+  HandleInfo,
   ModuleInfo,
   ServiceAction,
   ServiceInfo,
@@ -73,6 +75,7 @@ export interface Api {
   openServicesTool(): Promise<void>;
   networkConnections(): Promise<Connection[]>;
   processModules(pid: number): Promise<ModuleInfo[]>;
+  findHandles(query: string): Promise<HandleInfo[]>;
   setAlwaysOnTop(enabled: boolean): Promise<void>;
 }
 
@@ -134,6 +137,7 @@ export function createApi(call: Invoke): Api {
     },
     networkConnections: () => request('network_connections', isConnections),
     processModules: (pid) => request('process_modules', isModules, { pid }),
+    findHandles: (query) => request('find_handles', isHandles, { query }),
     setAlwaysOnTop: async (enabled) => {
       await request('set_always_on_top', isNull, { enabled });
     },

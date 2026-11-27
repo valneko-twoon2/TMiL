@@ -2,6 +2,7 @@
 import {
   type AppWindow,
   type Connection,
+  type HandleInfo,
   type ModuleInfo,
   PROTOCOLS,
   SERVICE_START_TYPES,
@@ -220,5 +221,7 @@ export const isConnection = shape<Connection>({
   pid: nullable(isCount),
 });
 export const isConnections = arrayOf(isConnection);
+
+export const isHandles = arrayOf(shape<HandleInfo>({ pid: isCount, path: isStr }));
 
 export const isModules = arrayOf(shape<ModuleInfo>({ name: isStr, path: isStr, version: nullable(isStr) }));

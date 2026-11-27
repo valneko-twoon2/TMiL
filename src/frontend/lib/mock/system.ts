@@ -1,5 +1,13 @@
-// 偽バックエンドのうち、サービス・接続・モジュール・ウィンドウ・新しいタスクの部分。値は決まったものだけを返す。
-import type { AppWindow, Connection, ModuleInfo, ServiceAction, ServiceInfo } from '../model/types';
+// 偽バックエンドのうち、サービス・接続・モジュール・ハンドル・ウィンドウ・新しいタスクの部分。値は決まったものだけを返す。
+import type {
+  AppWindow,
+  Connection,
+  HandleInfo,
+  ModuleInfo,
+  ProcessInfo,
+  ServiceAction,
+  ServiceInfo,
+} from '../model/types';
 
 /** この部分が持つ状態。 */
 export interface SystemMockState {
@@ -150,6 +158,16 @@ export function modules(pid: number, exe: string | undefined): ModuleInfo[] {
       version: '10.0.26100.1',
     })),
   ];
+}
+
+/** ハンドルの検索。「nosuch」を含む場所は見つからない扱い。見つかれば先頭の 2 つのプロセスが開いている。 */
+export function handles(query: unknown, list: readonly Pick<ProcessInfo, 'pid'>[]): HandleInfo[] {
+  const text = typeof query === 'string' ? query.trim() : '';
+  if (text === '') return [];
+  if (text.includes('nosuch')) {
+    throw new Error(`'${text}' が見つかりません。ファイルかフォルダーの場所を入れてください。`);
+  }
+  return list.slice(0, 2).map((p) => ({ pid: p.pid, path: text }));
 }
 
 /** 新しいタスクの実行。「nosuch」で始まるものは見つからない扱い。 */

@@ -1,6 +1,6 @@
 // 偽バックエンドのサービス・接続・モジュール・ウィンドウ・新しいタスクが契約どおりに動くか確かめる。
 import { describe, expect, it } from 'vitest';
-import { isAppWindows, isConnections, isModules, isServices } from '../model/guards';
+import { isAppWindows, isConnections, isHandles, isModules, isServices } from '../model/guards';
 import { createMockState, handleCommand } from './backend';
 
 describe('偽のバックエンド（システム）', () => {
@@ -62,6 +62,15 @@ describe('偽のバックエンド（システム）', () => {
       expect(() => handleCommand(state, 'control_service', { name: 'nope', action: 'stop' })).toThrow(
         '正しくありません',
       );
+    });
+
+    it('ハンドルの検索は、空なら空、nosuch なら見つからない', () => {
+      const state = createMockState();
+      expect(handleCommand(state, 'find_handles', { query: ' ' })).toEqual([]);
+      expect(() => handleCommand(state, 'find_handles', { query: '/tmp/nosuch' })).toThrow('見つかりません');
+      const found = handleCommand(state, 'find_handles', { query: '/tmp/a.txt' });
+      expect(isHandles(found)).toBe(true);
+      expect(found).toHaveLength(2);
     });
 
     it('空のタスクと見つからないタスクはエラー', () => {

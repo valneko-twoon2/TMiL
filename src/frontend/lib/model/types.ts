@@ -234,6 +234,12 @@ export interface Connection {
   pid: number | null;
 }
 
+/** ファイルなどを開いているプロセス（リソース モニターの「関連付けられたハンドル」）。 */
+export interface HandleInfo {
+  pid: number;
+  path: string;
+}
+
 /** プロセスが読み込んでいるモジュール。 */
 export interface ModuleInfo {
   name: string;
