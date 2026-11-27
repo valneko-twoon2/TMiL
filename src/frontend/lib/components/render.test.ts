@@ -301,7 +301,7 @@ describe('画面部品', () => {
           processes: [{ ...first, cpu: i % 10, memory: 100 * 1024 ** 2 + i * 2 * 1024 ** 2 }],
         });
       }
-      expect(actions.marks(first).growing).toBe(true);
+      expect(actions.marks(first).memoryGrowing).toBe(true);
       actions.showUsage(first);
       const body = render(ProcessDialogs, { props: { actions, intervalMs: 1000 } }).body;
       expect(body).toContain('直近 2 分の推移');

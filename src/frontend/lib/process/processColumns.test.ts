@@ -177,7 +177,7 @@ describe('プロセス タブの列', () => {
 
     it('まとめた行は、1 つでもメモリ増加中ならそれを出す', () => {
       const g = group(proc(1, 'a.exe'), proc(2, 'a.exe'));
-      const one = ctx({ marks: (p) => ({ efficient: false, suspended: false, growing: p.pid === 2 }) });
+      const one = ctx({ marks: (p) => ({ efficient: false, suspended: false, memoryGrowing: p.pid === 2 }) });
       expect(groupStatus(g, one)).toBe('メモリ増加中');
     });
 

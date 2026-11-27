@@ -14,12 +14,12 @@ export function processStateLabel(state: ProcessState): string {
 
 export function processStatusBadge(
   state: ProcessState,
-  marks: { efficient?: boolean; suspended?: boolean; growing?: boolean } = {},
+  marks: { efficient?: boolean; suspended?: boolean; memoryGrowing?: boolean } = {},
 ): string {
   if (marks.suspended === true) return PROCESS_STATE_LABEL.stopped;
   if (state === 'stopped' || state === 'zombie') return PROCESS_STATE_LABEL[state];
   if (marks.efficient === true) return '効率モード';
-  return marks.growing === true ? 'メモリ増加中' : '';
+  return marks.memoryGrowing === true ? 'メモリ増加中' : '';
 }
 
 const STARTUP_LOCATION_LABEL: Record<StartupLocation, string> = {

@@ -24,7 +24,7 @@ export { processKey };
 export interface ProcessMarks {
   efficient: boolean;
   suspended: boolean;
-  growing: boolean;
+  memoryGrowing: boolean;
 }
 
 export interface ProcessActionOptions {
@@ -115,7 +115,7 @@ export class ProcessActions {
     return {
       efficient: this.efficient.has(key) || p.efficient,
       suspended: this.suspended.has(key),
-      growing: this.usage.growth(p) !== null,
+      memoryGrowing: this.usage.growth(p) !== null,
     };
   }
 

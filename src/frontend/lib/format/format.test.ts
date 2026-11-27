@@ -200,10 +200,10 @@ describe('labels', () => {
     });
 
     it('メモリ増加中は、中断や効率モードが無いときだけ出す', () => {
-      expect(processStatusBadge('running', { growing: true })).toBe('メモリ増加中');
-      expect(processStatusBadge('running', { growing: true, efficient: true })).toBe('効率モード');
-      expect(processStatusBadge('running', { growing: true, suspended: true })).toBe('中断');
-      expect(processStatusBadge('zombie', { growing: true })).toBe('終了済み');
+      expect(processStatusBadge('running', { memoryGrowing: true })).toBe('メモリ増加中');
+      expect(processStatusBadge('running', { memoryGrowing: true, efficient: true })).toBe('効率モード');
+      expect(processStatusBadge('running', { memoryGrowing: true, suspended: true })).toBe('中断');
+      expect(processStatusBadge('zombie', { memoryGrowing: true })).toBe('終了済み');
     });
 
     it('スタートアップの場所', () => {

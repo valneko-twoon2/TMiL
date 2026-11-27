@@ -111,7 +111,7 @@ export interface ProcessCellContext {
   windows: boolean;
   description: (exe: string) => string;
   company: (exe: string) => string;
-  marks: (p: ProcessInfo) => { efficient: boolean; suspended: boolean; growing?: boolean };
+  marks: (p: ProcessInfo) => { efficient: boolean; suspended: boolean; memoryGrowing?: boolean };
   memoryTotal: number;
   averageCpu?: (p: ProcessInfo) => number;
 }
@@ -155,7 +155,7 @@ export function groupStatus(g: ProcessGroup, ctx: Pick<ProcessCellContext, 'mark
   return processStatusBadge('running', {
     efficient: marks.every((m) => m.efficient),
     suspended: marks.every((m) => m.suspended),
-    growing: marks.some((m) => m.growing === true),
+    memoryGrowing: marks.some((m) => m.memoryGrowing === true),
   });
 }
 
