@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <title>TaskManagerLite</title>
-  <rect x="48" y="48" width="928" height="928" rx="208" fill="#ffc53d"/>
-  <rect x="256" y="512" width="128" height="320" rx="44" fill="#2a3550"/>
-  <rect x="448" y="256" width="128" height="576" rx="44" fill="#2a3550"/>
-  <rect x="640" y="384" width="128" height="448" rx="44" fill="#e8553f"/>
+  <title>Task Manager Lite</title>
+  <rect x="72" y="72" width="880" height="880" rx="200" fill="#ffffff" stroke="#c9d1dc" stroke-width="48"/>
+  <rect x="256" y="512" width="128" height="320" rx="44" fill="#2f6fde"/>
+  <rect x="448" y="256" width="128" height="576" rx="44" fill="#2f6fde"/>
+  <rect x="640" y="384" width="128" height="448" rx="44" fill="#2f6fde"/>
 </svg>
