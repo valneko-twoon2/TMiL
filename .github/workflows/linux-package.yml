@@ -1,9 +1,12 @@
-# 手元で動かして確かめるための Linux パッケージ（AppImage と deb）を作る。手動実行だけ。
-# 実行: gh workflow run linux-package.yml --ref develop
-# 取得: gh run download <run-id> -n linux-package（バージョンは tauri.conf.json の version）
+# 手元で動かして確かめるための Linux パッケージ（AppImage と deb）を作る。
+# 実行: pkg/ で始まるブランチへ develop を push する（例 pkg/linux）。その中身が作られる。
+#       既定ブランチに入ったあとは gh workflow run linux-package.yml --ref develop でも動かせる。
+# 取得: gh run download <run-id> -n linux-package
 name: Linux パッケージ
 
 on:
+  push:
+    branches: ['pkg/**']
   workflow_dispatch:
 
 permissions:
