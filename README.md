@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/logo.svg" width="112" alt="TaskManagerLite のロゴ">
+<img src="assets/logo.svg" width="112" alt="Task Manager Lite のロゴ">
 
-# TaskManagerLite
+# Task Manager Lite
 
 **Rust + Tauri + Svelte 5 で作った、軽いタスクマネージャー**
 
@@ -26,7 +26,7 @@
 - **軽い** — ウィンドウを閉じるとトレイに隠れ、その間は計測を止めます
 - **見慣れた画面** — Windows 11 のタスク マネージャーと同じ並びのタブとコマンド。奥にあるリソース モニターもサイドバーから開けます
 - **Windows と Linux** — スタートアップ アプリは Windows のレジストリと Linux の autostart の両方に対応
-- **置き換えられる** — 設定から、タスクバーの右クリックメニューや Ctrl+Shift+Esc で TaskManagerLite が開くようにできます（Windows）
+- **置き換えられる** — 設定から、タスクバーの右クリックメニューや Ctrl+Shift+Esc で Task Manager Lite が開くようにできます（Windows）
 - **ライト・ダーク** — OS の設定に合わせるか、手動で選べます
 
 ## 画面

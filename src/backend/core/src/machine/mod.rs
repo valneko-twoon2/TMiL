@@ -144,7 +144,7 @@ impl fmt::Display for Rejection {
             Self::Quitting => "終了処理中です。",
             Self::NotFound => "プロセスが見つかりません。すでに終了している可能性があります。",
             Self::Protected => {
-                "TaskManagerLite 自身と、TaskManagerLite の画面を表示しているプロセスは終了・変更できません。TaskManagerLite を終了するときはトレイのメニューを使ってください。"
+                "Task Manager Lite 自身と、Task Manager Lite の画面を表示しているプロセスは終了・変更できません。Task Manager Lite を終了するときはトレイのメニューを使ってください。"
             }
             Self::Replaced => "プロセスが入れ替わっています。一覧を更新してからやり直してください。",
             Self::OtherTool => {

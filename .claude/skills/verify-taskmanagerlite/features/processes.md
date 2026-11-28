@@ -14,7 +14,7 @@
 
 `node .claude/skills/verify-taskmanagerlite/native.mjs run プロセス`
 
-証明: `.txt` に `taskmanagerlite` が含まれ、行が 2 つ以上ある。効率モードは、OS 側で効率モードにしたプロセス（タスク マネージャーで設定）に葉マークが付くことを `.png` で見る。
+証明: `.txt` に `Task Manager Lite`（自分自身。プロセス タブは実行ファイルの説明で出す）が含まれ、行が 2 つ以上ある。効率モードは、OS 側で効率モードにしたプロセス（タスク マネージャーで設定）に葉マークが付くことを `.png` で見る。
 
 ## Gotchas
 

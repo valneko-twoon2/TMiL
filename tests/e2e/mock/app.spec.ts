@@ -371,7 +371,7 @@ test.describe('設定', () => {
 
   test('タスク マネージャーを置き換えられる', async ({ page }) => {
     await open(page, '設定');
-    await page.getByRole('button', { name: 'TaskManagerLite に置き換える' }).click();
+    await page.getByRole('button', { name: 'Task Manager Lite に置き換える' }).click();
     await expect(page.getByText('現在: 置き換え中')).toBeVisible();
   });
 });

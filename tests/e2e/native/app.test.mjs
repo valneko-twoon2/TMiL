@@ -56,7 +56,8 @@ describe('実アプリ', () => {
     // getText は「見えている文字」だけを返し、列の幅に収めるため overflow: hidden にしたセルを
     // WebKitGTK では含めない（画面には出ている）。一覧の中身は textContent で確かめる
     const body = await driver.findElement(By.css('tbody')).getAttribute('textContent');
-    assert.match(body, /taskmanagerlite/i, 'TaskManagerLite 自身が一覧にあるはず');
+    // Windows は実行ファイルの説明（Task Manager Lite）、Linux は実行ファイル名で出る
+    assert.match(body, /Task Manager Lite|taskmanagerlite/, 'Task Manager Lite 自身が一覧にあるはず');
   });
 
   it('詳細タブで自分の PID を検索できる', async () => {
@@ -123,9 +124,9 @@ describe('実アプリ', () => {
   it('設定にバージョンが出る', async () => {
     await navigate('設定');
     const body = await driver.wait(
-      until.elementLocated(By.xpath('//*[contains(text(), "TaskManagerLite v")]')),
+      until.elementLocated(By.xpath('//*[contains(text(), "Task Manager Lite v")]')),
       TIMEOUT,
     );
-    assert.match(await body.getText(), /TaskManagerLite v\d+\.\d+\.\d+/);
+    assert.match(await body.getText(), /Task Manager Lite v\d+\.\d+\.\d+/);
   });
 });

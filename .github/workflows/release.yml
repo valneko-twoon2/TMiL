@@ -64,7 +64,7 @@ jobs:
           if [ -z "$id" ]; then
             id="$(gh api -X POST "repos/$GITHUB_REPOSITORY/releases" \
               -f tag_name="v$VERSION" -f target_commitish="$GITHUB_SHA" \
-              -f name="TaskManagerLite v$VERSION" -F body=@release-notes.md -F draft=true \
+              -f name="Task Manager Lite v$VERSION" -F body=@release-notes.md -F draft=true \
               --jq .id)"
           else
             gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$id" \
@@ -103,12 +103,15 @@ jobs:
       - run: npm ci
         working-directory: src/frontend
       # 設定（src/backend/app）とフロント（src/frontend）の場所は scripts/dev/tauri.mjs が教える
+      # ファイル名は productName（Task Manager Lite）から作られ空白が入るので、
+      # install.ps1・install.sh が探す TaskManagerLite_x.y.z_* の名前で添付する
       - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tauriScript: node scripts/dev/tauri.mjs
           releaseId: ${{ needs.prepare.outputs.release_id }}
+          releaseAssetNamePattern: TaskManagerLite_[version]_[arch][setup][ext]
 
   publish:
     name: リリースを公開

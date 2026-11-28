@@ -34,7 +34,7 @@ fail() {
 
 if [ "${1:-}" = "--uninstall" ]; then
   rm -f "$TARGET" "$DESKTOP"
-  say "TaskManagerLite をアンインストールしました。"
+  say "Task Manager Lite をアンインストールしました。"
   exit 0
 fi
 
@@ -66,7 +66,7 @@ sha256() {
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT INT TERM
 
-say "TaskManagerLite のリリースを確かめています..."
+say "Task Manager Lite のリリースを確かめています..."
 download "$BASE/SHA256SUMS" "$TMP/SHA256SUMS" || fail "SHA256SUMS を取得できません: $BASE"
 
 # 「ハッシュ  ファイル名」の行から AppImage を探す
@@ -91,7 +91,7 @@ install -m 755 "$TMP/$NAME" "$TARGET"
 cat >"$DESKTOP" <<EOF
 [Desktop Entry]
 Type=Application
-Name=TaskManagerLite
+Name=Task Manager Lite
 Comment=軽量タスクマネージャー
 Exec=$TARGET
 Icon=utilities-system-monitor
@@ -99,7 +99,7 @@ Categories=Utility;System;Monitor;
 Terminal=false
 EOF
 
-say "TaskManagerLite をインストールしました: $TARGET"
+say "Task Manager Lite をインストールしました: $TARGET"
 case ":$PATH:" in
   *":$BIN_DIR:"*) ;;
   *) say "（$BIN_DIR が PATH に入っていません。アプリのメニューから起動するか、PATH に足してください）" ;;

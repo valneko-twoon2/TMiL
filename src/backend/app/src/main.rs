@@ -11,7 +11,7 @@ fn main() {
     if let Err(err) = run() {
         #[expect(clippy::print_stderr, reason = "起動失敗を知らせる手段が他に無い")]
         {
-            eprintln!("TaskManagerLite を起動できませんでした: {err}");
+            eprintln!("Task Manager Lite を起動できませんでした: {err}");
         }
         std::process::exit(1);
     }

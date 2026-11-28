@@ -49,7 +49,7 @@
   $temp = Join-Path ([IO.Path]::GetTempPath()) ('taskmanagerlite-install-' + [guid]::NewGuid().ToString('N'))
   New-Item -ItemType Directory -Path $temp | Out-Null
   try {
-    Write-Host (Get-Message 'TaskManagerLite のリリースを確かめています...')
+    Write-Host (Get-Message 'Task Manager Lite のリリースを確かめています...')
     $sumsPath = Join-Path $temp 'SHA256SUMS'
     Invoke-WebRequest -UseBasicParsing -Uri "$base/SHA256SUMS" -OutFile $sumsPath
 
@@ -83,7 +83,7 @@
     if ($process.ExitCode -ne 0) {
       throw ((Get-Message 'インストーラーが失敗しました。終了コード: ') + $process.ExitCode)
     }
-    Write-Host (Get-Message 'TaskManagerLite をインストールしました。スタート メニューから起動できます。')
+    Write-Host (Get-Message 'Task Manager Lite をインストールしました。スタート メニューから起動できます。')
   } finally {
     Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue
   }

@@ -312,7 +312,7 @@ mod regression {
                 .error
                 .as_deref()
                 .unwrap()
-                .contains("TaskManagerLite")
+                .contains("Task Manager Lite")
         );
         assert!(alive, "子プロセスが終了されている");
     }
