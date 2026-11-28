@@ -5,7 +5,7 @@ mod tray;
 
 use taskmanagerlite_core::backend::Backend;
 use taskmanagerlite_core::icons::IconCache;
-use tauri::WindowEvent;
+use tauri::{Manager, WindowEvent};
 
 fn main() {
     if let Err(err) = run() {
@@ -57,11 +57,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             commands::set_summary_view,
         ])
         .setup(|app| {
-            tray::create(app.handle())?;
+            let available = tray::try_create(app.handle());
+            app.manage(tray::TrayAvailable(available));
             Ok(())
         })
         .on_window_event(|window, event| {
-            if let WindowEvent::CloseRequested { api, .. } = event {
+            if let WindowEvent::CloseRequested { api, .. } = event
+                && window
+                    .try_state::<tray::TrayAvailable>()
+                    .is_none_or(|t| t.0)
+            {
                 api.prevent_close();
                 tray::hide_window(window);
             }
