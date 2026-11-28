@@ -1,6 +1,6 @@
 {
   "name": "taskmanagerlite",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "Apache-2.0",
   "private": true,
   "description": "Rust + Tauri + Svelte 5 で作る軽量タスクマネージャー",
