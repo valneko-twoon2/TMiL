@@ -1,0 +1,149 @@
+# main にマージされたら、そのバージョンのリリースを作る。
+# 本文は CHANGELOG.md の該当バージョンの節をそのまま使う。
+# 同じバージョンのリリースが公開済みなら何もしない（手動で再実行しても二重にならない）。
+#
+# 1. prepare: 下書きのリリースを 1 回だけ作る（ビルドが並列でも作成が競合しない）
+# 2. build:   Windows / Linux でビルドし、下書きにインストーラーを添付する
+# 3. publish: インストール スクリプトと SHA256SUMS を添付し、公開する（このときタグが付く）
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: リリースの準備
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      release_id: ${{ steps.draft.outputs.release_id }}
+      skip: ${{ steps.meta.outputs.skip }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - id: meta
+        name: バージョンと既存のリリースを調べる
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(node -p "require('./src/frontend/package.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          published="$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
+            --jq ".[] | select(.tag_name == \"v$version\" and .draft == false) | .id")"
+          if [ -n "$published" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+      - id: draft
+        name: CHANGELOG を本文にして下書きを作る（既にあれば使い回す）
+        if: steps.meta.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          node scripts/release/changelog-section.mjs "$VERSION" > release-notes.md
+          id="$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
+            --jq ".[] | select(.tag_name == \"v$VERSION\" and .draft == true) | .id" | head -n 1)"
+          if [ -z "$id" ]; then
+            id="$(gh api -X POST "repos/$GITHUB_REPOSITORY/releases" \
+              -f tag_name="v$VERSION" -f target_commitish="$GITHUB_SHA" \
+              -f name="Task Manager Lite v$VERSION" -F body=@release-notes.md -F draft=true \
+              --jq .id)"
+          else
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$id" \
+              -f target_commitish="$GITHUB_SHA" -F body=@release-notes.md > /dev/null
+          fi
+          echo "release_id=$id" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: ビルド（${{ matrix.os }}）
+    needs: prepare
+    if: needs.prepare.outputs.skip == 'false'
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/linux-deps
+        if: runner.os == 'Linux'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src/backend
+      - run: npm ci
+        working-directory: src/frontend
+      # 設定（src/backend/app）とフロント（src/frontend）の場所は scripts/dev/tauri.mjs が教える
+      # ファイル名は productName（Task Manager Lite）から作られ空白が入るので、
+      # install.ps1・install.sh が探す TaskManagerLite_x.y.z_* の名前で添付する
+      - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tauriScript: node scripts/dev/tauri.mjs
+          releaseId: ${{ needs.prepare.outputs.release_id }}
+          releaseAssetNamePattern: TaskManagerLite_[version]_[arch][setup][ext]
+
+  publish:
+    name: リリースを公開
+    needs: [prepare, build]
+    if: needs.prepare.outputs.skip == 'false'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # irm / curl で入れるためのスクリプトと、全部のファイルのハッシュ（スクリプトが確かめる）を添付する
+      - name: インストール スクリプトと SHA256SUMS を添付する
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ needs.prepare.outputs.release_id }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/assets"
+          cd "$RUNNER_TEMP/assets"
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets" --paginate --jq '.[] | "\(.id) \(.name)"' |
+            while read -r id name; do
+              case "$name" in SHA256SUMS | install.sh | install.ps1) continue ;; esac
+              gh api -H 'Accept: application/octet-stream' "repos/$GITHUB_REPOSITORY/releases/assets/$id" > "$name"
+            done
+          cp "$GITHUB_WORKSPACE/src/installer/install.sh" "$GITHUB_WORKSPACE/src/installer/install.ps1" .
+          sha256sum -- * > "$RUNNER_TEMP/SHA256SUMS"
+          cat "$RUNNER_TEMP/SHA256SUMS"
+          gh release upload "v$VERSION" install.sh install.ps1 "$RUNNER_TEMP/SHA256SUMS" --clobber --repo "$GITHUB_REPOSITORY"
+      - name: 下書きを公開する
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ needs.prepare.outputs.release_id }}
+        run: gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -F draft=false --jq .html_url

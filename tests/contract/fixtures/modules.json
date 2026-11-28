@@ -1,0 +1,12 @@
+[
+  {
+    "name": "ntdll.dll",
+    "path": "C:\\Windows\\SYSTEM32\\ntdll.dll",
+    "version": "10.0.26100.1"
+  },
+  {
+    "name": "libc.so.6",
+    "path": "/usr/lib/libc.so.6",
+    "version": null
+  }
+]

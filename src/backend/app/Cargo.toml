@@ -1,0 +1,21 @@
+[package]
+name = "taskmanagerlite"
+description = "TaskManagerLite - 軽量タスクマネージャー"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[build-dependencies]
+tauri-build.workspace = true
+
+[dependencies]
+taskmanagerlite-core.workspace = true
+serde.workspace = true
+tauri.workspace = true
+tauri-plugin-single-instance.workspace = true
+
+[lints]
+workspace = true

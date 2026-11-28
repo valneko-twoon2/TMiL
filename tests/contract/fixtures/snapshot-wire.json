@@ -1,0 +1,208 @@
+{
+  "timestampMs": 1767225600000,
+  "cpu": {
+    "usage": 25.5,
+    "perCore": [
+      20.0,
+      31.0
+    ],
+    "frequencyMhz": 3200,
+    "processCount": 5,
+    "uptimeSecs": 93784
+  },
+  "memory": {
+    "total": 17179869184,
+    "used": 8589934592,
+    "available": 8589934592,
+    "free": 4294967296,
+    "swapTotal": 4294967296,
+    "swapUsed": 0
+  },
+  "disks": [
+    {
+      "name": "nvme0n1",
+      "mountPoint": "/",
+      "fileSystem": "ext4",
+      "kind": "ssd",
+      "removable": false,
+      "total": 512000000000,
+      "available": 200000000000,
+      "readPerSec": 4096,
+      "writtenPerSec": 1024
+    },
+    {
+      "name": "sda",
+      "mountPoint": "/data",
+      "fileSystem": "ext4",
+      "kind": "hdd",
+      "removable": false,
+      "total": 512000000000,
+      "available": 200000000000,
+      "readPerSec": 4096,
+      "writtenPerSec": 1024
+    },
+    {
+      "name": "loop0",
+      "mountPoint": "/snap/core",
+      "fileSystem": "ext4",
+      "kind": "unknown",
+      "removable": false,
+      "total": 512000000000,
+      "available": 200000000000,
+      "readPerSec": 4096,
+      "writtenPerSec": 1024
+    }
+  ],
+  "networks": [
+    {
+      "name": "eth0",
+      "receivedPerSec": 1000,
+      "transmittedPerSec": 200,
+      "totalReceived": 1000000,
+      "totalTransmitted": 200000,
+      "macAddress": "00:11:22:33:44:55",
+      "addresses": [
+        "192.168.1.2/24",
+        "fe80::1/64"
+      ]
+    }
+  ],
+  "gpus": [
+    {
+      "name": "Example GPU",
+      "vendor": "Example",
+      "usage": 12.5,
+      "memoryTotal": 8589934592,
+      "memoryUsed": 1073741824
+    },
+    {
+      "name": "Basic Display",
+      "vendor": "",
+      "usage": null,
+      "memoryTotal": null,
+      "memoryUsed": null
+    }
+  ],
+  "processes": [
+    [
+      1,
+      null,
+      "init",
+      1767222000,
+      "sleeping",
+      12.5,
+      1048576,
+      2048,
+      0,
+      3600,
+      4194304,
+      45000,
+      10485760,
+      1048576,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      false,
+      false
+    ],
+    [
+      100,
+      1,
+      "app",
+      1767222000,
+      "running",
+      12.5,
+      1048576,
+      2048,
+      0,
+      3600,
+      4194304,
+      45000,
+      10485760,
+      1048576,
+      120,
+      8,
+      1,
+      3.5,
+      67108864,
+      "GPU 0 - 3D",
+      false,
+      false
+    ],
+    [
+      101,
+      1,
+      "paused",
+      1767222000,
+      "stopped",
+      12.5,
+      1048576,
+      2048,
+      0,
+      3600,
+      4194304,
+      45000,
+      10485760,
+      1048576,
+      null,
+      null,
+      1,
+      null,
+      null,
+      null,
+      true,
+      true
+    ],
+    [
+      102,
+      1,
+      "defunct",
+      1767222000,
+      "zombie",
+      12.5,
+      1048576,
+      2048,
+      0,
+      3600,
+      4194304,
+      45000,
+      10485760,
+      1048576,
+      null,
+      null,
+      1,
+      null,
+      null,
+      null,
+      false,
+      false
+    ],
+    [
+      103,
+      1,
+      "odd",
+      1767222000,
+      "other",
+      12.5,
+      1048576,
+      2048,
+      0,
+      3600,
+      4194304,
+      45000,
+      10485760,
+      1048576,
+      null,
+      null,
+      1,
+      null,
+      null,
+      null,
+      false,
+      false
+    ]
+  ]
+}

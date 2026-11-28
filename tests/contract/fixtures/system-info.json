@@ -1,0 +1,9 @@
+{
+  "osName": "Ubuntu",
+  "osVersion": "24.04",
+  "kernelVersion": "6.8.0",
+  "hostName": "host",
+  "cpuBrand": "Example CPU",
+  "physicalCores": null,
+  "logicalCores": 8
+}

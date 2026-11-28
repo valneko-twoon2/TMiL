@@ -1,0 +1,12 @@
+[
+  {
+    "pid": 100,
+    "ok": true,
+    "error": null
+  },
+  {
+    "pid": 1,
+    "ok": false,
+    "error": "終了できませんでした。"
+  }
+]

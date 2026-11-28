@@ -1,0 +1,56 @@
+[
+  {
+    "id": "registryUser:item0",
+    "name": "Item 0",
+    "command": "\"C:\\Apps\\item0.exe\" --min",
+    "program": "C:\\Apps\\item0.exe",
+    "location": "registryUser",
+    "enabled": true,
+    "canToggle": true
+  },
+  {
+    "id": "registryMachine:item1",
+    "name": "Item 1",
+    "command": "\"C:\\Apps\\item1.exe\" --min",
+    "program": "C:\\Apps\\item1.exe",
+    "location": "registryMachine",
+    "enabled": false,
+    "canToggle": false
+  },
+  {
+    "id": "folderUser:item2",
+    "name": "Item 2",
+    "command": "\"C:\\Apps\\item2.exe\" --min",
+    "program": "C:\\Apps\\item2.exe",
+    "location": "folderUser",
+    "enabled": true,
+    "canToggle": true
+  },
+  {
+    "id": "folderCommon:item3",
+    "name": "Item 3",
+    "command": "\"C:\\Apps\\item3.exe\" --min",
+    "program": "C:\\Apps\\item3.exe",
+    "location": "folderCommon",
+    "enabled": false,
+    "canToggle": true
+  },
+  {
+    "id": "autostartUser:item4",
+    "name": "Item 4",
+    "command": "\"C:\\Apps\\item4.exe\" --min",
+    "program": "C:\\Apps\\item4.exe",
+    "location": "autostartUser",
+    "enabled": true,
+    "canToggle": false
+  },
+  {
+    "id": "autostartSystem:item5",
+    "name": "Item 5",
+    "command": "\"C:\\Apps\\item5.exe\" --min",
+    "program": "C:\\Apps\\item5.exe",
+    "location": "autostartSystem",
+    "enabled": false,
+    "canToggle": true
+  }
+]

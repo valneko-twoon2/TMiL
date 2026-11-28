@@ -1,0 +1,295 @@
+# Lint・テスト・依存関係の監査。ジョブはすべて並列に動く。
+# ミューテーションテストはここでは回さない（scripts/test/mutation.mjs で手動）。
+name: CI
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: '0'
+  NODE_VERSION: '24'
+
+jobs:
+  lint-frontend:
+    name: Lint（フロント）
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - run: npm ci
+        working-directory: src/frontend
+      - run: node scripts/lint/lint.mjs --frontend
+      - name: コメントの印（足した分だけ）
+        run: node scripts/lint/comments.mjs --base "$BASE"
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+
+  lint-backend:
+    name: Lint（バック）
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/linux-deps
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src/backend
+      # Tauri はビルド時にフロントの出力先が必要なので、空のフォルダーを用意する
+      - run: mkdir -p src/frontend/dist
+      - run: node scripts/lint/lint.mjs --backend
+
+  test-frontend:
+    name: テスト（フロント・ツール）
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - run: npm ci
+        working-directory: src/frontend
+      - name: 単体・スナップショット・契約・ファジング（カバレッジ 80% 未満で失敗）
+        run: npx vitest run --coverage
+        working-directory: src/frontend
+      - name: ツール（scripts/）
+        run: node scripts/test/tools.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: coverage-frontend
+          path: coverage/frontend
+          retention-days: 7
+
+  test-backend:
+    name: テスト（バック / ${{ matrix.os }}）
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+          components: llvm-tools-preview
+      - uses: taiki-e/install-action@893d6ee8d714b6c7dfe2bcd94e5759e9a7958a7e # v2.90.10
+        with:
+          tool: cargo-llvm-cov
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src/backend
+      - name: 単体・スナップショット・契約・ファジング（カバレッジ 80% 未満で失敗）
+        run: node scripts/test/backend.mjs --coverage
+
+  e2e-mock:
+    name: E2E（モック）
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - run: npm ci
+        working-directory: src/frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: src/frontend
+      - run: npx playwright test --project=e2e-mock
+        working-directory: src/frontend
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: e2e-mock-report
+          path: playwright-report
+          retention-days: 7
+
+  vrt:
+    name: VRT
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - run: npm ci
+        working-directory: src/frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: src/frontend
+      - run: npx playwright test --project=vrt
+        working-directory: src/frontend
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: vrt-diff
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+
+  e2e-native:
+    name: E2E（実アプリ）
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/linux-deps
+        with:
+          e2e: 'true'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src/backend
+      # 第三者が配布するバイナリを避け、crates.io から自前でビルドする（キャッシュされる）
+      - run: cargo install tauri-driver --locked
+      - run: npm ci
+        working-directory: src/frontend
+      - run: xvfb-run --auto-servernum node scripts/test/e2e-native.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: e2e-native-evidence
+          path: test-results/native
+          retention-days: 7
+
+  installer:
+    name: インストール スクリプト（${{ matrix.os }}）
+    strategy:
+      fail-fast: false
+      matrix:
+        # Linux: install.sh と PowerShell 7 の install.ps1、Windows: Windows PowerShell 5.1 の install.ps1
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: node scripts/test/installer.mjs
+
+  fuzz:
+    name: ファジング
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: nightly
+      - uses: taiki-e/install-action@893d6ee8d714b6c7dfe2bcd94e5759e9a7958a7e # v2.90.10
+        with:
+          tool: cargo-fuzz
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: tests/fuzz
+      - run: node scripts/test/fuzz.mjs --time 30
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: fuzz-artifacts
+          path: tests/fuzz/artifacts
+          retention-days: 7
+
+  formal:
+    name: 形式検証（TLA+）
+    runs-on: ubuntu-24.04
+    env:
+      TLA2TOOLS_VERSION: v1.7.4
+      TLA2TOOLS_SHA256: 936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: tla2tools を取得（チェックサムを確かめる）
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/tla2tools.jar" "https://github.com/tlaplus/tlaplus/releases/download/$TLA2TOOLS_VERSION/tla2tools.jar"
+          echo "$TLA2TOOLS_SHA256  $RUNNER_TEMP/tla2tools.jar" | sha256sum -c -
+      - name: TLC で検査（遷移の一致・約束・いつかは終わる）
+        run: TLA2TOOLS="$RUNNER_TEMP/tla2tools.jar" node scripts/test/formal.mjs
+
+  audit:
+    name: 依存関係の監査
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: npm audit（high 以上で失敗）
+        working-directory: src/frontend
+        run: |
+          {
+            echo '## npm audit'
+            echo '```'
+            npm audit --omit=optional || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          npm audit --audit-level=high
+      - name: cargo-deny（脆弱性・ライセンス・取得元）
+        uses: EmbarkStudios/cargo-deny-action@81891abc19297b21343b15ef67dc61e4aea74fda # v2.1.4
+        with:
+          manifest-path: src/backend/Cargo.toml
+          command: check advisories bans licenses sources

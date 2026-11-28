@@ -16,4 +16,5 @@
 # 生成物は差分表示を抑える
 package-lock.json -diff linguist-generated
 Cargo.lock -diff linguist-generated
-docs/testing/inventory.md linguist-generated
+docs/testing/03-inventory.md linguist-generated
+tests/formal/MachineTable.tla linguist-generated

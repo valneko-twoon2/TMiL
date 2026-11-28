@@ -1,0 +1,312 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`パフォーマンスの一覧（細部） > snapshot > すべてのリソースの見出し・詳細の文言 1`] = `
+[
+  {
+    "axisLabel": "% 使用率",
+    "caption": "Example CPU",
+    "id": "cpu",
+    "max": 100,
+    "series": [
+      "使用率:#1e88e5:25.5",
+    ],
+    "stats": [
+      {
+        "label": "使用率",
+        "value": "26%",
+      },
+      {
+        "label": "速度",
+        "value": "3.20 GHz",
+      },
+      {
+        "label": "プロセス",
+        "value": "5",
+      },
+      {
+        "label": "スレッド",
+        "value": "8",
+      },
+      {
+        "label": "ハンドル",
+        "value": "120",
+      },
+      {
+        "label": "稼働時間",
+        "value": "1:02:03:04",
+      },
+      {
+        "label": "コア",
+        "value": "-",
+      },
+      {
+        "label": "論理プロセッサ数",
+        "value": "8",
+      },
+    ],
+    "subtitle": "",
+    "summary": "26%  3.20 GHz",
+    "title": "CPU",
+  },
+  {
+    "axisLabel": "メモリ使用量",
+    "caption": "16.0 GB",
+    "id": "memory",
+    "max": 100,
+    "series": [
+      "使用中:#9c27b0:50",
+    ],
+    "stats": [
+      {
+        "label": "使用中",
+        "value": "8.0 GB",
+      },
+      {
+        "label": "利用可能",
+        "value": "8.0 GB",
+      },
+      {
+        "label": "合計",
+        "value": "16.0 GB",
+      },
+      {
+        "label": "スワップ",
+        "value": "0 B / 4.0 GB",
+      },
+      {
+        "label": "キャッシュ済み",
+        "value": "4.0 GB",
+      },
+      {
+        "label": "空き",
+        "value": "4.0 GB",
+      },
+    ],
+    "subtitle": "",
+    "summary": "8.0 GB / 16.0 GB (50%)",
+    "title": "メモリ",
+  },
+  {
+    "axisLabel": "転送速度",
+    "caption": "nvme0n1",
+    "id": "disk:/",
+    "max": 5000,
+    "series": [
+      "読み取り:#43a047:4096",
+      "書き込み:#a5d6a7:1024",
+    ],
+    "stats": [
+      {
+        "label": "読み取り速度",
+        "value": "4.0 KB/秒",
+      },
+      {
+        "label": "書き込み速度",
+        "value": "1.0 KB/秒",
+      },
+      {
+        "label": "容量",
+        "value": "476.8 GB",
+      },
+      {
+        "label": "空き領域",
+        "value": "186.3 GB",
+      },
+      {
+        "label": "種類",
+        "value": "SSD",
+      },
+      {
+        "label": "ファイルシステム",
+        "value": "ext4",
+      },
+    ],
+    "subtitle": "SSD",
+    "summary": "5.0 KB/秒",
+    "title": "ディスク 0 (/)",
+  },
+  {
+    "axisLabel": "転送速度",
+    "caption": "sda",
+    "id": "disk:/data",
+    "max": 5000,
+    "series": [
+      "読み取り:#43a047:4096",
+      "書き込み:#a5d6a7:1024",
+    ],
+    "stats": [
+      {
+        "label": "読み取り速度",
+        "value": "4.0 KB/秒",
+      },
+      {
+        "label": "書き込み速度",
+        "value": "1.0 KB/秒",
+      },
+      {
+        "label": "容量",
+        "value": "476.8 GB",
+      },
+      {
+        "label": "空き領域",
+        "value": "186.3 GB",
+      },
+      {
+        "label": "種類",
+        "value": "HDD",
+      },
+      {
+        "label": "ファイルシステム",
+        "value": "ext4",
+      },
+    ],
+    "subtitle": "HDD",
+    "summary": "5.0 KB/秒",
+    "title": "ディスク 1 (/data)",
+  },
+  {
+    "axisLabel": "転送速度",
+    "caption": "loop0",
+    "id": "disk:/snap/core",
+    "max": 5000,
+    "series": [
+      "読み取り:#43a047:4096",
+      "書き込み:#a5d6a7:1024",
+    ],
+    "stats": [
+      {
+        "label": "読み取り速度",
+        "value": "4.0 KB/秒",
+      },
+      {
+        "label": "書き込み速度",
+        "value": "1.0 KB/秒",
+      },
+      {
+        "label": "容量",
+        "value": "476.8 GB",
+      },
+      {
+        "label": "空き領域",
+        "value": "186.3 GB",
+      },
+      {
+        "label": "種類",
+        "value": "不明",
+      },
+      {
+        "label": "ファイルシステム",
+        "value": "ext4",
+      },
+    ],
+    "subtitle": "不明",
+    "summary": "5.0 KB/秒",
+    "title": "ディスク 2 (/snap/core)",
+  },
+  {
+    "axisLabel": "% 使用率",
+    "caption": "Example GPU",
+    "id": "gpu:0",
+    "max": 100,
+    "series": [
+      "使用率:#00897b:12.5",
+      "専用 GPU メモリ:#80cbc4:12.5",
+    ],
+    "stats": [
+      {
+        "label": "使用率",
+        "value": "13%",
+      },
+      {
+        "label": "専用 GPU メモリ",
+        "value": "1.0 GB / 8.0 GB",
+      },
+      {
+        "label": "名前",
+        "value": "Example GPU",
+      },
+      {
+        "label": "ベンダー",
+        "value": "Example",
+      },
+    ],
+    "subtitle": "Example GPU",
+    "summary": "13%",
+    "title": "GPU 0",
+  },
+  {
+    "axisLabel": "% 使用率",
+    "caption": "Basic Display",
+    "id": "gpu:1",
+    "max": 100,
+    "series": [
+      "使用率:#00897b:0",
+      "専用 GPU メモリ:#80cbc4:0",
+    ],
+    "stats": [
+      {
+        "label": "使用率",
+        "value": "-",
+      },
+      {
+        "label": "専用 GPU メモリ",
+        "value": "-",
+      },
+      {
+        "label": "名前",
+        "value": "Basic Display",
+      },
+      {
+        "label": "ベンダー",
+        "value": "-",
+      },
+    ],
+    "subtitle": "Basic Display",
+    "summary": "-",
+    "title": "GPU 1",
+  },
+  {
+    "axisLabel": "スループット",
+    "caption": "eth0",
+    "id": "net:eth0",
+    "max": 2000,
+    "series": [
+      "受信:#e08a00:1000",
+      "送信:#ffcc80:200",
+    ],
+    "stats": [
+      {
+        "label": "送信",
+        "value": "1.6 Kbps",
+      },
+      {
+        "label": "受信",
+        "value": "8.0 Kbps",
+      },
+      {
+        "label": "送信済み（合計）",
+        "value": "195.3 KB",
+      },
+      {
+        "label": "受信済み（合計）",
+        "value": "976.6 KB",
+      },
+      {
+        "label": "IPv4 アドレス",
+        "value": "192.168.1.2",
+      },
+      {
+        "label": "IPv6 アドレス",
+        "value": "fe80::1",
+      },
+      {
+        "label": "MAC アドレス",
+        "value": "00:11:22:33:44:55",
+      },
+    ],
+    "subtitle": "eth0",
+    "summary": "送信: 1.6 Kbps 受信: 8.0 Kbps",
+    "title": "イーサネット",
+  },
+]
+`;

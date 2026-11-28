@@ -3,8 +3,15 @@
 // Lint で問題があれば exit 2 で Claude に返す。clippy と svelte-check はコミット時に回す。
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
-import { isEslintTarget, isPrettierTarget, isTextFile, normalizePath } from '../../lib/files.mjs';
-import { ROOT, run, runNodeBin } from '../../lib/proc.mjs';
+import {
+  eslintArgs,
+  isEslintTarget,
+  isPrettierTarget,
+  isTextFile,
+  normalizePath,
+  prettierArgs,
+} from '../../lib/files.mjs';
+import { BACKEND, FRONTEND, ROOT, run, runNodeBin } from '../../lib/proc.mjs';
 import { block, readHookInput } from './read-input.mjs';
 
 const input = readHookInput();
@@ -19,20 +26,22 @@ if (rel.startsWith('..') || !existsSync(abs) || !isTextFile(rel)) process.exit(0
 const text = readFileSync(abs, 'utf8');
 if (text.includes('\r')) writeFileSync(abs, text.replaceAll('\r\n', '\n').replaceAll('\r', '\n'));
 
-const hasNodeModules = existsSync(join(ROOT, 'node_modules'));
+const hasNodeModules = existsSync(join(FRONTEND, 'node_modules'));
 const problems = [];
 
 if (hasNodeModules && isPrettierTarget(rel)) {
-  runNodeBin('prettier', 'prettier', ['--write', '--log-level', 'warn', rel], { quiet: true });
+  runNodeBin('prettier', 'prettier', prettierArgs([rel], true), { quiet: true, cwd: FRONTEND });
 }
 
 if (hasNodeModules && isEslintTarget(rel)) {
-  const r = runNodeBin('eslint', 'eslint', ['--max-warnings', '0', '--fix', rel], { quiet: true });
+  const r = runNodeBin('eslint', 'eslint', eslintArgs([rel], true), { quiet: true });
   if (r.status !== 0) problems.push(`[eslint]\n${r.stdout}${r.stderr}`.trim());
 }
 
 if (rel.endsWith('.rs')) {
-  const r = run('rustfmt', ['--edition', '2024', rel], { quiet: true });
+  // tests/fuzz など src/backend の外の .rs にも、同じ設定を使う
+  const config = join(BACKEND, 'rustfmt.toml');
+  const r = run('rustfmt', ['--edition', '2024', '--config-path', config, rel], { quiet: true });
   if (r.status !== 0) problems.push(`[rustfmt]\n${r.stdout}${r.stderr}`.trim());
 }
 

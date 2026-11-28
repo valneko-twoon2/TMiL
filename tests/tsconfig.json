@@ -1,0 +1,15 @@
+// tests/ の TypeScript（E2E モック・VRT）の設定。フロントの設定を引き継ぐ。
+// tests/ からは src/frontend/node_modules が見えないので、型とパッケージの場所を教える。
+// Playwright も実行時にこの paths を使ってパッケージを探す。
+{
+  "extends": "../src/frontend/tsconfig.json",
+  "compilerOptions": {
+    "typeRoots": ["../src/frontend/node_modules/@types"],
+    "types": ["node"],
+    "paths": {
+      "@playwright/test": ["../src/frontend/node_modules/@playwright/test"]
+    }
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["fuzz"]
+}

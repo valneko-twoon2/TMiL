@@ -1,0 +1,15 @@
+[
+  {
+    "priority": "normal",
+    "affinity": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "priority": null,
+    "affinity": null
+  }
+]

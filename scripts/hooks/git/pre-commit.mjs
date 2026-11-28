@@ -14,6 +14,9 @@ if (crlf.length > 0) {
   process.exit(1);
 }
 
+const comments = run(process.execPath, [`${ROOT}/scripts/lint/comments.mjs`, '--staged']);
+if (comments.status !== 0) process.exit(1);
+
 const lint = run(process.execPath, [`${ROOT}/scripts/lint/lint.mjs`, '--staged']);
 if (lint.status !== 0) {
   console.error('\nLint を直してからコミットしてください（自動修正: npm run lint:fix）');

@@ -1,0 +1,8 @@
+# cargo-mutants の設定（ミューテーションテストは手動で回す）
+# 実行: node scripts/test/mutation.mjs --backend
+
+# OS に依存して CI と手元で結果が変わる部分は対象外にする
+exclude_globs = ["core/src/startup/win_registry.rs"]
+
+# 実機の値を読むテストは遅いので、時間を長めに取る
+timeout_multiplier = 3.0

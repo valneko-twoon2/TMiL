@@ -1,0 +1,132 @@
+// 実際に TaskManagerLite を起動して操作する E2E（tauri-driver + WebDriver）。
+// バックエンドの変更を確かめたいときに使う。実行は scripts/test/e2e-native.mjs から。
+import assert from 'node:assert/strict';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { after, afterEach, before, describe, it } from 'node:test';
+
+// selenium-webdriver は src/frontend の依存なので、そこを起点に読み込む（tests/ からは node_modules が見えない）
+const require = createRequire(new URL('../../../src/frontend/package.json', import.meta.url));
+/** @type {typeof import('selenium-webdriver')} */
+const { Builder, By, Capabilities, Key, until } = require('selenium-webdriver');
+
+const application = process.env.TASKMANAGERLITE_APP;
+const server = process.env.TAURI_DRIVER_URL ?? 'http://127.0.0.1:4444/';
+const TIMEOUT = 20_000;
+
+/** @type {import('selenium-webdriver').WebDriver} */
+let driver;
+
+async function navigate(label) {
+  const nav = await driver.findElement(By.css('nav'));
+  await nav.findElement(By.css(`button[title="${label}"]`)).click();
+}
+
+before(async () => {
+  assert.ok(application, 'TASKMANAGERLITE_APP に起動するアプリのパスを指定してください');
+  const capabilities = new Capabilities();
+  capabilities.set('tauri:options', { application });
+  capabilities.setBrowserName('wry');
+  driver = await new Builder().withCapabilities(capabilities).usingServer(server).build();
+});
+
+// 失敗したときは、画面と DOM を test-results/native に残す（CI では成果物として置く）
+afterEach(async (t) => {
+  if (!driver || t.passed) return;
+  await saveEvidence(t.name).catch(() => undefined);
+});
+
+after(async () => {
+  await driver?.quit();
+});
+
+/** 画面と DOM を保存する。失敗の原因を後から見るため。 */
+async function saveEvidence(name) {
+  const dir = new URL('../../../test-results/native/', import.meta.url);
+  mkdirSync(dir, { recursive: true });
+  const safe = name.replace(/[^\w-]+/g, '_');
+  writeFileSync(new URL(`${safe}.png`, dir), await driver.takeScreenshot(), 'base64');
+  writeFileSync(new URL(`${safe}.html`, dir), await driver.getPageSource());
+}
+
+describe('実アプリ', () => {
+  it('プロセス一覧に実際のプロセスが並ぶ', async () => {
+    const rows = await driver.wait(until.elementsLocated(By.css('[data-testid="process-group"]')), TIMEOUT);
+    assert.ok(rows.length > 1, 'プロセスが 2 つ以上あるはず');
+    // getText は「見えている文字」だけを返し、列の幅に収めるため overflow: hidden にしたセルを
+    // WebKitGTK では含めない（画面には出ている）。一覧の中身は textContent で確かめる
+    const body = await driver.findElement(By.css('tbody')).getAttribute('textContent');
+    // Windows は実行ファイルの説明（Task Manager Lite）、Linux は実行ファイル名で出る
+    assert.match(body, /Task Manager Lite|taskmanagerlite/, 'Task Manager Lite 自身が一覧にあるはず');
+  });
+
+  it('詳細タブで自分の PID を検索できる', async () => {
+    await navigate('詳細');
+    const search = await driver.findElement(By.css('input[type="search"]'));
+    await search.clear();
+    await search.sendKeys('taskmanagerlite');
+    const rows = await driver.wait(until.elementsLocated(By.css('[data-testid="detail-row"]')), TIMEOUT);
+    assert.ok(rows.length >= 1);
+    // clear() は入力のイベントを出さず、画面の検索語が残る（ほかのページの一覧まで絞り込まれる）。
+    // 文字を消すキーを送って、画面にも空になったことを伝える
+    await search.sendKeys(Key.chord(Key.CONTROL, 'a'), Key.BACK_SPACE);
+    await driver.wait(async () => (await search.getAttribute('value')) === '', TIMEOUT);
+  });
+
+  it('パフォーマンスに CPU とメモリが出る', async () => {
+    await navigate('パフォーマンス');
+    const heading = await driver.wait(until.elementLocated(By.css('section h2')), TIMEOUT);
+    assert.equal(await heading.getText(), 'CPU');
+    const list = await driver.findElement(By.css('ul[aria-label="リソース"]')).getText();
+    assert.match(list, /メモリ/);
+  });
+
+  it('スタートアップ一覧を読み込める', async () => {
+    await navigate('スタートアップ アプリ');
+    await driver.wait(async () => {
+      const text = await driver.findElement(By.css('tbody')).getAttribute('textContent');
+      return !text.includes('読み込み中');
+    }, TIMEOUT);
+  });
+
+  it('サービスの一覧を OS から読める', async () => {
+    await navigate('サービス');
+    await driver.wait(async () => {
+      const rows = await driver.findElements(By.css('[data-testid="services-table"] tbody tr[data-key]'));
+      return rows.length > 0;
+    }, TIMEOUT);
+  });
+
+  it('リソース モニターで実際の待ち受けポートとモジュールが出る', async () => {
+    await navigate('リソース モニター');
+    await driver.findElement(By.xpath('//button[@role="tab" and normalize-space()="ネットワーク"]')).click();
+    await driver.wait(async () => {
+      const rows = await driver.findElements(By.css('[data-testid="resmon-listen"] tbody tr[data-key]'));
+      return rows.length > 0;
+    }, TIMEOUT);
+    // 自分自身にチェックを付けると、読み込んでいるモジュールが出る
+    await driver.findElement(By.xpath('//button[@role="tab" and normalize-space()="CPU"]')).click();
+    const mine = await driver.wait(
+      until.elementLocated(
+        By.xpath(
+          '//*[@data-testid="resmon-cpu"]//tr[.//td[contains(translate(., "TASKMANAGERLITE", "taskmanagerlite"), "taskmanagerlite")]]//input[@type="checkbox"]',
+        ),
+      ),
+      TIMEOUT,
+    );
+    await mine.click();
+    await driver.wait(async () => {
+      const rows = await driver.findElements(By.css('[data-testid="resmon-modules"] tbody tr[data-key]'));
+      return rows.length > 0;
+    }, TIMEOUT);
+  });
+
+  it('設定にバージョンが出る', async () => {
+    await navigate('設定');
+    const body = await driver.wait(
+      until.elementLocated(By.xpath('//*[contains(text(), "Task Manager Lite v")]')),
+      TIMEOUT,
+    );
+    assert.match(await body.getText(), /Task Manager Lite v\d+\.\d+\.\d+/);
+  });
+});

@@ -1,0 +1,14 @@
+[
+  {
+    "exe": "C:\\Windows\\explorer.exe",
+    "icon": "data:image/png;base64,iVBORw0KGgo=",
+    "description": "エクスプローラー",
+    "company": "Microsoft Corporation"
+  },
+  {
+    "exe": "/usr/bin/unknown",
+    "icon": null,
+    "description": null,
+    "company": null
+  }
+]

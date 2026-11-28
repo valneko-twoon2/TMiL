@@ -1,0 +1,37 @@
+[package]
+name = "taskmanagerlite-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4.13"
+taskmanagerlite-core = { path = "../../src/backend/core" }
+
+# src/backend のワークスペースとは切り離す（nightly と sanitizer でビルドするため）
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "desktop_entry"
+path = "fuzz_targets/desktop_entry.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "command_line"
+path = "fuzz_targets/command_line.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "windows_quote"
+path = "fuzz_targets/windows_quote.rs"
+test = false
+doc = false
+bench = false
