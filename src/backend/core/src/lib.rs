@@ -11,6 +11,7 @@ pub mod machine;
 pub mod metrics;
 pub mod model;
 pub mod modules;
+pub mod no_window;
 pub mod open;
 pub mod powershell;
 pub mod process_control;

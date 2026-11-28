@@ -6,6 +6,7 @@
 #
 #   バージョンを決める:  $env:TASKMANAGERLITE_VERSION = '0.2.0'; irm ... | iex
 #   確かめるだけ:        $env:TASKMANAGERLITE_DRY_RUN = '1'（ダウンロードとハッシュの確認だけ行う）
+#   置き換えを決める:    $env:TASKMANAGERLITE_REPLACE_TASKMGR = '1'（置き換える）または '0'（尋ねずに置き換えない）
 #
 # iex で読み込まれるので、変数が呼び出し元に残らないようスクリプト ブロックの中で動かす。
 # exit は呼び出し元の PowerShell ごと閉じてしまうので使わず、失敗は throw で知らせる。
@@ -78,8 +79,16 @@
       return
     }
 
+    # なぜ: タスクバーの右クリックの「タスク マネージャー」に項目は足せないので、置き換えはここで選べるようにする
+    $replace = $env:TASKMANAGERLITE_REPLACE_TASKMGR -eq '1'
+    if (-not $env:TASKMANAGERLITE_REPLACE_TASKMGR -and [Environment]::UserInteractive -and -not [Console]::IsInputRedirected) {
+      $answer = Read-Host (Get-Message 'Windows のタスク マネージャーを Task Manager Lite に置き換えますか？管理者の確認が出ます [y/N]')
+      $replace = $answer -match '^[yY]'
+    }
+    $setupArgs = if ($replace) { '/S /REPLACETASKMGR' } else { '/S' }
+
     Write-Host (Get-Message 'インストールしています...')
-    $process = Start-Process -FilePath $setup -ArgumentList '/S' -Wait -PassThru
+    $process = Start-Process -FilePath $setup -ArgumentList $setupArgs -Wait -PassThru
     if ($process.ExitCode -ne 0) {
       throw ((Get-Message 'インストーラーが失敗しました。終了コード: ') + $process.ExitCode)
     }

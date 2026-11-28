@@ -2,14 +2,11 @@
 //! 二重引用符や改行が要るスクリプト（C# を埋め込むものなど）は [`run_encoded`] で渡す。
 
 #[cfg(windows)]
+use crate::no_window::command;
+#[cfg(windows)]
 use std::io::Write;
 #[cfg(windows)]
-use std::os::windows::process::CommandExt;
-#[cfg(windows)]
-use std::process::{Command, Stdio};
-
-#[cfg(windows)]
-const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+use std::process::Stdio;
 
 pub fn is_safe_script(script: &str) -> bool {
     !script.contains(['"', '\n', '\r'])
@@ -38,10 +35,9 @@ pub fn run_encoded(script: &str, stdin: &str) -> Result<String, String> {
 /// 動かし続けるスクリプトを起動する（標準入力と標準出力でやり取りする）。標準エラーは捨てる。
 #[cfg(windows)]
 pub fn spawn_persistent(script: &str) -> Result<std::process::Child, String> {
-    Command::new("powershell.exe")
+    command("powershell.exe")
         .args(["-NoProfile", "-NonInteractive"])
         .args(["-EncodedCommand", &encode_command(script)])
-        .creation_flags(CREATE_NO_WINDOW)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
@@ -51,10 +47,9 @@ pub fn spawn_persistent(script: &str) -> Result<std::process::Child, String> {
 
 #[cfg(windows)]
 fn spawn(args: &[&str], stdin: &str) -> Result<String, String> {
-    let mut child = Command::new("powershell.exe")
+    let mut child = command("powershell.exe")
         .args(["-NoProfile", "-NonInteractive"])
         .args(args)
-        .creation_flags(CREATE_NO_WINDOW)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
