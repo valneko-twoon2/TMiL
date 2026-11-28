@@ -141,7 +141,7 @@ pub fn socket_inode(link: &str) -> Option<u64> {
 
 #[cfg(windows)]
 pub fn list() -> Result<Vec<Connection>, String> {
-    let output = std::process::Command::new("netstat")
+    let output = crate::no_window::command("netstat")
         .arg("-ano")
         .output()
         .map_err(|e| format!("接続の一覧を取れません（netstat を起動できません）: {e}"))?;

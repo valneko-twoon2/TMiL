@@ -132,7 +132,7 @@ pub fn status(exe: &Path) -> ReplacementStatus {
 #[cfg(windows)]
 pub fn elevate(exe: &Path, enable: bool) -> Result<(), String> {
     let script = elevate_script(&reg_args(enable, exe));
-    let output = std::process::Command::new("powershell.exe")
+    let output = crate::no_window::command("powershell.exe")
         .args(["-NoProfile", "-NonInteractive", "-Command", &script])
         .output()
         .map_err(|e| format!("PowerShell を起動できません: {e}"))?;
