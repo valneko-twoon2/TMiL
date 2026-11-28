@@ -9,7 +9,27 @@ pub(crate) const VISIBILITY_EVENT: &str = "window-visibility";
 const MENU_OPEN: &str = "open";
 const MENU_QUIT: &str = "quit";
 
-pub(crate) fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
+/// 契約: トレイを作れたか。作れなかったときは、閉じてもトレイに隠れず終了する（戻る手段が無くなるため）。
+pub(crate) struct TrayAvailable(pub(crate) bool);
+
+/// なぜ: Linux でトレイ用のライブラリ（appindicator）が読み込めないと、ライブラリが panic で落ちる。
+/// 画面は出せるので、トレイ無しで動かす。
+pub(crate) fn try_create<R: Runtime>(app: &AppHandle<R>) -> bool {
+    let created = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| create(app)));
+    let ok = matches!(created, Ok(Ok(())));
+    if !ok {
+        #[expect(
+            clippy::print_stderr,
+            reason = "トレイ無しで動くことを知らせる手段が他に無い"
+        )]
+        {
+            eprintln!("トレイを作れないので、トレイ無しで起動します。");
+        }
+    }
+    ok
+}
+
+fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let open = MenuItem::with_id(
         app,
         MENU_OPEN,

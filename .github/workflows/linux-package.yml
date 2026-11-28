@@ -1,0 +1,44 @@
+# 手元で動かして確かめるための Linux パッケージ（AppImage と deb）を作る。
+# 実行: pkg/ で始まるブランチへ develop を push する（例 pkg/linux）。その中身が作られる。
+#       既定ブランチに入ったあとは gh workflow run linux-package.yml --ref develop でも動かせる。
+# 取得: gh run download <run-id> -n linux-package
+name: Linux パッケージ
+
+on:
+  push:
+    branches: ['pkg/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: ビルド（ubuntu-22.04）
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/linux-deps
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src/backend
+      - run: npm ci
+        working-directory: src/frontend
+      - run: node scripts/dev/tauri.mjs build
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: linux-package
+          path: |
+            src/backend/target/release/bundle/appimage/*.AppImage
+            src/backend/target/release/bundle/deb/*.deb
+          if-no-files-found: error
